@@ -79,9 +79,16 @@
     </div>
     <div class="theme-toggle-wrapper">
       <span>Light</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="theme-toggle">
-      </label>
+      <div class="checkbox-wrapper-44">
+        <label class="toggleButton">
+          <input type="checkbox" id="theme-toggle">
+          <div>
+            <svg viewBox="0 0 44 44">
+              <path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"></path>
+            </svg>
+          </div>
+        </label>
+      </div>
       <span>Dark</span>
     </div>
   </header>
@@ -120,10 +127,34 @@
       </div>
     </div>
     
-    <h3>Toggle Switch</h3>
+    <h3>Toggle Switches</h3>
     <div class="component-demo">
-      <input type="checkbox" class="toggle-switch">
-      <input type="checkbox" class="toggle-switch sm" checked>
+      <!-- Toggle 1: Standard Capsule -->
+      <div style="text-align: center; margin-right: 20px;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 1</span>
+        <input type="checkbox" class="toggle-switch">
+      </div>
+
+      <!-- Toggle 2: Standard Capsule (Small) -->
+      <div style="text-align: center; margin-right: 20px;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 2</span>
+        <input type="checkbox" class="toggle-switch sm" checked>
+      </div>
+
+      <!-- Toggle 3: Circular Animated (New) -->
+      <div style="text-align: center;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 3</span>
+        <div class="checkbox-wrapper-44">
+          <label class="toggleButton">
+            <input type="checkbox">
+            <div>
+              <svg viewBox="0 0 44 44">
+                <path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"></path>
+              </svg>
+            </div>
+          </label>
+        </div>
+      </div>
     </div>
   </section>
 
