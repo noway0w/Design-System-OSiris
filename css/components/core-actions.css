@@ -186,7 +186,7 @@
 
 .checkbox-wrapper-44 .toggleButton input + div svg {
   fill: none;
-  stroke-width: 3.6;
+  stroke-width: 4px;
   stroke: var(--text-color);
   stroke-linecap: round;
   stroke-linejoin: round;
