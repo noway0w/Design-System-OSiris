@@ -2,7 +2,7 @@
 
 A modular, distributed Design System for the OSiris ecosystem. This system provides a consistent set of UI components, typography, and theming (Light/Dark mode) designed for modern web interfaces, including specialized components for Video Playback, Dashboards, and 3D/Map interactions.
 
-## 🚀 Quick Start
+## Quick Start
 
 Include the main CSS file in your project's `<head>`:
 
@@ -10,7 +10,7 @@ Include the main CSS file in your project's `<head>`:
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/noway0w/Design-System-OSiris@main/osiris.css" />
 ```
 
-## 🎨 Features
+## Features
 
 - **Typography**: Built on the **Parkinsans** variable font family.
 - **Theming**: Native Light and Dark mode support.
@@ -18,7 +18,7 @@ Include the main CSS file in your project's `<head>`:
   - Manual toggle via `data-theme="dark"` or `data-theme="light"` on the `<html>` tag.
 - **Responsiveness**: Mobile-first components with touch-friendly targets on smaller screens.
 
-## 📦 Components
+## Components
 
 The design system is organized into modular categories:
 
@@ -59,7 +59,7 @@ System status and wayfinding.
 - **Segmented Control**: Tab-like view switcher.
 - **Search Input (Omni)**: Global search bar with shortcut hints (Ctrl+K) and suggestions dropdown.
 
-## 🛠 Usage
+## Usage
 
 ### Dark Mode Toggle
 To manually toggle the theme, toggle the `data-theme` attribute on the root element:
