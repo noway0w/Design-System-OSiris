@@ -202,6 +202,7 @@
   stroke-dashoffset: 124.6;
   stroke-dasharray: 0 162.6 133 29.6;
   transition: all 0.4s ease 0s;
+  overflow: visible;
 }
 
 .checkbox-wrapper-44 .toggleButton input + div:before,
