@@ -7,7 +7,7 @@ A modular, distributed Design System for the OSiris ecosystem. This system provi
 Include the main CSS file in your project's `<head>`:
 
 ```html
-<link rel="stylesheet" href="https://raw.githubusercontent.com/noway0w/Design-System-OSiris/main/osiris.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/noway0w/Design-System-OSiris@main/osiris.css" />
 ```
 
 ## 🎨 Features
