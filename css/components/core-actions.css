@@ -194,10 +194,10 @@
   height: 44px;
   display: block;
   position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  left: -3px;
+  top: -3px;
+  right: -3px;
+  bottom: -3px;
   z-index: 1;
   stroke-dashoffset: 124.6;
   stroke-dasharray: 0 162.6 133 29.6;
