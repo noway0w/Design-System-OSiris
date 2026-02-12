@@ -1,0 +1,321 @@
+/* --- 3D / Map --- */
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  background-color: #e9ecef;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Zoom Widget */
+.zoom-controls {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: var(--font-size-lg);
+}
+
+.zoom-btn:hover {
+  background-color: var(--surface-hover);
+}
+
+.zoom-slider {
+  width: 4px;
+  height: 100px;
+  background: var(--border-color);
+  margin: 0 auto;
+  border-radius: 2px;
+  position: relative;
+}
+
+.zoom-thumb {
+  position: absolute;
+  bottom: 50%;
+  left: -6px;
+  width: 16px;
+  height: 16px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: grab;
+}
+
+/* Compass / Gizmo */
+.compass-widget {
+  position: absolute;
+  top: var(--spacing-md);
+  right: 60px; /* Offset from Zoom */
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.3s ease;
+}
+
+.compass-arrow {
+  width: 0; 
+  height: 0; 
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 20px solid var(--error-color); /* North indicator */
+}
+
+/* Floating Toolbar */
+.map-toolbar {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  background: rgba(255, 255, 255, 0.7); /* Glassmorphism base */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 10;
+}
+
+[data-theme="dark"] .map-toolbar {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-base);
+}
+
+.toolbar-btn:hover {
+  background-color: var(--surface-hover);
+}
+
+.toolbar-btn.active {
+  background-color: var(--primary-color);
+  color: var(--on-primary);
+}
+
+/* Layer Item */
+.layer-panel {
+  position: absolute;
+  bottom: var(--spacing-md);
+  left: var(--spacing-md);
+  width: 250px;
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  padding: var(--spacing-xs);
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+}
+
+.layer-item:hover {
+  background-color: var(--surface-hover);
+}
+
+.layer-thumb {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-color);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.layer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.layer-opacity {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  margin-top: 4px;
+  width: 100%;
+}
+.layer-opacity-val {
+  height: 100%;
+  background: var(--primary-color);
+  width: 80%;
+  border-radius: 2px;
+}
+
+/* Map Pin / Marker */
+.map-marker {
+  width: 24px;
+  height: 36px;
+  background: var(--error-color);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  z-index: 5;
+}
+
+.map-marker::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 7px;
+  left: 7px;
+}
+
+.map-cluster {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: var(--font-size-sm);
+  border: 2px solid white;
+  box-shadow: var(--shadow-md);
+  position: absolute;
+  top: 40%;
+  left: 60%;
+  z-index: 6;
+}
+
+/* Tooltip/Popup Styles */
+.map-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-color);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-bottom: 8px;
+}
+
+.map-marker:hover .map-tooltip {
+  opacity: 1;
+}
+
+/* --- Mobile Behavior --- */
+@media (max-width: 768px) {
+  /* Zoom: Often hidden or semi-transparent */
+  .zoom-controls {
+    display: none; /* Pinch to zoom preferred */
+  }
+
+  /* Compass: Tap to reset */
+  .compass-widget {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
+
+  /* Floating Toolbar: FAB */
+  .map-toolbar {
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+    top: auto;
+    left: auto;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    padding: 0;
+  }
+  
+  .map-toolbar .toolbar-btn {
+    display: none; /* Collapsed state */
+  }
+  
+  .map-toolbar::after {
+    content: '+'; /* FAB Icon */
+    font-size: 24px;
+    color: white;
+  }
+
+  /* Layer Item: Drawer */
+  .layer-panel {
+    width: 100%;
+    left: 0;
+    bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 50vh;
+  }
+  
+  .layer-item {
+    padding: var(--spacing-md); /* Larger touch target */
+  }
+
+  /* Map Marker: Tap shows bottom sheet (simulated here) */
+  .map-tooltip {
+    display: none; /* No hover on mobile */
+  }
+}

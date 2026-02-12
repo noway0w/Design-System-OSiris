@@ -1,0 +1,201 @@
+/* --- Video Player --- */
+
+.video-player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: #000;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Playback Toggle (Center Overlay) */
+.play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.video-player-container:hover .play-overlay,
+.video-player-container.paused .play-overlay {
+  opacity: 1;
+}
+
+/* Control Bar */
+.control-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.video-player-container:hover .control-bar {
+  opacity: 1;
+}
+
+/* Timeline Scrubber */
+.timeline-scrubber {
+  flex-grow: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: height 0.2s ease;
+}
+
+.timeline-scrubber:hover {
+  height: 8px; /* Detailed scrubbing area */
+}
+
+.timeline-progress {
+  height: 100%;
+  background: var(--primary-color);
+  width: 40%; /* Demo width */
+  border-radius: 2px;
+  position: relative;
+}
+
+.timeline-buffer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 60%; /* Demo buffer */
+  background: rgba(255, 255, 255, 0.1);
+  z-index: -1;
+}
+
+/* Chapter Marker */
+.chapter-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #fff;
+  z-index: 3;
+}
+
+/* Volume Slider */
+.volume-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-slider {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease;
+  background: rgba(255,255,255,0.2);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.volume-control:hover .volume-slider {
+  width: 80px; /* Expand on hover */
+}
+
+/* Video Tile */
+.video-tile {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  cursor: pointer;
+  transition: transform var(--transition-base);
+}
+
+.video-tile:hover {
+  transform: scale(1.02);
+  z-index: 1;
+  box-shadow: var(--shadow-lg);
+}
+
+.video-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-tile-meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-sm);
+  background: rgba(0,0,0,0.7);
+  color: white;
+  font-size: var(--font-size-sm);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.video-tile:hover .video-tile-meta {
+  transform: translateY(0);
+}
+
+/* --- Mobile Behavior --- */
+@media (max-width: 768px) {
+  /* Playback Toggle: Center screen tap */
+  .play-overlay {
+    width: 48px;
+    height: 48px;
+    /* Often hidden on mobile until tapped, relies on native controls or tap-to-show */
+  }
+
+  /* Timeline Scrubber: Thick bar for easy touch */
+  .timeline-scrubber {
+    height: 12px; /* Thicker touch target */
+  }
+  
+  .control-bar {
+    opacity: 1; /* Always visible or toggle on tap */
+    padding: var(--spacing-sm);
+  }
+
+  /* Volume Slider: Often replaced by hardware buttons, but if present */
+  .volume-slider {
+    width: 60px; /* Always visible if needed, or hidden */
+  }
+
+  /* Video Tile: Static image */
+  .video-tile:hover {
+    transform: none;
+  }
+  .video-tile-meta {
+    transform: translateY(0); /* Always show meta or show on tap */
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  }
+}

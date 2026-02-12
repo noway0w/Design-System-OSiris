@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSiris Design System</title>
+  <link rel="stylesheet" href="osiris.css">
+  <style>
+    /* Documentation Specific Styles */
+    body {
+      padding: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    section {
+      margin-bottom: var(--spacing-2xl);
+      padding: var(--spacing-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-color);
+    }
+    
+    h1 { font-size: var(--font-size-3xl); margin-bottom: var(--spacing-sm); }
+    h2 { font-size: var(--font-size-2xl); margin-bottom: var(--spacing-lg); color: var(--primary-color); border-bottom: 2px solid var(--primary-light); display: inline-block; }
+    h3 { font-size: var(--font-size-xl); margin-bottom: var(--spacing-md); margin-top: var(--spacing-lg); }
+    
+    .component-demo {
+      padding: var(--spacing-lg);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-color);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+      align-items: flex-start;
+    }
+    
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-size: var(--font-size-sm);
+    }
+
+    .usage-box {
+      background: var(--surface-active);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    /* Theme Toggle Switch in Header */
+    .theme-toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>OSiris Design System</h1>
+      <p>A modular design system for modern web interfaces.</p>
+    </div>
+    <div class="theme-toggle-wrapper">
+      <span>Light</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="theme-toggle">
+      </label>
+      <span>Dark</span>
+    </div>
+  </header>
+
+  <div class="usage-box">
+    <h3>Quick Start</h3>
+    <p>Include the CSS in your project:</p>
+    <pre>&lt;link rel="stylesheet" href="https://raw.githubusercontent.com/noway0w/Design-System-OSiris/main/osiris.css" /&gt;</pre>
+    <small>Note: For production, consider using a CDN like jsDelivr or GitHub Pages once deployed.</small>
+  </div>
+
+  <!-- Core Actions -->
+  <section id="core-actions">
+    <h2>Core Actions</h2>
+    
+    <h3>Primary Button</h3>
+    <div class="component-demo">
+      <button class="btn-primary">Solid Button</button>
+      <button class="btn-primary gradient">Gradient Button</button>
+    </div>
+    <pre>&lt;button class="btn-primary"&gt;Solid Button&lt;/button&gt;
+&lt;button class="btn-primary gradient"&gt;Gradient Button&lt;/button&gt;</pre>
+
+    <h3>Icon Button</h3>
+    <div class="component-demo">
+      <button class="btn-icon ghost" data-tooltip="Ghost">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
+      <button class="btn-icon outlined" data-tooltip="Outlined">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div style="background: #333; padding: 10px; border-radius: 8px;">
+        <button class="btn-icon bg-blur" data-tooltip="Blur (Dark BG)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    
+    <h3>Toggle Switch</h3>
+    <div class="component-demo">
+      <input type="checkbox" class="toggle-switch">
+      <input type="checkbox" class="toggle-switch sm" checked>
+    </div>
+  </section>
+
+  <!-- Video Player -->
+  <section id="video-player">
+    <h2>Video Player</h2>
+    <div class="component-demo" style="display: block;">
+      <div class="video-player-container">
+        <!-- Placeholder Video Background -->
+        <div style="width:100%; height:100%; background: #222; display: flex; align-items: center; justify-content: center; color: #555;">Video Content</div>
+        
+        <div class="play-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        
+        <div class="control-bar" style="opacity: 1;"> <!-- Force visible for demo -->
+          <button class="btn-icon ghost" style="color:white;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          
+          <div class="timeline-scrubber">
+            <div class="timeline-buffer"></div>
+            <div class="timeline-progress"></div>
+          </div>
+          
+          <div class="volume-control">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+             <div class="volume-slider" style="width: 60px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <h2>Dashboard</h2>
+    
+    <h3>Metric Tile (KPI)</h3>
+    <div class="component-demo">
+      <div class="kpi-tile">
+        <span class="kpi-label">Total Revenue</span>
+        <div class="kpi-value">
+          $12,450
+          <span class="kpi-trend up">+12%</span>
+        </div>
+        <div class="kpi-sparkline"></div>
+      </div>
+      
+      <div class="kpi-tile">
+        <span class="kpi-label">Active Users</span>
+        <div class="kpi-value">
+          1,203
+          <span class="kpi-trend down">-3%</span>
+        </div>
+        <div class="kpi-sparkline"></div>
+      </div>
+    </div>
+
+    <h3>Filter Chips</h3>
+    <div class="component-demo">
+      <div class="filter-chip-container">
+        <div class="filter-chip active">
+          Status: Active <span class="filter-chip-remove">✕</span>
+        </div>
+        <div class="filter-chip">
+          Role: Admin <span class="filter-chip-remove">✕</span>
+        </div>
+        <div class="filter-chip">
+          Date: Today <span class="filter-chip-remove">✕</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3D / Map -->
+  <section id="map-3d">
+    <h2>3D / Map Components</h2>
+    <div class="component-demo" style="display: block;">
+      <div class="map-container">
+        <div class="zoom-controls">
+          <button class="zoom-btn">+</button>
+          <div class="zoom-slider"><div class="zoom-thumb"></div></div>
+          <button class="zoom-btn">-</button>
+        </div>
+        
+        <div class="compass-widget">
+          <div class="compass-arrow"></div>
+        </div>
+        
+        <div class="map-toolbar">
+          <button class="toolbar-btn active" title="Select">S</button>
+          <button class="toolbar-btn" title="Draw">D</button>
+          <button class="toolbar-btn" title="Measure">M</button>
+        </div>
+        
+        <div class="layer-panel">
+          <div class="layer-item">
+            <div class="layer-thumb"></div>
+            <div class="layer-info">
+              <span class="layer-name">Satellite Imagery</span>
+              <div class="layer-opacity"><div class="layer-opacity-val"></div></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="map-marker" style="top: 40%; left: 40%;">
+          <div class="map-tooltip">Location A</div>
+        </div>
+        <div class="map-cluster">5+</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feedback & Navigation -->
+  <section id="feedback-nav">
+    <h2>Feedback & Navigation</h2>
+    
+    <h3>Toasts</h3>
+    <div class="component-demo">
+      <div class="toast success" style="position: static; transform: none; box-shadow: none;">
+        <div class="toast-icon">✓</div>
+        <span>Operation successful!</span>
+      </div>
+      <div class="toast error" style="position: static; transform: none; box-shadow: none;">
+        <div class="toast-icon">!</div>
+        <span>Something went wrong.</span>
+      </div>
+    </div>
+
+    <h3>Search Input</h3>
+    <div class="component-demo">
+      <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search...">
+        <span class="search-shortcut">Ctrl K</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Theme Toggle Logic
+    const toggle = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      root.setAttribute('data-theme', savedTheme);
+      toggle.checked = savedTheme === 'dark';
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      toggle.checked = true;
+    }
+
+    toggle.addEventListener('change', (e) => {
+      const theme = e.target.checked ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
+  </script>
+</body>
+</html>
