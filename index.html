@@ -61,6 +61,14 @@
       border-radius: var(--radius-md);
       margin-bottom: var(--spacing-xl);
     }
+    
+    [data-theme="dark"] .usage-box {
+      background: var(--brand-dark-grey);
+    }
+    
+    [data-theme="dark"] h2 {
+      color: #F7F7F7;
+    }
 
     /* Theme Toggle Switch in Header */
     .theme-toggle-wrapper {
@@ -128,6 +136,21 @@
         <div style="width: 100px; height: 100px; background: #733E10; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
         <span style="display:block; font-weight:bold; font-size: 14px;">Bronze Earth</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#733E10</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #141414; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Grey BG</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#141414</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #181818; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Mode BG</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#181818</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #F7F7F7; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #ddd;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Light Title</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#F7F7F7</span>
       </div>
     </div>
   </section>
@@ -324,24 +347,24 @@
         <div class="weather-header">Current local weather</div>
         <div class="weather-main-visual">
           <div class="weather-icon-large">
-             <!-- Placeholder for Sun+Cloud SVG -->
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:100%; height:100%;">
-               <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414M16.95 16.95l1.414 1.414M7.05 7.05L5.636 5.636M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0z" stroke="currentColor"/>
-             </svg>
+             <!-- Partly Cloudy Icon from Design System -->
+             <img src="weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" style="width:100%; height:100%;" alt="Partly Cloudy">
           </div>
         </div>
         <div class="weather-metrics">
           <div class="weather-metric-item">
             <span class="weather-metric-label">Temperature</span>
             <div class="weather-metric-value-row">
-              <svg class="weather-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              <!-- Thermostat Icon from Design System -->
+              <img src="weather_icons/device_thermostat_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Temperature">
               <span>-4,8°C</span>
             </div>
           </div>
           <div class="weather-metric-item">
             <span class="weather-metric-label">Humidity</span>
             <div class="weather-metric-value-row">
-              <svg class="weather-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              <!-- Humidity Mid Icon from Design System -->
+              <img src="weather_icons/humidity_mid_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Humidity">
               <span>77 %</span>
             </div>
           </div>

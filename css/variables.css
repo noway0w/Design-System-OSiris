@@ -6,6 +6,9 @@
   --brand-ocean: #03588C; /* Ocean Blue - Primary Accent */
   --brand-teal: #023859; /* Deep Teal - Secondary Accent */
   --brand-bronze: #733E10; /* Bronze Earth - Warm Accent */
+  --brand-dark-grey: #141414; /* Dark Grey Background */
+  --brand-dark-mode: #181818; /* Dark Mode Background */
+  --brand-light-title: #F7F7F7; /* Light Title */
 
   /* Mapped Variables */
   --primary-color: var(--brand-ocean);
@@ -75,8 +78,8 @@
   --primary-active: #022a42;
   --on-primary: #ffffff;
 
-  --bg-color: var(--brand-navy); /* Midnight Navy Background */
-  --surface-color: #021a36; /* Slightly lighter than Midnight Navy for cards */
+  --bg-color: var(--brand-dark-grey); /* Dark Grey Background */
+  --surface-color: var(--brand-dark-mode); /* Dark Mode Background */
   --surface-hover: var(--brand-teal);
   --surface-active: #03456e;
   
