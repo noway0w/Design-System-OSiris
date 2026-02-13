@@ -76,13 +76,25 @@
       align-items: center;
       gap: var(--spacing-sm);
     }
+
+    .header-logo {
+      height: 60px; /* Adjust based on logo aspect ratio */
+      display: block;
+      margin-bottom: var(--spacing-sm);
+      filter: brightness(0.08); /* Adapt White SVG to #141414 for Light Mode */
+    }
+
+    [data-theme="dark"] .header-logo {
+      filter: brightness(1); /* Keep White in Dark Mode */
+    }
   </style>
 </head>
 <body>
 
   <header>
     <div>
-      <h1>OSiris Design System</h1>
+      <img src="logo-OSiris/logo-OSiris-horizontal-text.svg" alt="OSiris Logo" class="header-logo">
+      <h1>Design System</h1>
       <p>A modular design system for modern web interfaces.</p>
     </div>
     <div class="theme-toggle-wrapper">

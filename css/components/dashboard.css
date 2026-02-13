@@ -449,4 +449,9 @@
   width: 24px;
   height: 24px;
   fill: var(--text-color);
+  filter: brightness(0.1); /* Adapt White SVG to dark for Light Mode */
+}
+
+[data-theme="dark"] .weather-metric-icon {
+  filter: brightness(1); /* Keep White in Dark Mode */
 }
