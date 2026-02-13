@@ -104,21 +104,30 @@
   <section id="colour-palette">
     <h2>Colour Palette</h2>
     <div class="component-demo">
-      <div style="text-align: center; width: 100px;">
-        <div style="width: 100px; height: 100px; background: var(--primary-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
-        <span style="font-size: 12px; color: var(--text-secondary);">Primary</span>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #011126; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Midnight Navy</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#011126</span>
       </div>
-      <div style="text-align: center; width: 100px;">
-        <div style="width: 100px; height: 100px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
-        <span style="font-size: 12px; color: var(--text-secondary);">Surface</span>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #5E778C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Slate Blue</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#5E778C</span>
       </div>
-      <div style="text-align: center; width: 100px;">
-        <div style="width: 100px; height: 100px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
-        <span style="font-size: 12px; color: var(--text-secondary);">Background</span>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #03588C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Ocean Blue</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#03588C</span>
       </div>
-      <div style="text-align: center; width: 100px;">
-        <div style="width: 100px; height: 100px; background: var(--text-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
-        <span style="font-size: 12px; color: var(--text-secondary);">Text</span>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #023859; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Deep Teal</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#023859</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #733E10; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Bronze Earth</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#733E10</span>
       </div>
     </div>
   </section>
@@ -269,58 +278,97 @@
     </div>
 
     <h3>Tiles</h3>
-    <div class="component-demo">
-      <!-- OSiris State Tile -->
-      <div class="osiris-state-tile">
-        <h4>System Status</h4>
-        <div class="state-row">
-          <span class="state-label">IP Address</span>
-          <span class="state-value">192.168.1.100</span>
-        </div>
-        <div class="state-row">
-          <span class="state-label">FPS Client</span>
-          <span class="state-value">60 fps</span>
-        </div>
-        <div class="state-row">
-          <span class="state-label">RAM Usage</span>
-          <span class="state-value">4.2 GB</span>
-        </div>
-        <div class="state-row">
-          <span class="state-label">Server Load</span>
-          <span class="state-value">24%</span>
-        </div>
-      </div>
-
-      <!-- Settings Tile -->
+    <div class="component-demo" style="align-items: stretch;">
+      <!-- Component 1: Settings Tile -->
       <div class="settings-tile">
-        <h4>Settings</h4>
+        <h3>Current settings</h3>
         <div class="setting-row">
-          <span class="setting-label">Record New Guest</span>
-          <input type="checkbox" class="toggle-switch sm">
+          <span class="setting-label">Record new guest</span>
+          <!-- Control: Large Toggle Switch (Background: Green when active, Knob: White circle) -->
+          <input type="checkbox" class="toggle-switch">
         </div>
         <div class="setting-row">
-          <span class="setting-label">Security Mode</span>
-          <input type="checkbox" class="toggle-switch sm" checked>
+          <span class="setting-label">Security mode</span>
+          <!-- Control: Large Toggle Switch (Active) -->
+          <input type="checkbox" class="toggle-switch" checked>
         </div>
         <button class="add-user-btn">
-          <span>+</span> Add New User
+          <div class="add-user-icon">+</div>
+          <span>Add new user</span>
         </button>
       </div>
 
-      <!-- Content Tile -->
-      <div class="content-tile">
-        <div class="content-tile-img"></div>
-        <div class="content-tile-overlay">
-          <div class="content-tile-title">Memory of the Day</div>
-          <div class="content-tile-meta">Captured: Today, 10:00 AM</div>
+      <!-- Component 2: OSiris State Tile -->
+      <div class="osiris-state-tile">
+        <h4>Current OSiris state</h4>
+        <div class="state-row">
+          <span class="state-label">IP detected</span>
+          <span class="state-value">195.139.147.156</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">FPS client</span>
+          <span class="state-value">4 frame/sec</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">RAM in usage</span>
+          <span class="state-value">550 Mb</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">Server load</span>
+          <span class="state-value">11,7%</span>
         </div>
       </div>
 
-      <!-- Weather Tile -->
+      <!-- Component 3: Weather Tile -->
       <div class="weather-tile">
-        <div class="weather-icon-large"></div>
-        <div class="weather-temp">24°C</div>
-        <div class="weather-desc">Sunny</div>
+        <div class="weather-header">Current local weather</div>
+        <div class="weather-main-visual">
+          <div class="weather-icon-large">
+             <!-- Placeholder for Sun+Cloud SVG -->
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:100%; height:100%;">
+               <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414M16.95 16.95l1.414 1.414M7.05 7.05L5.636 5.636M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0z" stroke="currentColor"/>
+             </svg>
+          </div>
+        </div>
+        <div class="weather-metrics">
+          <div class="weather-metric-item">
+            <span class="weather-metric-label">Temperature</span>
+            <div class="weather-metric-value-row">
+              <svg class="weather-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              <span>-4,8°C</span>
+            </div>
+          </div>
+          <div class="weather-metric-item">
+            <span class="weather-metric-label">Humidity</span>
+            <div class="weather-metric-value-row">
+              <svg class="weather-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              <span>77 %</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Component 4: Content Tile -->
+      <div class="content-tile">
+        <!-- Placeholder for cliff/ocean image -->
+        <div class="content-tile-img" style="background: linear-gradient(to bottom right, #2c3e50, #4ca1af);"></div> 
+        <div class="content-tile-overlay">
+          <div class="content-tile-title">Memory of the Day</div>
+        </div>
+      </div>
+
+      <!-- Component 5: User Profile Tile -->
+      <div class="user-profile-tile">
+        <div class="user-status-header">
+          <span class="user-status-text">User detected</span>
+          <div class="user-status-dot"></div>
+        </div>
+        <div class="user-name">User Name</div>
+        <div class="user-visual-placeholder">
+          <!-- Placeholder for Voxel City -->
+          <span>3D City Voxel</span>
+        </div>
+        <div class="user-sparkle">✨</div>
       </div>
     </div>
   </section>

@@ -1,29 +1,33 @@
 :root {
   /* Color Palette - Light Theme (Default) */
-  --primary-hue: 220;
-  --primary-sat: 90%;
-  --primary-light: 56%;
-  
-  --primary-color: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
-  --primary-hover: hsl(var(--primary-hue), var(--primary-sat), 45%);
-  --primary-active: hsl(var(--primary-hue), var(--primary-sat), 35%);
+  /* Specific Brand Colors from Palette */
+  --brand-navy: #011126; /* Midnight Navy - Primary Background */
+  --brand-slate: #5E778C; /* Slate Blue - Secondary/Neutral */
+  --brand-ocean: #03588C; /* Ocean Blue - Primary Accent */
+  --brand-teal: #023859; /* Deep Teal - Secondary Accent */
+  --brand-bronze: #733E10; /* Bronze Earth - Warm Accent */
+
+  /* Mapped Variables */
+  --primary-color: var(--brand-ocean);
+  --primary-hover: var(--brand-teal);
+  --primary-active: #022a42; /* Darker shade of Deep Teal */
   --on-primary: #ffffff;
 
-  --bg-color: #f8f9fa;
+  --bg-color: #f8f9fa; /* Keep light theme background distinct from brand dark */
   --surface-color: #ffffff;
   --surface-hover: #f1f3f5;
   --surface-active: #e9ecef;
   
   --text-color: #212529;
-  --text-secondary: #6c757d;
+  --text-secondary: var(--brand-slate);
   --text-tertiary: #adb5bd;
   
   --border-color: #dee2e6;
-  --border-focus: #86b7fe;
+  --border-focus: var(--brand-ocean);
   
   --success-color: #28a745;
   --error-color: #dc3545;
-  --warning-color: #ffc107;
+  --warning-color: var(--brand-bronze);
   --info-color: #17a2b8;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -64,24 +68,24 @@
   --transition-base: 0.2s ease-in-out;
 }
 
-/* Dark Theme Overrides */
+/* Dark Theme Overrides - Using Brand Colors as Primary */
 [data-theme="dark"] {
-  --primary-color: hsl(var(--primary-hue), var(--primary-sat), 60%);
-  --primary-hover: hsl(var(--primary-hue), var(--primary-sat), 70%);
-  --primary-active: hsl(var(--primary-hue), var(--primary-sat), 80%);
-  --on-primary: #121212;
+  --primary-color: var(--brand-ocean);
+  --primary-hover: var(--brand-teal);
+  --primary-active: #022a42;
+  --on-primary: #ffffff;
 
-  --bg-color: #121212;
-  --surface-color: #1e1e1e;
-  --surface-hover: #2c2c2c;
-  --surface-active: #3a3a3a;
+  --bg-color: var(--brand-navy); /* Midnight Navy Background */
+  --surface-color: #021a36; /* Slightly lighter than Midnight Navy for cards */
+  --surface-hover: var(--brand-teal);
+  --surface-active: #03456e;
   
   --text-color: #e9ecef;
-  --text-secondary: #adb5bd;
+  --text-secondary: var(--brand-slate);
   --text-tertiary: #6c757d;
   
-  --border-color: #495057;
-  --border-focus: #0d6efd; /* Keep focus recognizable */
+  --border-color: var(--brand-slate);
+  --border-focus: var(--brand-ocean);
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -91,21 +95,21 @@
 /* System Preference Support */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --primary-color: hsl(var(--primary-hue), var(--primary-sat), 60%);
-    --primary-hover: hsl(var(--primary-hue), var(--primary-sat), 70%);
-    --primary-active: hsl(var(--primary-hue), var(--primary-sat), 80%);
-    --on-primary: #121212;
+    --primary-color: var(--brand-ocean);
+    --primary-hover: var(--brand-teal);
+    --primary-active: #022a42;
+    --on-primary: #ffffff;
 
-    --bg-color: #121212;
-    --surface-color: #1e1e1e;
-    --surface-hover: #2c2c2c;
-    --surface-active: #3a3a3a;
+    --bg-color: var(--brand-navy);
+    --surface-color: #021a36;
+    --surface-hover: var(--brand-teal);
+    --surface-active: #03456e;
     
     --text-color: #e9ecef;
-    --text-secondary: #adb5bd;
+    --text-secondary: var(--brand-slate);
     --text-tertiary: #6c757d;
     
-    --border-color: #495057;
+    --border-color: var(--brand-slate);
     
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
