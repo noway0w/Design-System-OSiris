@@ -350,26 +350,47 @@
 
       <!-- Component 4: Content Tile -->
       <div class="content-tile">
-        <!-- Placeholder for cliff/ocean image -->
-        <div class="content-tile-img" style="background: linear-gradient(to bottom right, #2c3e50, #4ca1af);"></div> 
+        <!-- Background Image Example -->
+        <img src="visuals-for-tiles/Visual_tile_4.png" class="content-tile-img" alt="Background Visual">
         <div class="content-tile-overlay">
           <div class="content-tile-title">Memory of the Day</div>
         </div>
       </div>
 
       <!-- Component 5: User Profile Tile -->
-      <div class="user-profile-tile">
+      <div class="user-profile-tile" style="background-image: url('visuals-for-tiles/Oslo_tile_5.png'); background-size: cover; background-position: center;">
         <div class="user-status-header">
           <span class="user-status-text">User detected</span>
           <div class="user-status-dot"></div>
         </div>
         <div class="user-name">User Name</div>
-        <div class="user-visual-placeholder">
-          <!-- Placeholder for Voxel City -->
-          <span>3D City Voxel</span>
-        </div>
-        <div class="user-sparkle">✨</div>
       </div>
+    </div>
+    
+    <div class="usage-box">
+      <h3>Tiles Usage</h3>
+      <p>The dashboard tiles are modular components designed for various content types.</p>
+      
+      <h4>Content Tile (Image Background)</h4>
+      <p>Use for immersive content like "Memory of the Day". The image acts as a full-bleed background.</p>
+      <pre>
+&lt;div class="content-tile"&gt;
+  &lt;img src="path/to/image.png" class="content-tile-img" alt="Description"&gt;
+  &lt;div class="content-tile-overlay"&gt;
+    &lt;div class="content-tile-title"&gt;Title Here&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+      <h4>User Profile Tile</h4>
+      <p>Designed for user status. Set the background image via inline styles or a custom class.</p>
+      <pre>
+&lt;div class="user-profile-tile" style="background-image: url('path/to/bg.png');"&gt;
+  &lt;div class="user-status-header"&gt;
+    &lt;span class="user-status-text"&gt;User detected&lt;/span&gt;
+    &lt;div class="user-status-dot"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="user-name"&gt;User Name&lt;/div&gt;
+&lt;/div&gt;</pre>
     </div>
   </section>
 
