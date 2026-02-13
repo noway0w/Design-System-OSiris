@@ -11,7 +11,7 @@
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-base);
   color: var(--on-primary);
-  background: var(--primary-color); /* Solid Fill */
+  background: var(--primary-color); /* Uses var(--brand-ocean) from variables.css */
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -20,11 +20,11 @@
 }
 
 .btn-primary.gradient {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-active));
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); /* Ocean to Teal */
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--primary-hover); /* Deep Teal */
 }
 
 .btn-primary:active {
