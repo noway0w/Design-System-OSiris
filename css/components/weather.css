@@ -24,9 +24,9 @@
 }
 
 .weather-icon-svg {
-  width: 48px;
-  height: 48px;
-  fill: var(--text-color);
+  width: 24px;
+  height: 24px;
+  /* SVGs are colored via fill attribute or img src, so fill: var(--text-color) might not apply to <img> tags directly unless using SVG injection or filters */
   margin-bottom: var(--spacing-sm);
 }
 
