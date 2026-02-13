@@ -100,6 +100,29 @@
     <small>Note: For production, consider using a CDN like jsDelivr or GitHub Pages once deployed.</small>
   </div>
 
+  <!-- Colour Palette -->
+  <section id="colour-palette">
+    <h2>Colour Palette</h2>
+    <div class="component-demo">
+      <div style="text-align: center; width: 100px;">
+        <div style="width: 100px; height: 100px; background: var(--primary-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
+        <span style="font-size: 12px; color: var(--text-secondary);">Primary</span>
+      </div>
+      <div style="text-align: center; width: 100px;">
+        <div style="width: 100px; height: 100px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
+        <span style="font-size: 12px; color: var(--text-secondary);">Surface</span>
+      </div>
+      <div style="text-align: center; width: 100px;">
+        <div style="width: 100px; height: 100px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
+        <span style="font-size: 12px; color: var(--text-secondary);">Background</span>
+      </div>
+      <div style="text-align: center; width: 100px;">
+        <div style="width: 100px; height: 100px; background: var(--text-color); border-radius: var(--radius-md); margin-bottom: 8px;"></div>
+        <span style="font-size: 12px; color: var(--text-secondary);">Text</span>
+      </div>
+    </div>
+  </section>
+
   <!-- Core Actions -->
   <section id="core-actions">
     <h2>Core Actions</h2>
@@ -155,6 +178,22 @@
           </label>
         </div>
       </div>
+    </div>
+    
+    <div class="usage-box">
+      <h3>Toggle 3 Usage</h3>
+      <p>The animated toggle requires specific HTML structure and dependency on <code>core-actions.css</code>.</p>
+      <pre>
+&lt;div class="checkbox-wrapper-44"&gt;
+  &lt;label class="toggleButton"&gt;
+    &lt;input type="checkbox"&gt;
+    &lt;div&gt;
+      &lt;svg viewBox="1 4 37 37"&gt;
+        &lt;path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"&gt;&lt;/path&gt;
+      &lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/label&gt;
+&lt;/div&gt;</pre>
     </div>
   </section>
 
@@ -226,6 +265,90 @@
         <div class="filter-chip">
           Date: Today <span class="filter-chip-remove">✕</span>
         </div>
+      </div>
+    </div>
+
+    <h3>Tiles</h3>
+    <div class="component-demo">
+      <!-- OSiris State Tile -->
+      <div class="osiris-state-tile">
+        <h4>System Status</h4>
+        <div class="state-row">
+          <span class="state-label">IP Address</span>
+          <span class="state-value">192.168.1.100</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">FPS Client</span>
+          <span class="state-value">60 fps</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">RAM Usage</span>
+          <span class="state-value">4.2 GB</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">Server Load</span>
+          <span class="state-value">24%</span>
+        </div>
+      </div>
+
+      <!-- Settings Tile -->
+      <div class="settings-tile">
+        <h4>Settings</h4>
+        <div class="setting-row">
+          <span class="setting-label">Record New Guest</span>
+          <input type="checkbox" class="toggle-switch sm">
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Security Mode</span>
+          <input type="checkbox" class="toggle-switch sm" checked>
+        </div>
+        <button class="add-user-btn">
+          <span>+</span> Add New User
+        </button>
+      </div>
+
+      <!-- Content Tile -->
+      <div class="content-tile">
+        <div class="content-tile-img"></div>
+        <div class="content-tile-overlay">
+          <div class="content-tile-title">Memory of the Day</div>
+          <div class="content-tile-meta">Captured: Today, 10:00 AM</div>
+        </div>
+      </div>
+
+      <!-- Weather Tile -->
+      <div class="weather-tile">
+        <div class="weather-icon-large"></div>
+        <div class="weather-temp">24°C</div>
+        <div class="weather-desc">Sunny</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Weather Icons -->
+  <section id="weather-icons">
+    <h2>Weather Icons</h2>
+    <div class="weather-grid">
+      <!-- Placeholders for Weather Icons -->
+      <div class="weather-icon-card">
+        <div class="weather-icon-svg" style="background: var(--surface-active); border-radius: 50%;"></div>
+        <span class="weather-icon-name">Clear Day</span>
+      </div>
+      <div class="weather-icon-card">
+        <div class="weather-icon-svg" style="background: var(--surface-active); border-radius: 50%;"></div>
+        <span class="weather-icon-name">Cloudy</span>
+      </div>
+      <div class="weather-icon-card">
+        <div class="weather-icon-svg" style="background: var(--surface-active); border-radius: 50%;"></div>
+        <span class="weather-icon-name">Rainy</span>
+      </div>
+      <div class="weather-icon-card">
+        <div class="weather-icon-svg" style="background: var(--surface-active); border-radius: 50%;"></div>
+        <span class="weather-icon-name">Snowy</span>
+      </div>
+      <div class="weather-icon-card">
+        <div class="weather-icon-svg" style="background: var(--surface-active); border-radius: 50%;"></div>
+        <span class="weather-icon-name">Thunderstorm</span>
       </div>
     </div>
   </section>

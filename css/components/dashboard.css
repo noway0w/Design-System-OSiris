@@ -219,3 +219,138 @@
     border-top: 1px solid var(--border-color);
   }
 }
+
+/* --- New Dashboard Tiles --- */
+
+/* OSiris State Tile */
+.osiris-state-tile {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  min-width: 250px;
+}
+.osiris-state-tile h4 {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-color);
+  font-size: var(--font-size-lg);
+}
+.state-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+.state-label {
+  color: var(--text-secondary);
+}
+.state-value {
+  color: var(--text-color);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Settings Tile */
+.settings-tile {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  min-width: 250px;
+}
+.settings-tile h4 {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-color);
+  font-size: var(--font-size-lg);
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+.setting-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-color);
+}
+.add-user-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+}
+.add-user-btn:hover {
+  background-color: var(--surface-hover);
+}
+
+/* Content Tile (Memory/User) */
+.content-tile {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  min-width: 250px;
+  height: 250px; /* Placeholder height */
+}
+.content-tile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: var(--surface-active); /* Placeholder color */
+}
+.content-tile-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: var(--spacing-md);
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  color: white;
+}
+.content-tile-title {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-xs);
+}
+.content-tile-meta {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+}
+
+/* Weather Tile */
+.weather-tile {
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+  text-align: center;
+}
+.weather-icon-large {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--spacing-sm);
+  background: var(--surface-active); /* Placeholder */
+  border-radius: 50%;
+}
+.weather-temp {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-color);
+}
+.weather-desc {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
