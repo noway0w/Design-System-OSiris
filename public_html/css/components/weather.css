@@ -1,0 +1,42 @@
+/* --- Weather Icons --- */
+.weather-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.weather-icon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: var(--surface-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.weather-icon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.weather-icon-svg {
+  width: 24px;
+  height: 24px;
+  /* SVGs are colored via fill attribute or img src, so fill: var(--text-color) might not apply to <img> tags directly unless using SVG injection or filters */
+  margin-bottom: var(--spacing-sm);
+  filter: brightness(0.1); /* Adapt White SVG to dark for Light Mode */
+}
+
+[data-theme="dark"] .weather-icon-svg {
+  filter: brightness(1); /* Keep White in Dark Mode */
+}
+
+.weather-icon-name {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: center;
+}

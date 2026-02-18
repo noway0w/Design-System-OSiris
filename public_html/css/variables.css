@@ -1,0 +1,121 @@
+:root {
+  /* Color Palette - Light Theme (Default) */
+  /* Specific Brand Colors from Palette */
+  --brand-navy: #011126; /* Midnight Navy - Primary Background */
+  --brand-slate: #5E778C; /* Slate Blue - Secondary/Neutral */
+  --brand-ocean: #03588C; /* Ocean Blue - Primary Accent */
+  --brand-teal: #023859; /* Deep Teal - Secondary Accent */
+  --brand-bronze: #733E10; /* Bronze Earth - Warm Accent */
+  --brand-dark-grey: #141414; /* Dark Grey Background */
+  --brand-dark-mode: #181818; /* Dark Mode Background */
+  --brand-light-title: #F7F7F7; /* Light Title */
+
+  /* Mapped Variables */
+  --primary-color: var(--brand-ocean);
+  --primary-hover: var(--brand-teal);
+  --primary-active: #022a42; /* Darker shade of Deep Teal */
+  --on-primary: #ffffff;
+
+  --bg-color: #f8f9fa; /* Keep light theme background distinct from brand dark */
+  --surface-color: #ffffff;
+  --surface-hover: #f1f3f5;
+  --surface-active: #e9ecef;
+  
+  --text-color: #212529;
+  --text-secondary: var(--brand-slate);
+  --text-tertiary: #adb5bd;
+  
+  --border-color: #dee2e6;
+  --border-focus: var(--brand-ocean);
+  
+  --success-color: #28a745;
+  --error-color: #dc3545;
+  --warning-color: var(--brand-bronze);
+  --info-color: #17a2b8;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-base: 0.2s ease-in-out;
+}
+
+/* Dark Theme Overrides - Using Brand Colors as Primary */
+[data-theme="dark"] {
+  --primary-color: var(--brand-ocean);
+  --primary-hover: var(--brand-teal);
+  --primary-active: #022a42;
+  --on-primary: #ffffff;
+
+  --bg-color: var(--brand-dark-grey); /* Dark Grey Background */
+  --surface-color: var(--brand-dark-mode); /* Dark Mode Background */
+  --surface-hover: var(--brand-teal);
+  --surface-active: #03456e;
+  
+  --text-color: #e9ecef;
+  --text-secondary: var(--brand-slate);
+  --text-tertiary: #6c757d;
+  
+  --border-color: var(--brand-slate);
+  --border-focus: var(--brand-ocean);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* System Preference Support */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary-color: var(--brand-ocean);
+    --primary-hover: var(--brand-teal);
+    --primary-active: #022a42;
+    --on-primary: #ffffff;
+
+    --bg-color: var(--brand-navy);
+    --surface-color: #021a36;
+    --surface-hover: var(--brand-teal);
+    --surface-active: #03456e;
+    
+    --text-color: #e9ecef;
+    --text-secondary: var(--brand-slate);
+    --text-tertiary: #6c757d;
+    
+    --border-color: var(--brand-slate);
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  }
+}
