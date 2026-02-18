@@ -1,0 +1,8 @@
+.bash_history
+.cache/
+.cursor-server/
+.cursor/
+.gitconfig
+.local/
+.ssh/
+.DS_Store

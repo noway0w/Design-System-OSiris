@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSiris Design System</title>
+  <link rel="stylesheet" href="osiris.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.js"></script>
+  <style>
+    /* Documentation Specific Styles */
+    body {
+      padding: var(--spacing-xl);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    section {
+      margin-bottom: var(--spacing-2xl);
+      padding: var(--spacing-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--surface-color);
+    }
+    
+    h1 { font-size: var(--font-size-3xl); margin-bottom: var(--spacing-sm); }
+    h2 { font-size: var(--font-size-2xl); margin-bottom: var(--spacing-lg); color: var(--primary-color); border-bottom: 2px solid var(--primary-light); display: inline-block; }
+    h3 { font-size: var(--font-size-xl); margin-bottom: var(--spacing-md); margin-top: var(--spacing-lg); }
+    
+    .component-demo {
+      padding: var(--spacing-lg);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-color);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+      align-items: flex-start;
+    }
+    
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-size: var(--font-size-sm);
+    }
+
+    .usage-box {
+      background: var(--surface-active);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    [data-theme="dark"] .usage-box {
+      background: var(--brand-dark-grey);
+    }
+    
+    [data-theme="dark"] h2 {
+      color: #F7F7F7;
+    }
+
+    /* Theme Toggle Switch in Header */
+    .theme-toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .header-logo {
+      height: 60px; /* Adjust based on logo aspect ratio */
+      display: block;
+      margin-bottom: var(--spacing-sm);
+      filter: brightness(0.08); /* Adapt White SVG to #141414 for Light Mode */
+    }
+
+    [data-theme="dark"] .header-logo {
+      filter: brightness(1); /* Keep White in Dark Mode */
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <img src="logo-OSiris/logo-OSiris-horizontal-text.svg" alt="OSiris Logo" class="header-logo">
+      <h1>Design System</h1>
+      <p>A modular design system for modern web interfaces.</p>
+    </div>
+    <div class="theme-toggle-wrapper">
+      <span>Light</span>
+      <div class="checkbox-wrapper-44">
+        <label class="toggleButton">
+          <input type="checkbox" id="theme-toggle">
+          <div>
+            <svg viewBox="1 4 37 37">
+              <path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"></path>
+            </svg>
+          </div>
+        </label>
+      </div>
+      <span>Dark</span>
+    </div>
+  </header>
+
+  <div class="usage-box">
+    <h3>Quick Start</h3>
+    <p>Include the CSS in your project:</p>
+    <pre>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/noway0w/Design-System-OSiris@main/osiris.css" /&gt;</pre>
+    <small>Note: For production, consider using a CDN like jsDelivr or GitHub Pages once deployed.</small>
+  </div>
+
+  <!-- Colour Palette -->
+  <section id="colour-palette">
+    <h2>Colour Palette</h2>
+    <div class="component-demo">
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #011126; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Midnight Navy</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#011126</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #5E778C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Slate Blue</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#5E778C</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #03588C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Ocean Blue</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#03588C</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #023859; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Deep Teal</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#023859</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #733E10; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Bronze Earth</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#733E10</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #141414; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Grey BG</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#141414</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #181818; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Mode BG</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#181818</span>
+      </div>
+      <div style="text-align: center; width: 120px;">
+        <div style="width: 100px; height: 100px; background: #F7F7F7; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #ddd;"></div>
+        <span style="display:block; font-weight:bold; font-size: 14px;">Light Title</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">#F7F7F7</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Actions -->
+  <section id="core-actions">
+    <h2>Core Actions</h2>
+    
+    <h3>Primary Button</h3>
+    <div class="component-demo">
+      <button class="btn-primary">Solid Button</button>
+      <button class="btn-primary gradient">Gradient Button</button>
+    </div>
+    <pre>&lt;button class="btn-primary"&gt;Solid Button&lt;/button&gt;
+&lt;button class="btn-primary gradient"&gt;Gradient Button&lt;/button&gt;</pre>
+
+    <h3>Icon Button</h3>
+    <div class="component-demo">
+      <button class="btn-icon ghost" data-tooltip="Ghost">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
+      <button class="btn-icon outlined" data-tooltip="Outlined">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div style="background: #333; padding: 10px; border-radius: 8px;">
+        <button class="btn-icon bg-blur" data-tooltip="Blur (Dark BG)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    
+    <h3>Toggle Switches</h3>
+    <div class="component-demo">
+      <!-- Toggle 1: Standard Capsule -->
+      <div style="text-align: center; margin-right: 20px;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 1</span>
+        <input type="checkbox" class="toggle-switch">
+      </div>
+
+      <!-- Toggle 2: Standard Capsule (Small) -->
+      <div style="text-align: center; margin-right: 20px;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 2</span>
+        <input type="checkbox" class="toggle-switch sm" checked>
+      </div>
+
+      <!-- Toggle 3: Circular Animated (New) -->
+      <div style="text-align: center;">
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 3</span>
+        <div class="checkbox-wrapper-44">
+          <label class="toggleButton">
+            <input type="checkbox">
+            <div>
+              <svg viewBox="1 4 37 37">
+                <path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"></path>
+              </svg>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="usage-box">
+      <h3>Toggle 3 Usage</h3>
+      <p>The animated toggle requires specific HTML structure and dependency on <code>core-actions.css</code>.</p>
+      <pre>
+&lt;div class="checkbox-wrapper-44"&gt;
+  &lt;label class="toggleButton"&gt;
+    &lt;input type="checkbox"&gt;
+    &lt;div&gt;
+      &lt;svg viewBox="1 4 37 37"&gt;
+        &lt;path d="M14,24 L21,31 L39.7428882,11.5937758 C35.2809627,6.53125861 30.0333333,4 24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,19.3 42.5809627,15.1645919 39.7428882,11.5937758" transform="translate(-2.000000, -2.000000)"&gt;&lt;/path&gt;
+      &lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/label&gt;
+&lt;/div&gt;</pre>
+    </div>
+  </section>
+
+  <!-- Video Player -->
+  <section id="video-player">
+    <h2>Video Player</h2>
+    <div class="component-demo" style="display: block;">
+      <div class="video-player-container">
+        <!-- Placeholder Video Background -->
+        <div style="width:100%; height:100%; background: #222; display: flex; align-items: center; justify-content: center; color: #555;">Video Content</div>
+        
+        <div class="play-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        
+        <div class="control-bar" style="opacity: 1;"> <!-- Force visible for demo -->
+          <button class="btn-icon ghost" style="color:white;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          
+          <div class="timeline-scrubber">
+            <div class="timeline-buffer"></div>
+            <div class="timeline-progress"></div>
+          </div>
+          
+          <div class="volume-control">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+             <div class="volume-slider" style="width: 60px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <h2>Dashboard</h2>
+    
+    <h3>Metric Tile (KPI)</h3>
+    <div class="component-demo">
+      <div class="kpi-tile">
+        <span class="kpi-label">Total Revenue</span>
+        <div class="kpi-value">
+          $12,450
+          <span class="kpi-trend up">+12%</span>
+        </div>
+        <div class="kpi-sparkline"></div>
+      </div>
+      
+      <div class="kpi-tile">
+        <span class="kpi-label">Active Users</span>
+        <div class="kpi-value">
+          1,203
+          <span class="kpi-trend down">-3%</span>
+        </div>
+        <div class="kpi-sparkline"></div>
+      </div>
+    </div>
+
+    <h3>Filter Chips</h3>
+    <div class="component-demo">
+      <div class="filter-chip-container">
+        <div class="filter-chip active">
+          Status: Active <span class="filter-chip-remove">✕</span>
+        </div>
+        <div class="filter-chip">
+          Role: Admin <span class="filter-chip-remove">✕</span>
+        </div>
+        <div class="filter-chip">
+          Date: Today <span class="filter-chip-remove">✕</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Tiles</h3>
+    <div class="component-demo" style="align-items: stretch;">
+      <!-- Component 1: Settings Tile -->
+      <div class="settings-tile">
+        <h3>Current settings</h3>
+        <div class="setting-row">
+          <span class="setting-label">Record new guest</span>
+          <!-- Control: Large Toggle Switch (Background: Green when active, Knob: White circle) -->
+          <input type="checkbox" class="toggle-switch">
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Security mode</span>
+          <!-- Control: Large Toggle Switch (Active) -->
+          <input type="checkbox" class="toggle-switch" checked>
+        </div>
+        <button class="add-user-btn">
+          <div class="add-user-icon">+</div>
+          <span>Add new user</span>
+        </button>
+      </div>
+
+      <!-- Component 2: OSiris State Tile -->
+      <div class="osiris-state-tile">
+        <h4>Current OSiris state</h4>
+        <div class="state-row">
+          <span class="state-label">IP detected</span>
+          <span class="state-value">195.139.147.156</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">FPS client</span>
+          <span class="state-value">4 frame/sec</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">RAM in usage</span>
+          <span class="state-value">550 Mb</span>
+        </div>
+        <div class="state-row">
+          <span class="state-label">Server load</span>
+          <span class="state-value">11,7%</span>
+        </div>
+      </div>
+
+      <!-- Component 3: Weather Tile -->
+      <div class="weather-tile">
+        <div class="weather-header">Current local weather</div>
+        <div class="weather-main-visual">
+          <div class="weather-icon-large">
+             <!-- Partly Cloudy Icon from Design System -->
+             <img src="weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" style="width:100%; height:100%;" alt="Partly Cloudy">
+          </div>
+        </div>
+        <div class="weather-metrics">
+          <div class="weather-metric-item">
+            <span class="weather-metric-label">Temperature</span>
+            <div class="weather-metric-value-row">
+              <!-- Thermostat Icon from Design System -->
+              <img src="weather_icons/device_thermostat_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Temperature">
+              <span>-4,8°C</span>
+            </div>
+          </div>
+          <div class="weather-metric-item">
+            <span class="weather-metric-label">Humidity</span>
+            <div class="weather-metric-value-row">
+              <!-- Humidity Mid Icon from Design System -->
+              <img src="weather_icons/humidity_mid_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Humidity">
+              <span>77 %</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Component 4: Content Tile -->
+      <div class="content-tile">
+        <!-- Background Image Example -->
+        <img src="visuals-for-tiles/Visual_tile_4.png" class="content-tile-img" alt="Background Visual">
+        <div class="content-tile-overlay">
+          <div class="content-tile-title">Memory of the Day</div>
+        </div>
+      </div>
+
+      <!-- Component 5: User Profile Tile -->
+      <div class="user-profile-tile" style="background-image: url('visuals-for-tiles/Oslo_tile_5.png'); background-size: cover; background-position: center;">
+        <div class="user-status-header">
+          <span class="user-status-text">User detected</span>
+          <div class="user-status-dot"></div>
+        </div>
+        <div class="user-name">User Name</div>
+      </div>
+    </div>
+    
+    <div class="usage-box">
+      <h3>Tiles Usage</h3>
+      <p>The dashboard tiles are modular components designed for various content types.</p>
+      
+      <h4>Content Tile (Image Background)</h4>
+      <p>Use for immersive content like "Memory of the Day". The image acts as a full-bleed background.</p>
+      <pre>
+&lt;div class="content-tile"&gt;
+  &lt;img src="path/to/image.png" class="content-tile-img" alt="Description"&gt;
+  &lt;div class="content-tile-overlay"&gt;
+    &lt;div class="content-tile-title"&gt;Title Here&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+      <h4>User Profile Tile</h4>
+      <p>Designed for user status. Set the background image via inline styles or a custom class.</p>
+      <pre>
+&lt;div class="user-profile-tile" style="background-image: url('path/to/bg.png');"&gt;
+  &lt;div class="user-status-header"&gt;
+    &lt;span class="user-status-text"&gt;User detected&lt;/span&gt;
+    &lt;div class="user-status-dot"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="user-name"&gt;User Name&lt;/div&gt;
+&lt;/div&gt;</pre>
+    </div>
+  </section>
+
+  <!-- Weather Icons -->
+  <section id="weather-icons">
+    <h2>Weather Icons</h2>
+    <p>Usage: <code>&lt;img src="weather_icons/icon_name.svg" class="weather-icon-svg"&gt;</code></p>
+    <div class="weather-grid">
+      <div class="weather-icon-card">
+        <img src="weather_icons/clear_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Clear Day">
+        <span class="weather-icon-name">Clear Day</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/cloud_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cloudy">
+        <span class="weather-icon-name">Cloudy</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/cool_to_dry_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cool to Dry">
+        <span class="weather-icon-name">Cool to Dry</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/cyclone_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cyclone">
+        <span class="weather-icon-name">Cyclone</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/device_thermostat_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Thermostat">
+        <span class="weather-icon-name">Thermostat</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/flood_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Flood">
+        <span class="weather-icon-name">Flood</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/foggy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Foggy">
+        <span class="weather-icon-name">Foggy</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/humidity_low_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity Low">
+        <span class="weather-icon-name">Humidity Low</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/humidity_mid_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity Mid">
+        <span class="weather-icon-name">Humidity Mid</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/humidity_percentage_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity %">
+        <span class="weather-icon-name">Humidity %</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/mist_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Mist">
+        <span class="weather-icon-name">Mist</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/moon_stars_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Moon Stars">
+        <span class="weather-icon-name">Moon Stars</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Partly Cloudy">
+        <span class="weather-icon-name">Partly Cloudy</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Heavy">
+        <span class="weather-icon-name">Rainy Heavy</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/rainy_light_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Light">
+        <span class="weather-icon-name">Rainy Light</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/rainy_snow_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Snow">
+        <span class="weather-icon-name">Rainy Snow</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/snowing_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowing">
+        <span class="weather-icon-name">Snowing</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/snowing_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowing Heavy">
+        <span class="weather-icon-name">Snowing Heavy</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/sunny_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Sunny">
+        <span class="weather-icon-name">Sunny</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Thunderstorm">
+        <span class="weather-icon-name">Thunderstorm</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/weather_hail_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Hail">
+        <span class="weather-icon-name">Hail</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/weather_mix_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Mix">
+        <span class="weather-icon-name">Mix</span>
+      </div>
+      <div class="weather-icon-card">
+        <img src="weather_icons/weather_snowy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowy">
+        <span class="weather-icon-name">Snowy</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3D / Map -->
+  <section id="map-3d">
+    <h2>3D / Map Components</h2>
+    <div class="component-demo" style="display: block;">
+      <div id="map-container" class="map-container"></div>
+    </div>
+  </section>
+
+  <!-- Feedback & Navigation -->
+  <section id="feedback-nav">
+    <h2>Feedback & Navigation</h2>
+    
+    <h3>Toasts</h3>
+    <div class="component-demo">
+      <div class="toast success" style="position: static; transform: none; box-shadow: none;">
+        <div class="toast-icon">✓</div>
+        <span>Operation successful!</span>
+      </div>
+      <div class="toast error" style="position: static; transform: none; box-shadow: none;">
+        <div class="toast-icon">!</div>
+        <span>Something went wrong.</span>
+      </div>
+    </div>
+
+    <h3>Search Input</h3>
+    <div class="component-demo">
+      <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search...">
+        <span class="search-shortcut">Ctrl K</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Theme Toggle Logic
+    const toggle = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+
+    // Check saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      root.setAttribute('data-theme', savedTheme);
+      toggle.checked = savedTheme === 'dark';
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      toggle.checked = true;
+    }
+
+    toggle.addEventListener('change', (e) => {
+      const theme = e.target.checked ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
+  </script>
+  <script src="js/map-component.js?v=2"></script>
+</body>
+</html>
