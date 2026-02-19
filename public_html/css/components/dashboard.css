@@ -225,10 +225,10 @@
 /* Stock Tile */
 .stock-tile {
   background: var(--surface-color);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: var(--spacing-md);
-  box-shadow: var(--shadow-md);
-  min-width: 140px;
+  box-shadow: var(--shadow-sm);
+  min-width: 250px; /* Match other tiles */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -243,7 +243,7 @@
 
 .stock-tile:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .stock-header {
@@ -297,7 +297,7 @@
 }
 
 .stock-price {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-3xl); /* Larger to match KPI */
   font-weight: var(--font-weight-bold);
   color: var(--text-color);
 }
@@ -309,19 +309,19 @@
 /* Utility Settings Tile (Button) */
 .utility-settings-tile {
   background: var(--surface-color);
-  border-radius: var(--radius-2xl, 1rem);
-  padding: var(--spacing-lg); /* p-5 ~ 20px */
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--spacing-sm); /* gap-3 ~ 12px */
+  gap: var(--spacing-md);
   border: 1px solid transparent;
   transition: all var(--transition-base);
   text-align: left;
   cursor: pointer;
   width: 100%;
-  min-width: 160px;
+  min-width: 250px; /* Match other tiles */
 }
 
 [data-theme="dark"] .utility-settings-tile {
@@ -346,7 +346,7 @@
   border-radius: var(--radius-full);
   background: var(--primary-color);
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+  box-shadow: var(--shadow-md);
   transition: transform var(--transition-base);
 }
 
@@ -357,6 +357,7 @@
 .utility-title {
   font-weight: var(--font-weight-bold);
   color: var(--text-color);
+  font-size: var(--font-size-lg);
   transition: color var(--transition-base);
 }
 
