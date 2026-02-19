@@ -6,3 +6,6 @@
 .local/
 .ssh/
 .DS_Store
+
+# Mapbox token - never commit (copy mapbox-config.example.js and add your token)
+public_html/js/mapbox-config.js

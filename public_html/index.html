@@ -89,6 +89,38 @@
     [data-theme="dark"] .header-logo {
       filter: brightness(1); /* Keep White in Dark Mode */
     }
+
+    /* OSiris Map App section */
+    .osiris-map-app-section {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--spacing-2xl);
+      color: white;
+    }
+    .osiris-map-app-section h3 {
+      margin: 0 0 var(--spacing-sm);
+      color: white;
+      font-size: var(--font-size-xl);
+    }
+    .osiris-map-app-section p {
+      margin: 0 0 var(--spacing-md);
+      opacity: 0.95;
+      font-size: var(--font-size-sm);
+    }
+    .osiris-map-app-section a.btn-map-app {
+      display: inline-block;
+      padding: var(--spacing-md) var(--spacing-xl);
+      background: white;
+      color: var(--primary-color);
+      border-radius: var(--radius-md);
+      font-weight: var(--font-weight-semibold);
+      text-decoration: none;
+      transition: opacity var(--transition-base);
+    }
+    .osiris-map-app-section a.btn-map-app:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -114,6 +146,12 @@
       <span>Dark</span>
     </div>
   </header>
+
+  <div class="osiris-map-app-section">
+    <h3>OSiris Map App</h3>
+    <p>Access the map with location by IP (default) and GPS. Protected by access code.</p>
+    <a href="access-gate.html" class="btn-map-app">Open Map App</a>
+  </div>
 
   <div class="usage-box">
     <h3>Quick Start</h3>
@@ -633,6 +671,7 @@
       localStorage.setItem('theme', theme);
     });
   </script>
+  <script src="js/mapbox-config.js"></script>
   <script src="js/map-component.js?v=2"></script>
 </body>
 </html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSiris - Enter Code</title>
+  <link rel="stylesheet" href="osiris.css">
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--spacing-lg); background: var(--bg-color); }
+    .gate-card { background: var(--surface-color); padding: var(--spacing-2xl); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); max-width: 360px; width: 100%; text-align: center; }
+    .gate-logo { height: 48px; margin-bottom: var(--spacing-lg); filter: brightness(1); }
+    [data-theme="light"] .gate-logo { filter: brightness(0.08); }
+    .gate-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--text-color); margin-bottom: var(--spacing-sm); }
+    .gate-subtitle { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xl); }
+    .gate-input { width: 100%; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-lg); text-align: center; letter-spacing: 0.5em; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-color); color: var(--text-color); margin-bottom: var(--spacing-lg); }
+    .gate-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(3, 88, 140, 0.2); }
+    .gate-error { color: var(--error-color); font-size: var(--font-size-sm); margin-bottom: var(--spacing-md); min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <div class="gate-card">
+    <img src="logo-OSiris/logo-OSiris-horizontal-text.svg" alt="OSiris" class="gate-logo">
+    <h1 class="gate-title">Enter Access Code</h1>
+    <p class="gate-subtitle">Enter the code to access the map app</p>
+    <input type="password" id="gate-input" class="gate-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
+    <p id="gate-error" class="gate-error" aria-live="polite"></p>
+    <button type="button" id="gate-validate" class="btn-primary" style="width: 100%;">Validate</button>
+  </div>
+  <script>
+    const ACCESS_CODE = '7777';
+    const input = document.getElementById('gate-input');
+    const validateBtn = document.getElementById('gate-validate');
+    const errorEl = document.getElementById('gate-error');
+    function validate() {
+      const code = input.value.trim();
+      errorEl.textContent = '';
+      if (code === ACCESS_CODE) {
+        sessionStorage.setItem('osiris_authenticated', '1');
+        window.location.href = 'map-app.html';
+      } else {
+        errorEl.textContent = 'Invalid code. Please try again.';
+        input.value = '';
+        input.focus();
+      }
+    }
+    validateBtn.addEventListener('click', validate);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') validate(); });
+    input.focus();
+  </script>
+</body>
+</html>

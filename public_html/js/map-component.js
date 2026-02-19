@@ -1,6 +1,10 @@
 // Mapbox Access Token Logic
 let map; // Global map instance
 
+function getMapboxToken() {
+  return localStorage.getItem('mapbox_access_token') || (typeof window.MAPBOX_DEFAULT_TOKEN === 'string' ? window.MAPBOX_DEFAULT_TOKEN : '') || '';
+}
+
 function initializeMap(token) {
     if (!token) {
         console.warn('Mapbox token is missing.');
@@ -38,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const tokenInput = document.getElementById('mapbox-token-input');
     const updateBtn = document.getElementById('update-map-btn');
     
-    // Check for saved token
-    const savedToken = localStorage.getItem('mapbox_access_token');
-    if (savedToken) {
-        tokenInput.value = savedToken;
-        initializeMap(savedToken);
+    // Check for saved token or default token
+    const token = getMapboxToken();
+    if (token) {
+        tokenInput.value = token;
+        initializeMap(token);
     }
 
     // Handle button click
