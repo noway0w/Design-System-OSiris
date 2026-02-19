@@ -82,7 +82,7 @@
       <div class="px-6 pb-4 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold text-white">Nearby Friends</h2>
-          <p class="text-sm text-text-secondary">6 friends worldwide</p>
+          <p id="nearby-friends-count" class="text-sm text-text-secondary">Users worldwide</p>
         </div>
         <button class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-full shadow-[0_4px_20px_rgba(19,164,236,0.3)] flex items-center gap-2 active:scale-95 transition-transform">
           <span class="material-symbols-outlined fill-current">radio_button_checked</span>
@@ -90,104 +90,8 @@
         </button>
       </div>
       <div class="w-full overflow-x-auto no-scrollbar pb-6 pl-6">
-        <div class="flex gap-4 pr-6 w-max">
-          <div data-friend-card="Sarah J." class="w-48 bg-card-dark p-3 rounded-2xl border border-primary/30 flex flex-col gap-3 relative overflow-hidden group cursor-pointer hover:border-primary/50 transition-colors">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-primary p-0.5">
-              <img alt="Sarah J." class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">Sarah J.</h3>
-              <div class="flex items-center gap-1 mt-1 text-primary text-sm font-medium">
-                <span class="material-symbols-outlined text-[16px]">near_me</span>
-                <span>0.5 mi</span>
-              </div>
-            </div>
-          </div>
-          <div data-friend-card="Mike T." class="w-48 bg-card-dark p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-transparent p-0.5 grayscale group-hover:grayscale-0 transition-all">
-              <img alt="Mike T." class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPy7qTrwvb0VVlIC4AUXxu9oKHw1tTdcEK0xLkt_rafxpY8Q5vToM_97fe11fu3YdtVcgOSaHDhvHENwLIUWdcYa1z6fN_7yDLNallyS8GQpbCVKvRhq2TeqH5giXjNxNtxi55QRNrh2opNAEO5jMw1G_Hlo84OPSE_QiTZrrEGU53N6DB-bHImedXVE6qD4A5DErmaCsw3JiPJUTA8qxImYIK2t0mc0eeHwEK_sVwuecL0CKE--Pq2JQhk1us0B4hdPoQI61dye4"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">Mike T.</h3>
-              <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
-                <span class="material-symbols-outlined text-[16px]">location_on</span>
-                <span>1.2 mi</span>
-              </div>
-            </div>
-          </div>
-          <div data-friend-card="Emily R." class="w-48 bg-card-dark p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-gray-500 rounded-full"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-transparent p-0.5 grayscale group-hover:grayscale-0 transition-all">
-              <img alt="Emily R." class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaldXINzAN1Fx_a7e4Iy4567-I05RjeUkU8oVLpQMAbITvEaxY7zeyfpDOTvrsnSx5o55osuO_dXUOxBz_iF_GPJz7nfoxQi2cIS9fVp8Mpm5gCVS4dluRnAVk-Cp3fP3gNu-RelI-8m0A2aA_pvkXyosiDDuRw8dgo1BVIfGMuzkLjv8eejWl-KN5hUwL-QXrJagvHaqNcYChw-jgp209aYCH4HPaP9QSwLp0LdZuwobK2ZJslE2-yJ3h2P6jViZ8doL-7uN3ANo"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">Emily R.</h3>
-              <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
-                <span class="material-symbols-outlined text-[16px]">location_on</span>
-                <span>Geneva</span>
-              </div>
-            </div>
-          </div>
-          <div data-friend-card="Marie L." class="w-48 bg-card-dark p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-primary p-0.5">
-              <img alt="Marie L." class="w-full h-full object-cover rounded-full" src="https://i.pravatar.cc/150?u=marie"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">Marie L.</h3>
-              <div class="flex items-center gap-1 mt-1 text-primary text-sm font-medium">
-                <span class="material-symbols-outlined text-[16px]">near_me</span>
-                <span>Paris</span>
-              </div>
-            </div>
-          </div>
-          <div data-friend-card="James W." class="w-48 bg-card-dark p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-transparent p-0.5 grayscale group-hover:grayscale-0 transition-all">
-              <img alt="James W." class="w-full h-full object-cover rounded-full" src="https://i.pravatar.cc/150?u=james"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">James W.</h3>
-              <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
-                <span class="material-symbols-outlined text-[16px]">location_on</span>
-                <span>Milford Sound</span>
-              </div>
-            </div>
-          </div>
-          <div data-friend-card="Kenji S." class="w-48 bg-card-dark p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative overflow-hidden group hover:border-white/10 transition-colors cursor-pointer">
-            <div class="absolute top-0 right-0 p-3">
-              <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            </div>
-            <div class="w-14 h-14 rounded-full border-2 border-primary p-0.5">
-              <img alt="Kenji S." class="w-full h-full object-cover rounded-full" src="https://i.pravatar.cc/150?u=kenji"/>
-            </div>
-            <div>
-              <h3 class="text-white font-bold text-base leading-tight">Kenji S.</h3>
-              <div class="flex items-center gap-1 mt-1 text-primary text-sm font-medium">
-                <span class="material-symbols-outlined text-[16px]">near_me</span>
-                <span>Tokyo</span>
-              </div>
-            </div>
-          </div>
-          <div class="w-48 bg-card-dark/50 p-3 rounded-2xl border border-white/5 flex flex-col gap-3 relative">
-            <div class="w-14 h-14 rounded-full bg-white/5 animate-pulse"></div>
-            <div class="flex flex-col gap-2">
-              <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
-              <div class="h-3 w-16 bg-white/5 rounded animate-pulse"></div>
-            </div>
-          </div>
+        <div id="nearby-friends-tiles" class="flex gap-4 pr-6 w-max">
+          <!-- Tiles rendered by map-app.js -->
         </div>
       </div>
       </div>
@@ -212,9 +116,10 @@
       window.location.href = 'access-gate.html';
     } else {
       document.addEventListener('DOMContentLoaded', () => {
-      initMapApp();
-      initBottomSheet();
-    });
+        renderNearbyTiles();
+        initMapApp();
+        initBottomSheet();
+      });
     }
   </script>
 </body>

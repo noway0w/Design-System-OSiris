@@ -2,18 +2,128 @@
 
 let appMap = null;
 let currentLocationMarker = null;
-let friendMarkers = [];
+let userTileMarkers = [];
 let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
-const FRIENDS = [
-  { name: 'Sarah J.', lat: 37.7954, lng: -122.4034, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw', status: 'online' },
-  { name: 'Mike T.', lat: 37.7542, lng: -122.4518, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPy7qTrwvb0VVlIC4AUXxu9oKHw1tTdcEK0xLkt_rafxpY8Q5vToM_97fe11fu3YdtVcgOSaHDhvHENwLIUWdcYa1z6fN_7yDLNallyS8GQpbCVKvRhq2TeqH5giXjNxNtxi55QRNrh2opNAEO5jMw1G_Hlo84OPSE_QiTZrrEGU53N6DB-bHImedXVE6qD4A5DErmaCsw3JiPJUTA8qxImYIK2t0mc0eeHwEK_sVwuecL0CKE--Pq2JQhk1us0B4hdPoQI61dye4', status: 'idle' },
-  { name: 'Emily R.', lat: 46.2044, lng: 6.1432, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDaldXINzAN1Fx_a7e4Iy4567-I05RjeUkU8oVLpQMAbITvEaxY7zeyfpDOTvrsnSx5o55osuO_dXUOxBz_iF_GPJz7nfoxQi2cIS9fVp8Mpm5gCVS4dluRnAVk-Cp3fP3gNu-RelI-8m0A2aA_pvkXyosiDDuRw8dgo1BVIfGMuzkLjv8eejWl-KN5hUwL-QXrJagvHaqNcYChw-jgp209aYCH4HPaP9QSwLp0LdZuwobK2ZJslE2-yJ3h2P6jViZ8doL-7uN3ANo', status: 'offline', location: 'Geneva' },
-  { name: 'Marie L.', lat: 48.8566, lng: 2.3522, avatar: 'https://i.pravatar.cc/150?u=marie', status: 'online', location: 'Paris' },
-  { name: 'James W.', lat: -44.6717, lng: 167.9236, avatar: 'https://i.pravatar.cc/150?u=james', status: 'idle', location: 'Milford Sound' },
-  { name: 'Kenji S.', lat: 35.6762, lng: 139.6503, avatar: 'https://i.pravatar.cc/150?u=kenji', status: 'online', location: 'Tokyo' }
+const USER_TILES_KEY = 'osiris_nearby_user_tiles';
+const AVATARS = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAPy7qTrwvb0VVlIC4AUXxu9oKHw1tTdcEK0xLkt_rafxpY8Q5vToM_97fe11fu3YdtVcgOSaHDhvHENwLIUWdcYa1z6fN_7yDLNallyS8GQpbCVKvRhq2TeqH5giXjNxNtxi55QRNrh2opNAEO5jMw1G_Hlo84OPSE_QiTZrrEGU53N6DB-bHImedXVE6qD4A5DErmaCsw3JiPJUTA8qxImYIK2t0mc0eeHwEK_sVwuecL0CKE--Pq2JQhk1us0B4hdPoQI61dye4',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDaldXINzAN1Fx_a7e4Iy4567-I05RjeUkU8oVLpQMAbITvEaxY7zeyfpDOTvrsnSx5o55osuO_dXUOxBz_iF_GPJz7nfoxQi2cIS9fVp8Mpm5gCVS4dluRnAVk-Cp3fP3gNu-RelI-8m0A2aA_pvkXyosiDDuRw8dgo1BVIfGMuzkLjv8eejWl-KN5hUwL-QXrJagvHaqNcYChw-jgp209aYCH4HPaP9QSwLp0LdZuwobK2ZJslE2-yJ3h2P6jViZ8doL-7uN3ANo',
+  'https://i.pravatar.cc/150?u=marie',
+  'https://i.pravatar.cc/150?u=james',
+  'https://i.pravatar.cc/150?u=kenji'
 ];
+const MS_1_MIN = 60 * 1000;
+const MS_24H = 24 * 60 * 60 * 1000;
+
+function getStatusFromLastSeen(lastSeen) {
+  const age = Date.now() - lastSeen;
+  if (age < MS_1_MIN) return 'connected';
+  if (age < MS_24H) return 'recently';
+  return 'offline';
+}
+
+function getStatusDot(status) {
+  if (status === 'connected' || status === 'online') return 'bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+  if (status === 'recently' || status === 'idle') return 'bg-orange-500 rounded-full';
+  return 'bg-gray-500 rounded-full';
+}
+
+function loadUserTiles() {
+  try {
+    const raw = localStorage.getItem(USER_TILES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUserTiles(tiles) {
+  localStorage.setItem(USER_TILES_KEY, JSON.stringify(tiles));
+}
+
+function addCurrentUserTile(loc) {
+  const name = sessionStorage.getItem('osiris_user_name')?.trim();
+  if (!name) return;
+  const tiles = loadUserTiles();
+  const idx = tiles.findIndex((t) => t.name === name);
+  const avatarIndex = idx >= 0 ? tiles[idx].avatarIndex : tiles.length % AVATARS.length;
+  const entry = {
+    name,
+    avatar: AVATARS[avatarIndex],
+    avatarIndex,
+    lastSeen: Date.now(),
+    lat: loc?.lat,
+    lng: loc?.lng,
+    city: loc?.city || null
+  };
+  if (idx >= 0) {
+    tiles[idx] = entry;
+  } else {
+    tiles.push(entry);
+  }
+  saveUserTiles(tiles);
+}
+
+function renderNearbyTiles() {
+  const container = document.getElementById('nearby-friends-tiles');
+  const countEl = document.getElementById('nearby-friends-count');
+  if (!container) return;
+
+  const userTiles = loadUserTiles();
+  const total = userTiles.length;
+
+  let html = '';
+
+  userTiles.forEach((tile) => {
+    const status = getStatusFromLastSeen(tile.lastSeen);
+    const dotClass = getStatusDot(status);
+    const isActive = status === 'connected';
+    const subtext = tile.city || 'Unknown';
+    const hasLocation = tile.lat != null && tile.lng != null;
+    const iconClass = isActive ? 'text-primary' : 'text-text-secondary';
+    const borderClass = isActive ? 'border-primary/30' : 'border-white/5';
+    const imgBorder = isActive ? 'border-primary' : 'border-transparent';
+    const imgClass = isActive ? '' : 'grayscale group-hover:grayscale-0 transition-all';
+    const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
+    const dataAttr = hasLocation ? `data-user-tile="${tile.name}"` : '';
+    html += `
+      <div ${dataAttr} class="w-48 bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}">
+        <div class="absolute top-0 right-0 p-3">
+          <div class="w-2.5 h-2.5 ${dotClass}"></div>
+        </div>
+        <div class="w-14 h-14 rounded-full border-2 ${imgBorder} p-0.5 ${imgClass}">
+          <img alt="${tile.name}" class="w-full h-full object-cover rounded-full" src="${tile.avatar}"/>
+        </div>
+        <div>
+          <h3 class="text-white font-bold text-base leading-tight">${tile.name}</h3>
+          <div class="flex items-center gap-1 mt-1 ${iconClass} text-sm ${isActive ? 'font-medium' : ''}">
+            <span class="material-symbols-outlined text-[16px]">${isActive ? 'near_me' : 'location_on'}</span>
+            <span>${subtext}</span>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  html += `
+    <button id="nearby-clear-all" type="button" class="w-48 bg-card-dark/50 hover:bg-card-dark/80 p-3 rounded-2xl border border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
+      <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
+      <span class="text-text-secondary text-sm font-medium">Clear all</span>
+    </button>`;
+
+  container.innerHTML = html;
+  if (countEl) countEl.textContent = total === 0 ? 'No users yet' : `${total} user${total === 1 ? '' : 's'} worldwide`;
+
+  document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    saveUserTiles([]);
+    addUserTileMarkers();
+    renderNearbyTiles();
+    if (countEl) countEl.textContent = 'No users yet';
+  });
+}
 
 function getMapboxToken() {
   return localStorage.getItem('mapbox_access_token') || (typeof window.MAPBOX_DEFAULT_TOKEN === 'string' ? window.MAPBOX_DEFAULT_TOKEN : '') || '';
@@ -69,10 +179,12 @@ function initMap() {
         flyToLocation(loc.lng, loc.lat, 10);
         addCurrentLocationMarker(loc.lng, loc.lat);
       }
+      addCurrentUserTile(loc || {}); // even if no loc, we may have name from access gate
+      addUserTileMarkers();
+      renderNearbyTiles();
+      wireUserTileCards();
     });
-    addFriendMarkers();
     wireControls();
-    wireFriendCards();
   });
 }
 
@@ -90,37 +202,40 @@ function addCurrentLocationMarker(lng, lat) {
   currentLocationMarker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(appMap);
 }
 
-function addFriendMarkers() {
-  friendMarkers.forEach(m => m.remove());
-  friendMarkers = [];
-  FRIENDS.forEach((friend) => {
+function addUserTileMarkers() {
+  userTileMarkers.forEach(m => m.remove());
+  userTileMarkers = [];
+  if (!appMap) return;
+  const tiles = loadUserTiles().filter((t) => t.lat != null && t.lng != null);
+  tiles.forEach((tile) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
     const avatar = document.createElement('div');
-    avatar.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${friend.status === 'online' ? '#13a4ec' : 'rgba(255,255,255,0.2)'};overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d`;
+    const status = getStatusFromLastSeen(tile.lastSeen);
+    avatar.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${status === 'connected' ? '#13a4ec' : 'rgba(255,255,255,0.2)'};overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d`;
     const img = document.createElement('img');
-    img.src = friend.avatar;
-    img.alt = friend.name;
+    img.src = tile.avatar;
+    img.alt = tile.name;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
     avatar.appendChild(img);
     el.appendChild(avatar);
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-      .setLngLat([friend.lng, friend.lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${friend.name}</strong>`))
+      .setLngLat([tile.lng, tile.lat])
+      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${tile.name}</strong><br>${tile.city || ''}`))
       .addTo(appMap);
-    friendMarkers.push(marker);
+    userTileMarkers.push(marker);
   });
 }
 
 const ZOOM_ANIMATION_MS = 1200;
 
-function wireFriendCards() {
-  document.querySelectorAll('[data-friend-card]').forEach((el) => {
+function wireUserTileCards() {
+  document.querySelectorAll('[data-user-tile]').forEach((el) => {
     el.addEventListener('click', () => {
-      const name = el.getAttribute('data-friend-card');
-      const friend = FRIENDS.find((f) => f.name === name);
-      if (friend && appMap) {
-        flyToLocation(friend.lng, friend.lat, 14);
+      const name = el.getAttribute('data-user-tile');
+      const tile = loadUserTiles().find((t) => t.name === name);
+      if (tile && tile.lat != null && tile.lng != null && appMap) {
+        flyToLocation(tile.lng, tile.lat, 14);
       }
     });
   });

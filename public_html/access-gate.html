@@ -12,7 +12,8 @@
     [data-theme="light"] .gate-logo { filter: brightness(0.08); }
     .gate-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--text-color); margin-bottom: var(--spacing-sm); }
     .gate-subtitle { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-xl); }
-    .gate-input { width: 100%; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-lg); text-align: center; letter-spacing: 0.5em; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-color); color: var(--text-color); margin-bottom: var(--spacing-lg); }
+    .gate-input { width: 100%; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-lg); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-color); color: var(--text-color); margin-bottom: var(--spacing-md); }
+    .gate-input.code { text-align: center; letter-spacing: 0.5em; }
     .gate-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(3, 88, 140, 0.2); }
     .gate-error { color: var(--error-color); font-size: var(--font-size-sm); margin-bottom: var(--spacing-md); min-height: 1.5em; }
   </style>
@@ -22,30 +23,40 @@
     <img src="logo-OSiris/logo-OSiris-horizontal-text.svg" alt="OSiris" class="gate-logo">
     <h1 class="gate-title">Enter Access Code</h1>
     <p class="gate-subtitle">Enter the code to access the map app</p>
-    <input type="password" id="gate-input" class="gate-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
+    <input type="text" id="gate-name" class="gate-input" placeholder="Your name" autocomplete="name">
+    <input type="password" id="gate-input" class="gate-input code" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
     <p id="gate-error" class="gate-error" aria-live="polite"></p>
     <button type="button" id="gate-validate" class="btn-primary" style="width: 100%;">Validate</button>
   </div>
   <script>
     const ACCESS_CODE = '7777';
-    const input = document.getElementById('gate-input');
+    const nameInput = document.getElementById('gate-name');
+    const codeInput = document.getElementById('gate-input');
     const validateBtn = document.getElementById('gate-validate');
     const errorEl = document.getElementById('gate-error');
     function validate() {
-      const code = input.value.trim();
+      const name = nameInput.value.trim();
+      const code = codeInput.value.trim();
       errorEl.textContent = '';
+      if (!name) {
+        errorEl.textContent = 'Please enter your name.';
+        nameInput.focus();
+        return;
+      }
       if (code === ACCESS_CODE) {
         sessionStorage.setItem('osiris_authenticated', '1');
+        sessionStorage.setItem('osiris_user_name', name);
         window.location.href = 'map-app.html';
       } else {
         errorEl.textContent = 'Invalid code. Please try again.';
-        input.value = '';
-        input.focus();
+        codeInput.value = '';
+        codeInput.focus();
       }
     }
     validateBtn.addEventListener('click', validate);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') validate(); });
-    input.focus();
+    nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') codeInput.focus(); });
+    codeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validate(); });
+    nameInput.focus();
   </script>
 </body>
 </html>
