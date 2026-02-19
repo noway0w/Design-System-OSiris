@@ -534,6 +534,19 @@
   <!-- 3D / Map -->
   <section id="map-3d">
     <h2>3D / Map Components</h2>
+    
+    <div class="usage-box">
+      <h3>Mapbox Configuration</h3>
+      <p>Enter your Mapbox Access Token to render the map.</p>
+      <div style="display: flex; gap: var(--spacing-md); align-items: center; flex-wrap: wrap;">
+        <div class="search-container" style="flex: 1; min-width: 250px;">
+          <input type="text" id="mapbox-token-input" class="search-input" placeholder="Paste your Mapbox Access Token (pk....)">
+        </div>
+        <button id="update-map-btn" class="btn-primary">Load Map</button>
+      </div>
+      <small style="display: block; margin-top: var(--spacing-sm); color: var(--text-secondary);">Token will be saved locally for this session.</small>
+    </div>
+
     <div class="component-demo" style="display: block;">
       <div id="map-container" class="map-container"></div>
     </div>
