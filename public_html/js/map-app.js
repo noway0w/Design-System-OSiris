@@ -3,6 +3,8 @@
 let appMap = null;
 let currentLocationMarker = null;
 let friendMarkers = [];
+let globeRotationEnabled = false;
+let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
 const FRIENDS = [
   { name: 'Sarah J.', lat: 37.7954, lng: -122.4034, avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw', status: 'online' },
@@ -140,6 +142,89 @@ function wireControls() {
           addCurrentLocationMarker(loc.lng, loc.lat);
         }
       });
+    }
+  });
+  const MAX_SPIN_ZOOM = 5;
+  const SECONDS_PER_REVOLUTION = 60;
+  const EASE_DURATION_MS = 300;
+  const EASE_STEPS = 3;
+  const EASE_IN_MULTIPLIERS = [0.2, 0.6, 1];
+  const EASE_OUT_MULTIPLIERS = [0.8, 0.4, 0];
+  const SEGMENT_DURATION_MS = EASE_DURATION_MS / EASE_STEPS;
+  let globeEaseStepIndex = 0;
+
+  function getSpeedMultiplier() {
+    if (globeRotationState === 'easing-in') {
+      return EASE_IN_MULTIPLIERS[Math.min(globeEaseStepIndex, EASE_IN_MULTIPLIERS.length - 1)] ?? 1;
+    }
+    if (globeRotationState === 'easing-out') {
+      return EASE_OUT_MULTIPLIERS[Math.min(globeEaseStepIndex, EASE_OUT_MULTIPLIERS.length - 1)] ?? 0;
+    }
+    return 1;
+  }
+
+  function spinGlobe() {
+    if (!appMap) return;
+    if (globeRotationState === 'off') return;
+    const zoom = appMap.getZoom();
+    if (zoom >= MAX_SPIN_ZOOM && globeRotationState !== 'easing-out') return;
+
+    const baseDistancePerSecond = 360 / SECONDS_PER_REVOLUTION;
+    const multiplier = getSpeedMultiplier();
+
+    if (globeRotationState === 'easing-out' && multiplier <= 0) {
+      globeRotationState = 'off';
+      globeRotationEnabled = false;
+      document.getElementById('map-rotate')?.setAttribute('aria-pressed', 'false');
+      document.getElementById('map-rotate')?.classList.remove('bg-primary/20', 'text-primary');
+      return;
+    }
+
+    const isEasing = globeRotationState === 'easing-in' || globeRotationState === 'easing-out';
+    const duration = isEasing ? SEGMENT_DURATION_MS : 1000;
+    const center = appMap.getCenter();
+    center.lng -= baseDistancePerSecond * multiplier * (duration / 1000);
+    appMap.easeTo({ center, duration, easing: (n) => n });
+
+    if (globeRotationState === 'easing-in') {
+      globeEaseStepIndex++;
+      if (globeEaseStepIndex >= EASE_IN_MULTIPLIERS.length) {
+        globeRotationState = 'running';
+        globeEaseStepIndex = 0;
+      }
+    } else if (globeRotationState === 'easing-out') {
+      globeEaseStepIndex++;
+    }
+  }
+
+  appMap.on('moveend', () => {
+    if (globeRotationState !== 'off') spinGlobe();
+  });
+
+  function stopGlobeRotation() {
+    if (globeRotationState === 'off') return;
+    globeRotationState = 'easing-out';
+    globeEaseStepIndex = 0;
+    document.getElementById('map-rotate')?.setAttribute('aria-pressed', 'false');
+    document.getElementById('map-rotate')?.classList.remove('bg-primary/20', 'text-primary');
+    spinGlobe();
+  }
+
+  appMap.on('click', stopGlobeRotation);
+  appMap.on('dragstart', stopGlobeRotation);
+
+  document.getElementById('map-rotate')?.addEventListener('click', () => {
+    const btn = document.getElementById('map-rotate');
+    const pressed = btn?.getAttribute('aria-pressed') === 'true';
+    if (pressed) {
+      stopGlobeRotation();
+    } else {
+      globeRotationEnabled = true;
+      globeRotationState = 'easing-in';
+      globeEaseStepIndex = 0;
+      btn?.setAttribute('aria-pressed', 'true');
+      btn?.classList.add('bg-primary/20', 'text-primary');
+      spinGlobe();
     }
   });
   document.getElementById('map-gps')?.addEventListener('click', () => {
