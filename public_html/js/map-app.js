@@ -127,6 +127,21 @@ function wireFriendCards() {
 function wireControls() {
   document.getElementById('map-zoom-in')?.addEventListener('click', () => appMap?.zoomIn({ duration: ZOOM_ANIMATION_MS }));
   document.getElementById('map-zoom-out')?.addEventListener('click', () => appMap?.zoomOut({ duration: ZOOM_ANIMATION_MS }));
+  document.getElementById('gps-status-btn')?.addEventListener('click', () => {
+    if (currentLocationMarker) {
+      const { lng, lat } = currentLocationMarker.getLngLat();
+      flyToLocation(lng, lat, 14);
+    } else if (LocationService.currentLocation) {
+      flyToLocation(LocationService.currentLocation.lng, LocationService.currentLocation.lat, 14);
+    } else {
+      LocationService.getIPLocation().then((loc) => {
+        if (loc) {
+          flyToLocation(loc.lng, loc.lat, 14);
+          addCurrentLocationMarker(loc.lng, loc.lat);
+        }
+      });
+    }
+  });
   document.getElementById('map-gps')?.addEventListener('click', () => {
     LocationService.getGPSLocation()
       .then((loc) => {
@@ -161,20 +176,47 @@ function flyToLocation(lng, lat, zoom) {
   });
 }
 
+const PEEK_HEIGHT = '80px';
+
 function initBottomSheet() {
+  const sheet = document.getElementById('bottom-sheet');
   const toggle = document.getElementById('bottom-sheet-toggle');
   const content = document.getElementById('bottom-sheet-content');
-  if (!toggle || !content) return;
+  if (!sheet || !toggle || !content) return;
 
   const EXPANDED_HEIGHT = '380px';
 
-  toggle.addEventListener('click', () => {
-    const expanded = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!expanded));
-    content.style.maxHeight = expanded ? '0' : EXPANDED_HEIGHT;
-    setMapPadding(!expanded);
-    appMap?.resize();
-    setTimeout(() => appMap?.resize(), TRANSITION_MS);
+  function isExpanded() {
+    return toggle.getAttribute('aria-expanded') === 'true';
+  }
+
+  function setContentHeight(height) {
+    content.style.maxHeight = height;
+  }
+
+  sheet.addEventListener('click', (e) => {
+    const expanded = isExpanded();
+    if (!expanded) {
+      toggle.setAttribute('aria-expanded', 'true');
+      setContentHeight(EXPANDED_HEIGHT);
+      setMapPadding(false);
+      appMap?.resize();
+      setTimeout(() => appMap?.resize(), TRANSITION_MS);
+    } else if (toggle.contains(e.target)) {
+      toggle.setAttribute('aria-expanded', 'false');
+      setContentHeight('0');
+      setMapPadding(true);
+      appMap?.resize();
+      setTimeout(() => appMap?.resize(), TRANSITION_MS);
+    }
+  });
+
+  sheet.addEventListener('mouseenter', () => {
+    if (!isExpanded()) setContentHeight(PEEK_HEIGHT);
+  });
+
+  sheet.addEventListener('mouseleave', () => {
+    if (!isExpanded()) setContentHeight('0');
   });
 
   content.style.maxHeight = EXPANDED_HEIGHT;
