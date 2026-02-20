@@ -6,7 +6,7 @@ let userTileMarkers = [];
 let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
-const USER_TILES_KEY = 'osiris_nearby_user_tiles';
+const HEARTBEAT_MS = 5000;
 const AVATARS = [
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw',
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAPy7qTrwvb0VVlIC4AUXxu9oKHw1tTdcEK0xLkt_rafxpY8Q5vToM_97fe11fu3YdtVcgOSaHDhvHENwLIUWdcYa1z6fN_7yDLNallyS8GQpbCVKvRhq2TeqH5giXjNxNtxi55QRNrh2opNAEO5jMw1G_Hlo84OPSE_QiTZrrEGU53N6DB-bHImedXVE6qD4A5DErmaCsw3JiPJUTA8qxImYIK2t0mc0eeHwEK_sVwuecL0CKE--Pq2JQhk1us0B4hdPoQI61dye4',
@@ -31,49 +31,116 @@ function getStatusDot(status) {
   return 'bg-gray-500 rounded-full';
 }
 
-function loadUserTiles() {
+let heartbeatIntervalId = null;
+let currentTiles = [];
+let previousUserNames = new Set();
+let apiMisconfigured = false; // true when server returns PHP source instead of JSON
+
+function getApiBase() {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base || '';
+}
+
+function getUsersListUrl() {
+  const b = getApiBase();
+  return b ? `${b}/api/users` : 'api/users.php';
+}
+
+function getUsersRegisterUrl() {
+  const b = getApiBase();
+  return b ? `${b}/api/users` : 'api/users-register.php';
+}
+
+function getUsersClearUrl() {
+  const b = getApiBase();
+  return b ? `${b}/api/users` : 'api/users-clear.php';
+}
+
+async function fetchUsers() {
+  const url = getUsersListUrl() + '?_=' + Date.now();
   try {
-    const raw = localStorage.getItem(USER_TILES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
+    const res = await fetch(url, { cache: 'no-store' });
+    const text = await res.text();
+    if (!res.ok) {
+      if (!apiMisconfigured) console.warn('[Nearby] fetchUsers failed:', res.status, text.slice(0, 80));
+      return [];
+    }
+    if (text.trimStart().startsWith('<') || text.trimStart().startsWith('<?php')) {
+      if (!apiMisconfigured) {
+        console.warn('[Nearby] API returns PHP source—enable PHP on server (see api/README-SERVER.md)');
+        apiMisconfigured = true;
+        stopHeartbeat();
+      }
+      return [];
+    }
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    const isPhpSource = e.message && (e.message.includes('Unexpected token') || e.message.includes('<?php'));
+    if (isPhpSource) {
+      if (!apiMisconfigured) {
+        console.warn('[Nearby] API returns PHP source—enable PHP on server (see api/README-SERVER.md)');
+        apiMisconfigured = true;
+        stopHeartbeat();
+      }
+    } else if (!apiMisconfigured) {
+      console.warn('[Nearby] fetchUsers error:', e.message || e);
+    }
     return [];
   }
 }
 
-function saveUserTiles(tiles) {
-  localStorage.setItem(USER_TILES_KEY, JSON.stringify(tiles));
-}
-
-function addCurrentUserTile(loc) {
+async function registerUser(loc) {
   const name = sessionStorage.getItem('osiris_user_name')?.trim();
   if (!name) return;
-  const tiles = loadUserTiles();
-  const idx = tiles.findIndex((t) => t.name === name);
-  const avatarIndex = idx >= 0 ? tiles[idx].avatarIndex : tiles.length % AVATARS.length;
-  const entry = {
+  const ip = loc?.ip ?? LocationService.currentIP ?? '';
+  const params = new URLSearchParams({
+    ip: ip || '',
     name,
-    avatar: AVATARS[avatarIndex],
-    avatarIndex,
-    lastSeen: Date.now(),
-    lat: loc?.lat,
-    lng: loc?.lng,
-    city: loc?.city || null
-  };
-  if (idx >= 0) {
-    tiles[idx] = entry;
-  } else {
-    tiles.push(entry);
+    lat: String(loc?.lat ?? ''),
+    lng: String(loc?.lng ?? ''),
+    city: loc?.city ?? '',
+    country: loc?.country ?? ''
+  });
+  const url = getUsersRegisterUrl() + '?' + params.toString() + '&_=' + Date.now();
+  try {
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    if (!res.ok) {
+      console.warn('[Nearby] registerUser failed:', res.status, await res.text().catch(() => ''));
+    }
+  } catch (e) {
+    console.warn('[Nearby] Failed to register user:', e);
   }
-  saveUserTiles(tiles);
 }
 
-function renderNearbyTiles() {
+async function clearAllUsers() {
+  try {
+    await fetch(getUsersClearUrl(), { method: 'GET' });
+  } catch (e) {
+    console.warn('Failed to clear users:', e);
+  }
+}
+
+function toTiles(users) {
+  currentTiles = users.map((u, i) => ({
+    name: u.name,
+    avatar: AVATARS[i % AVATARS.length],
+    lastSeen: u.lastSeen,
+    lat: u.lat,
+    lng: u.lng,
+    city: u.city ?? null
+  }));
+  return currentTiles;
+}
+
+function renderNearbyTiles(tiles) {
   const container = document.getElementById('nearby-friends-tiles');
   const countEl = document.getElementById('nearby-friends-count');
   if (!container) return;
 
-  const userTiles = loadUserTiles();
+  const userTiles = Array.isArray(tiles) ? tiles : [];
   const total = userTiles.length;
+  const newNames = new Set(userTiles.map((t) => t.name));
 
   let html = '';
 
@@ -89,8 +156,9 @@ function renderNearbyTiles() {
     const imgClass = isActive ? '' : 'grayscale group-hover:grayscale-0 transition-all';
     const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
     const dataAttr = hasLocation ? `data-user-tile="${tile.name}"` : '';
+    const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     html += `
-      <div ${dataAttr} class="w-48 bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}">
+      <div ${dataAttr} class="w-48 bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-3">
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
@@ -113,16 +181,47 @@ function renderNearbyTiles() {
       <span class="text-text-secondary text-sm font-medium">Clear all</span>
     </button>`;
 
+  previousUserNames = newNames;
   container.innerHTML = html;
-  if (countEl) countEl.textContent = total === 0 ? 'No users yet' : `${total} user${total === 1 ? '' : 's'} worldwide`;
+  if (countEl) {
+    countEl.textContent = apiMisconfigured && total === 0
+      ? 'Nearby Friends needs PHP enabled on server'
+      : total === 0 ? 'No users yet' : `${total} user${total === 1 ? '' : 's'} worldwide`;
+  }
 
-  document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
+  document.getElementById('nearby-clear-all')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    saveUserTiles([]);
-    addUserTileMarkers();
-    renderNearbyTiles();
+    await clearAllUsers();
+    const users = await fetchUsers();
+    const tiles = toTiles(users);
+    addUserTileMarkers(tiles);
+    renderNearbyTiles(tiles);
     if (countEl) countEl.textContent = 'No users yet';
   });
+}
+
+async function refreshNearby() {
+  const name = sessionStorage.getItem('osiris_user_name')?.trim();
+  const loc = LocationService.currentLocation || {};
+  if (name) {
+    registerUser({ ...loc, ip: loc.ip ?? LocationService.currentIP });
+  }
+  const users = await fetchUsers();
+  const tiles = toTiles(users);
+  addUserTileMarkers(tiles);
+  renderNearbyTiles(tiles);
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatIntervalId = setInterval(refreshNearby, HEARTBEAT_MS);
+}
+
+function stopHeartbeat() {
+  if (heartbeatIntervalId) {
+    clearInterval(heartbeatIntervalId);
+    heartbeatIntervalId = null;
+  }
 }
 
 function getMapboxToken() {
@@ -174,14 +273,14 @@ function initMap() {
 
   appMap.on('load', () => {
     setMapPadding(true);
-    LocationService.getIPLocation().then((loc) => {
+    LocationService.getIPLocation().then(async (loc) => {
       if (loc) {
         flyToLocation(loc.lng, loc.lat, 10);
         addCurrentLocationMarker(loc.lng, loc.lat);
       }
-      addCurrentUserTile(loc || {}); // even if no loc, we may have name from access gate
-      addUserTileMarkers();
-      renderNearbyTiles();
+      await registerUser(loc || {});
+      await refreshNearby();
+      startHeartbeat();
       wireUserTileCards();
     });
     wireControls();
@@ -202,12 +301,12 @@ function addCurrentLocationMarker(lng, lat) {
   currentLocationMarker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(appMap);
 }
 
-function addUserTileMarkers() {
+function addUserTileMarkers(tiles = []) {
   userTileMarkers.forEach(m => m.remove());
   userTileMarkers = [];
   if (!appMap) return;
-  const tiles = loadUserTiles().filter((t) => t.lat != null && t.lng != null);
-  tiles.forEach((tile) => {
+  const withLoc = (tiles.length ? tiles : currentTiles).filter((t) => t.lat != null && t.lng != null);
+  withLoc.forEach((tile) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
     const avatar = document.createElement('div');
@@ -230,14 +329,15 @@ function addUserTileMarkers() {
 const ZOOM_ANIMATION_MS = 1200;
 
 function wireUserTileCards() {
-  document.querySelectorAll('[data-user-tile]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const name = el.getAttribute('data-user-tile');
-      const tile = loadUserTiles().find((t) => t.name === name);
-      if (tile && tile.lat != null && tile.lng != null && appMap) {
-        flyToLocation(tile.lng, tile.lat, 14);
-      }
-    });
+  const container = document.getElementById('nearby-friends-tiles');
+  container?.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-user-tile]');
+    if (!el || !appMap) return;
+    const name = el.getAttribute('data-user-tile');
+    const tile = currentTiles.find((t) => t.name === name);
+    if (tile && tile.lat != null && tile.lng != null) {
+      flyToLocation(tile.lng, tile.lat, 14);
+    }
   });
 }
 

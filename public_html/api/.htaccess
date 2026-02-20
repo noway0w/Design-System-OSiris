@@ -1,0 +1,12 @@
+# Allow POST and other methods for PHP API
+<FilesMatch "\.php$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+# Ensure PHP executes (some hosts need this)
+Options -Indexes
+# Block direct access to SQLite database
+<Files "users.db">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</Files>

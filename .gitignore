@@ -9,3 +9,7 @@
 
 # Mapbox token - never commit (copy mapbox-config.example.js and add your token)
 public_html/js/mapbox-config.js
+
+# API database
+api/users.db
+public_html/api/users.db

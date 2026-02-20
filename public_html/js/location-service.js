@@ -11,7 +11,7 @@ const LocationService = {
       const data = await res.json();
       const [lat, lng] = data.loc ? data.loc.split(',').map(Number) : [];
       if (lat && lng) {
-        this.currentLocation = { lat, lng, city: data.city, country: data.country, source: 'ip' };
+        this.currentLocation = { lat, lng, city: data.city, country: data.country, ip: data.ip, source: 'ip' };
         this.currentIP = data.ip;
         return this.currentLocation;
       }
@@ -22,7 +22,7 @@ const LocationService = {
       const res = await fetch('http://ip-api.com/json/?fields=lat,lon,city,country,query');
       const data = await res.json();
       if (data.lat && data.lon) {
-        this.currentLocation = { lat: data.lat, lng: data.lon, city: data.city, country: data.country, source: 'ip' };
+        this.currentLocation = { lat: data.lat, lng: data.lon, city: data.city, country: data.country, ip: data.query, source: 'ip' };
         this.currentIP = data.query;
         return this.currentLocation;
       }
