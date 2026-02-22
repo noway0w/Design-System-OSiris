@@ -43,7 +43,27 @@ let previousUserNames = new Set();
 let apiMisconfigured = false; // true when server returns PHP source instead of JSON
 
 let mapDataState = { buildings: true, topography: true, names: true, propertyBoundaries: true };
+let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries'];
 let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null };
+
+const MAP_DATA_ORDER_KEY = 'osiris_map_data_tile_order';
+function loadMapDataTileOrder() {
+  try {
+    const stored = localStorage.getItem(MAP_DATA_ORDER_KEY);
+    if (stored) {
+      const order = JSON.parse(stored);
+      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries'];
+      if (Array.isArray(order) && order.length === valid.length && valid.every((k) => order.includes(k))) {
+        mapDataTileOrder = order;
+      }
+    }
+  } catch (_) {}
+}
+function saveMapDataTileOrder() {
+  try {
+    localStorage.setItem(MAP_DATA_ORDER_KEY, JSON.stringify(mapDataTileOrder));
+  } catch (_) {}
+}
 
 
 function getApiBase() {
@@ -270,7 +290,10 @@ function initMapApp() {
   overlay?.classList.add('hidden');
   root?.classList.remove('hidden');
   initMap();
-  document.addEventListener('osiris-theme-change', () => applyMapTheme());
+  document.addEventListener('osiris-theme-change', () => {
+    applyMapTheme();
+    renderMapDataTiles(mapDataState);
+  });
 }
 
 function applyMapTheme() {
@@ -359,8 +382,11 @@ function addUserTileMarkers(tiles = []) {
     el.appendChild(avatar);
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([tile.lng, tile.lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${tile.name}</strong><br>${tile.city || ''}`))
       .addTo(appMap);
+    el.addEventListener('click', () => {
+      flyToLocation(tile.lng, tile.lat, 18, { pitch: 45 });
+      openUserProfilePanel(tile);
+    });
     userTileMarkers.push(marker);
   });
 }
@@ -368,8 +394,9 @@ function addUserTileMarkers(tiles = []) {
 const ZOOM_ANIMATION_MS = 1200;
 
 function wireUserTileCards() {
-  const container = document.getElementById('nearby-friends-tiles');
-  container?.addEventListener('click', (e) => {
+  const panelContent = document.getElementById('bottom-panel-content');
+  if (!panelContent) return;
+  panelContent.addEventListener('click', (e) => {
     const el = e.target.closest('[data-user-tile]');
     if (!el || !appMap) return;
     const name = el.getAttribute('data-user-tile');
@@ -476,82 +503,122 @@ function discoverMapLayers() {
     const id = layer.id?.toLowerCase() || '';
     const type = layer.type || '';
     if (type === 'fill-extrusion' || id.includes('building')) buildingIds.push(layer.id);
-    if (type === 'symbol' && (id.includes('label') || id.includes('place') || id.includes('poi'))) labelIds.push(layer.id);
+    const isTerrainRelated = id.includes('terrain') || id.includes('hillshade') || id.includes('elevation') || id.includes('dem') || id.includes('contour');
+    if (type === 'symbol' && !isTerrainRelated) labelIds.push(layer.id);
     if (type === 'line' && (id.includes('boundary') || id.includes('parcel') || id.includes('property') || id.includes('cadastral'))) propertyBoundaryIds.push(layer.id);
   });
   mapLayerInfo.buildingLayerIds = buildingIds;
   mapLayerInfo.labelLayerIds = labelIds;
   mapLayerInfo.propertyBoundaryLayerIds = propertyBoundaryIds;
   if (style.terrain) {
-    mapLayerInfo.terrainConfig = style.terrain;
-  } else if (appMap.getSource?.('mapbox-dem')) {
-    mapLayerInfo.terrainConfig = { source: 'mapbox-dem', exaggeration: 1.2 };
+    mapLayerInfo.terrainConfig = { ...style.terrain };
+  } else {
+    const demSource = Object.keys(style.sources || {}).find((s) => s.toLowerCase().includes('dem'));
+    mapLayerInfo.terrainConfig = demSource
+      ? { source: demSource, exaggeration: 1.2 }
+      : appMap.getSource?.('mapbox-dem')
+        ? { source: 'mapbox-dem', exaggeration: 1.2 }
+        : null;
   }
 }
 
-function applyMapDataState(state) {
+function applyBuildingsState(state) {
   if (!appMap || !appMap.isStyleLoaded()) return;
-  const { buildingLayerIds, labelLayerIds, propertyBoundaryLayerIds, terrainConfig } = mapLayerInfo;
-  buildingLayerIds.forEach((id) => {
-    try {
-      appMap.setLayoutProperty(id, 'visibility', state.buildings ? 'visible' : 'none');
-    } catch {}
-  });
-  labelLayerIds.forEach((id) => {
-    try {
-      appMap.setLayoutProperty(id, 'visibility', state.names ? 'visible' : 'none');
-    } catch {}
-  });
-  propertyBoundaryLayerIds.forEach((id) => {
-    try {
-      appMap.setLayoutProperty(id, 'visibility', state.propertyBoundaries ? 'visible' : 'none');
-    } catch {}
+  mapLayerInfo.buildingLayerIds.forEach((id) => {
+    try { appMap.setLayoutProperty(id, 'visibility', state.buildings ? 'visible' : 'none'); } catch {}
   });
   try {
     if (typeof appMap.setConfigProperty === 'function') {
-      try {
-        appMap.setConfigProperty('basemap', 'show3dBuildings', state.buildings);
-        appMap.setConfigProperty('basemap', 'show3dObjects', state.buildings);
-      } catch {}
-      try {
-        appMap.setConfigProperty('basemap', 'showPlaceLabels', state.names);
-        appMap.setConfigProperty('basemap', 'showRoadLabels', state.names);
-        appMap.setConfigProperty('basemap', 'showPointOfInterestLabels', state.names);
-      } catch {}
+      appMap.setConfigProperty('basemap', 'show3dBuildings', state.buildings);
+      appMap.setConfigProperty('basemap', 'show3dObjects', state.buildings);
     }
   } catch {}
+}
+
+function applyNamesState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  mapLayerInfo.labelLayerIds.forEach((id) => {
+    try { appMap.setLayoutProperty(id, 'visibility', state.names ? 'visible' : 'none'); } catch {}
+  });
   try {
-    if (state.topography && terrainConfig) {
-      appMap.setTerrain(terrainConfig);
+    if (typeof appMap.setConfigProperty === 'function') {
+      appMap.setConfigProperty('basemap', 'showPlaceLabels', state.names);
+      appMap.setConfigProperty('basemap', 'showRoadLabels', state.names);
+      appMap.setConfigProperty('basemap', 'showPointOfInterestLabels', state.names);
+      appMap.setConfigProperty('basemap', 'showTransitLabels', state.names);
+    }
+  } catch {}
+}
+
+function applyTopographyState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  let cfg = mapLayerInfo.terrainConfig;
+  if (state.topography && !cfg) {
+    discoverMapLayers();
+    cfg = mapLayerInfo.terrainConfig;
+  }
+  try {
+    if (state.topography && cfg) {
+      appMap.setTerrain(cfg);
     } else {
       appMap.setTerrain(null);
     }
   } catch {}
 }
 
+function applyPropertyBoundariesState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  mapLayerInfo.propertyBoundaryLayerIds.forEach((id) => {
+    try { appMap.setLayoutProperty(id, 'visibility', state.propertyBoundaries ? 'visible' : 'none'); } catch {}
+  });
+}
+
+function applyMapDataState(state) {
+  applyBuildingsState(state);
+  applyNamesState(state);
+  applyPropertyBoundariesState(state);
+  applyTopographyState(state);
+}
+
 function renderMapDataTiles(state) {
   const container = document.getElementById('map-data-tiles');
   if (!container) return;
-  const tiles = [
-    { key: 'buildings', label: 'Buildings', icon: 'apartment', on: state.buildings },
-    { key: 'topography', label: 'Topography', icon: 'terrain', on: state.topography },
-    { key: 'names', label: 'Names', icon: 'label', on: state.names },
-    { key: 'propertyBoundaries', label: 'Property boundaries', icon: 'fence', on: state.propertyBoundaries }
-  ];
+  const thumbLight = {
+    buildings: 'assets/map-data/3D_Building-16df9d4f-a37a-4b28-82b4-29102ba973cc.png',
+    topography: 'assets/map-data/Topography-f0f7d58d-01de-4a71-a672-5645b1839686.png',
+    names: 'assets/map-data/Local_Information-761468aa-38c3-4dab-98e3-194b0ddc73ad.png',
+    propertyBoundaries: 'assets/map-data/Road_Boundaries-d086e440-e5a5-49d5-95bb-a00e264e36ab.png'
+  };
+  const thumbDark = {
+    buildings: 'assets/map-data/3D_Building_Dark_Mode-03ad4b23-3a78-423f-afef-6a0c97118e27.png',
+    topography: 'assets/map-data/Topography_Dark_Mode-0e13759c-17de-477e-abde-b9aa409f14b7.png',
+    names: 'assets/map-data/Local_Information_Dark_Mode-c3aa1a4b-5a4b-4225-a85d-d2ce6d35a065.png',
+    propertyBoundaries: 'assets/map-data/Road_Boundaries_Dark_Mode-ca300c9d-f9de-4023-b087-67bc7a8f0127.png'
+  };
+  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route' };
+  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries' };
+  const tiles = mapDataTileOrder.map((key) => ({ key, label: labels[key], on: state[key] }));
+  const isDark = document.documentElement.classList.contains('dark');
   let html = '';
-  tiles.forEach((t) => {
-    const borderClass = t.on ? 'border-primary/30' : 'border-slate-200 dark:border-white/5';
-    const textClass = t.on ? 'text-primary font-medium' : 'text-text-secondary';
+  tiles.forEach((t, i) => {
+    const thumbSrc = isDark ? thumbDark[t.key] : thumbLight[t.key];
+    const toggleId = `map-data-toggle-${t.key}-${i}`;
     html += `
-      <div data-toggle="${t.key}" class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 cursor-pointer hover:border-primary/50 transition-colors">
-        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-white/10 flex items-center justify-center ${t.on ? 'border-primary/50' : ''}">
-          <span class="material-symbols-outlined text-3xl ${t.on ? 'text-primary' : 'text-text-secondary'}">${t.icon}</span>
+      <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
+        <div class="h-20 overflow-hidden relative">
+          <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"/>
         </div>
-        <div>
-          <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${t.label}</h3>
-          <div class="flex items-center gap-1 mt-1 ${textClass} text-sm">
-            <span class="material-symbols-outlined text-[16px]">${t.on ? 'toggle_on' : 'toggle_off'}</span>
-            <span>${t.on ? 'On' : 'Off'}</span>
+        <div class="p-4 flex flex-col flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-slate-400 text-base flex-shrink-0">${icons[t.key]}</span>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white truncate text-left">${t.label}</h3>
+          </div>
+          <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[8px] font-medium text-slate-400 uppercase tracking-widest">${t.on ? 'Enabled' : 'Disabled'}</span>
+            <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+              <input class="toggle-checkbox map-data-toggle absolute top-0 block w-5 h-5 rounded-full bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" data-key="${t.key}" ${t.on ? 'checked' : ''}/>
+              <label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
+            </div>
           </div>
         </div>
       </div>`;
@@ -561,16 +628,134 @@ function renderMapDataTiles(state) {
 
 function wireMapDataTiles() {
   const container = document.getElementById('map-data-tiles');
-  container?.addEventListener('click', (e) => {
+  if (!container) return;
+  loadMapDataTileOrder();
+
+  function handleToggleChange(key, checked) {
+    switch (key) {
+      case 'buildings': mapDataState.buildings = checked; applyBuildingsState(mapDataState); break;
+      case 'topography': mapDataState.topography = checked; applyTopographyState(mapDataState); break;
+      case 'names': mapDataState.names = checked; applyNamesState(mapDataState); break;
+      case 'propertyBoundaries': mapDataState.propertyBoundaries = checked; applyPropertyBoundariesState(mapDataState); break;
+      default: return;
+    }
+    renderMapDataTiles(mapDataState);
+  }
+
+  container.addEventListener('change', (e) => {
+    const toggleEl = e.target.closest('.map-data-toggle');
+    if (toggleEl) {
+      e.stopPropagation();
+      const key = toggleEl.getAttribute('data-key');
+      handleToggleChange(key, toggleEl.checked);
+    }
+  });
+
+  container.addEventListener('click', (e) => {
+    if (e.target.closest('.map-data-toggle, label[for^="map-data-toggle"]')) return;
     const el = e.target.closest('[data-toggle]');
     if (!el || !appMap) return;
+    e.stopPropagation();
     const key = el.getAttribute('data-toggle');
-    if (key === 'buildings') mapDataState.buildings = !mapDataState.buildings;
-    else if (key === 'topography') mapDataState.topography = !mapDataState.topography;
-    else if (key === 'names') mapDataState.names = !mapDataState.names;
-    else if (key === 'propertyBoundaries') mapDataState.propertyBoundaries = !mapDataState.propertyBoundaries;
-    applyMapDataState(mapDataState);
-    renderMapDataTiles(mapDataState);
+    const toggle = el.querySelector('.map-data-toggle');
+    if (toggle) {
+      const newChecked = !toggle.checked;
+      toggle.checked = newChecked;
+      handleToggleChange(key, newChecked);
+    }
+  });
+
+  let draggedKey = null;
+  let draggedEl = null;
+  let dragStartFromToggle = false;
+  let droppedInContainer = false;
+  let orderBeforeDrag = null;
+
+  const MAGNET_RADIUS = 28;
+  function reorderOnHover(cursorX) {
+    if (!draggedEl) return;
+    const tiles = Array.from(container.querySelectorAll('.map-data-tile-draggable')).filter((t) => t !== draggedEl);
+    if (tiles.length === 0) return;
+    const rects = tiles.map((t) => {
+      const r = t.getBoundingClientRect();
+      return { key: t.getAttribute('data-tile-key'), el: t, left: r.left, right: r.right };
+    });
+    rects.sort((a, b) => a.left - b.left);
+    const boundaries = [
+      { x: rects[0].left, insertIdx: 0 },
+      ...rects.flatMap((r, i) => (i < rects.length - 1 ? [{ x: (r.right + rects[i + 1].left) / 2, insertIdx: i + 1 }] : [])),
+      { x: rects[rects.length - 1].right, insertIdx: rects.length }
+    ];
+    let newToIdx = null;
+    let closestDist = Infinity;
+    for (const b of boundaries) {
+      const d = Math.abs(cursorX - b.x);
+      if (d < MAGNET_RADIUS && d < closestDist) {
+        closestDist = d;
+        newToIdx = b.insertIdx;
+      }
+    }
+    if (newToIdx === null) {
+      let effectiveX = cursorX;
+      newToIdx = rects.length;
+      for (let i = 0; i < rects.length; i++) {
+        if (effectiveX < rects[i].left) {
+          newToIdx = i;
+          break;
+        }
+        if (effectiveX <= rects[i].right) {
+          const mid = rects[i].left + (rects[i].right - rects[i].left) / 2;
+          newToIdx = effectiveX < mid ? i : i + 1;
+          break;
+        }
+      }
+    }
+    const fromIdx = mapDataTileOrder.indexOf(draggedKey);
+    if (fromIdx === -1 || newToIdx === fromIdx) return;
+    mapDataTileOrder.splice(fromIdx, 1);
+    mapDataTileOrder.splice(newToIdx, 0, draggedKey);
+    const nextSibling = newToIdx >= rects.length ? null : rects[newToIdx].el;
+    container.insertBefore(draggedEl, nextSibling);
+  }
+
+  container.addEventListener('mousedown', (e) => {
+    dragStartFromToggle = !!e.target.closest('.map-data-toggle, label[for^="map-data-toggle"]');
+  });
+  container.addEventListener('dragstart', (e) => {
+    if (dragStartFromToggle) {
+      e.preventDefault();
+      return;
+    }
+    const el = e.target.closest('.map-data-tile-draggable');
+    if (!el) return;
+    draggedKey = el.getAttribute('data-tile-key');
+    draggedEl = el;
+    el.classList.add('opacity-50');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedKey);
+    orderBeforeDrag = [...mapDataTileOrder];
+  });
+  container.addEventListener('dragend', (e) => {
+    const el = e.target.closest('.map-data-tile-draggable');
+    if (el) el.classList.remove('opacity-50');
+    if (!droppedInContainer && orderBeforeDrag) {
+      mapDataTileOrder = orderBeforeDrag;
+      renderMapDataTiles(mapDataState);
+    }
+    draggedKey = null;
+    draggedEl = null;
+    droppedInContainer = false;
+    orderBeforeDrag = null;
+  });
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedEl) reorderOnHover(e.clientX);
+  });
+  container.addEventListener('drop', (e) => {
+    e.preventDefault();
+    droppedInContainer = true;
+    saveMapDataTileOrder();
   });
 }
 
@@ -611,6 +796,98 @@ function closeBottomPanel() {
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-label', 'Open Emerging Tech Specialist');
   toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
+}
+
+function openUserProfilePanel(tile) {
+  const panel = document.getElementById('user-profile-panel');
+  const avatar = document.getElementById('user-profile-avatar');
+  const nameEl = document.getElementById('user-profile-name');
+  const locationEl = document.getElementById('user-profile-location');
+  if (!panel || !avatar || !nameEl || !locationEl) return;
+  avatar.src = tile.avatar || '';
+  avatar.alt = tile.name || '';
+  nameEl.textContent = tile.name || '—';
+  locationEl.textContent = tile.city || tile.country || 'Unknown';
+  panel.style.left = '50%';
+  panel.style.top = '50%';
+  panel.style.transform = 'translate(-50%, -50%)';
+  panel.classList.remove('hidden');
+  panel.setAttribute('aria-hidden', 'false');
+}
+
+function closeUserProfilePanel() {
+  const panel = document.getElementById('user-profile-panel');
+  if (!panel) return;
+  panel.classList.add('hidden');
+  panel.setAttribute('aria-hidden', 'true');
+}
+
+function initUserProfilePanel() {
+  const panel = document.getElementById('user-profile-panel');
+  const handle = document.getElementById('user-profile-drag-handle');
+  const closeBtn = document.getElementById('user-profile-close');
+  if (!panel || !handle) return;
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  function getPanelPosition() {
+    const rect = panel.getBoundingClientRect();
+    return { left: rect.left, top: rect.top };
+  }
+
+  function setPanelPosition(left, top) {
+    const maxLeft = window.innerWidth - panel.offsetWidth;
+    const maxTop = window.innerHeight - panel.offsetHeight;
+    left = Math.max(0, Math.min(left, maxLeft));
+    top = Math.max(0, Math.min(top, maxTop));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.transform = 'none';
+  }
+
+  handle.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#user-profile-close')) return;
+    isDragging = true;
+    const pos = getPanelPosition();
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = pos.left;
+    startTop = pos.top;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    setPanelPosition(startLeft + dx, startTop + dy);
+  });
+
+  document.addEventListener('mouseup', () => isDragging = false);
+
+  handle.addEventListener('touchstart', (e) => {
+    if (e.target.closest('#user-profile-close')) return;
+    isDragging = true;
+    const pos = getPanelPosition();
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startLeft = pos.left;
+    startTop = pos.top;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    setPanelPosition(startLeft + dx, startTop + dy);
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => isDragging = false);
+
+  closeBtn?.addEventListener('click', () => closeUserProfilePanel());
 }
 
 function initGeneralMenu() {
@@ -797,6 +1074,7 @@ function initBottomPanel() {
   const wrapper = document.getElementById('bottom-panel-wrapper');
   const panel = document.getElementById('bottom-panel');
   const toggle = document.getElementById('bottom-panel-toggle');
+  const closeBtn = document.getElementById('bottom-panel-close');
   if (!wrapper || !panel || !toggle) return;
 
   function closePanel() {
@@ -828,6 +1106,12 @@ function initBottomPanel() {
     e.stopPropagation();
     if (panel.classList.contains('visible')) closePanel();
     else openPanel();
+  });
+
+  closeBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (panel.classList.contains('visible')) closePanel();
   });
 
   panel.addEventListener('click', (e) => e.stopPropagation());
