@@ -6,8 +6,8 @@
 /* Light mode palette - applied when html has class "light" */
 html.light #general-menu-panel,
 html.light .neumorphic-menu-panel {
-  --neumorphic-bg: rgba(239, 242, 249, 0.75);
-  --neumorphic-surface: rgba(228, 235, 241, 0.8);
+  --neumorphic-bg: rgba(239, 242, 249, 0.05);
+  --neumorphic-surface: rgba(228, 235, 241, 0.1);
   --neumorphic-text: #6E7F8D;
   --neumorphic-light-shadow: #FAFBFB;
   --neumorphic-dark-shadow: rgba(22, 27, 29, 0.23);
@@ -17,8 +17,8 @@ html.light .neumorphic-menu-panel {
 /* Dark mode palette - applied when html has class "dark" */
 html.dark #general-menu-panel,
 html.dark .neumorphic-menu-panel {
-  --neumorphic-bg: rgba(26, 31, 46, 0.75);
-  --neumorphic-surface: rgba(37, 43, 59, 0.8);
+  --neumorphic-bg: rgba(26, 31, 46, 0.05);
+  --neumorphic-surface: rgba(37, 43, 59, 0.1);
   --neumorphic-text: #9ca3af;
   --neumorphic-light-shadow: rgba(255, 255, 255, 0.05);
   --neumorphic-dark-shadow: rgba(0, 0, 0, 0.4);

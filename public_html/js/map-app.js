@@ -40,9 +40,10 @@ function getStatusDot(status) {
 let heartbeatIntervalId = null;
 let currentTiles = [];
 let previousUserNames = new Set();
-let apiMisconfigured = false; // true when server returns PHP source instead of JSON
+let apiMisconfigured = false;
+let isAdmin = false; // true when server returns PHP source instead of JSON
 
-let mapDataState = { buildings: true, topography: true, names: true, propertyBoundaries: true };
+let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true };
 let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries'];
 let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null };
 
@@ -84,6 +85,38 @@ function getUsersRegisterUrl() {
 function getUsersClearUrl() {
   const b = getApiBase();
   return b ? `${b}/api/users` : 'api/users-clear.php';
+}
+
+function getUsersDeleteUrl(id) {
+  const b = getApiBase();
+  return b ? `${b}/api/users/${id}` : `api/users-delete.php?id=${id}`;
+}
+
+function getUsersMeUrl() {
+  const b = getApiBase();
+  return b ? `${b}/api/users/me` : 'api/users-me.php';
+}
+
+async function fetchIsAdmin() {
+  try {
+    const res = await fetch(getUsersMeUrl() + '?_=' + Date.now(), { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      isAdmin = !!data?.isAdmin;
+    }
+  } catch (_) {}
+}
+
+async function deleteUser(id) {
+  const b = getApiBase();
+  const url = getUsersDeleteUrl(id);
+  const opts = b ? { method: 'DELETE' } : { method: 'GET' };
+  const res = await fetch(url, opts);
+  if (res.status === 403) {
+    showToastError('You do not have the rights to use this feature');
+    return false;
+  }
+  return res.ok;
 }
 
 async function fetchUsers() {
@@ -145,7 +178,13 @@ async function registerUser(loc) {
 
 async function clearAllUsers() {
   try {
-    await fetch(getUsersClearUrl(), { method: 'GET' });
+    const b = getApiBase();
+    const res = await fetch(getUsersClearUrl(), b ? { method: 'DELETE' } : { method: 'GET' });
+    if (res.status === 403) {
+      showToastError('You do not have the rights to use this feature');
+      return;
+    }
+    if (res.ok) await refreshNearby();
   } catch (e) {
     console.warn('Failed to clear users:', e);
   }
@@ -167,6 +206,7 @@ async function fetchPointsOfInterest() {
 
 function toTiles(users) {
   currentTiles = users.map((u, i) => ({
+    id: u.id,
     name: u.name,
     avatar: AVATARS[i % AVATARS.length],
     lastSeen: u.lastSeen,
@@ -185,8 +225,16 @@ function renderNearbyTiles(tiles) {
   const userTiles = Array.isArray(tiles) ? tiles : [];
   const total = userTiles.length;
   const newNames = new Set(userTiles.map((t) => t.name));
+  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
 
   let html = '';
+  if (isAdmin) {
+    html = `
+    <button id="nearby-clear-all" type="button" class="w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
+      <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
+      <span class="text-text-secondary text-sm font-medium">Clear all</span>
+    </button>`;
+  }
 
   userTiles.forEach((tile) => {
     const status = getStatusFromLastSeen(tile.lastSeen);
@@ -200,10 +248,14 @@ function renderNearbyTiles(tiles) {
     const imgClass = isActive ? '' : 'grayscale group-hover:grayscale-0 transition-all';
     const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
     const dataAttr = hasLocation ? `data-user-tile="${tile.name}"` : '';
+    const dataId = tile.id != null ? `data-user-id="${tile.id}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
+    const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
+    const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
     html += `
-      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
-        <div class="absolute top-0 right-0 p-3">
+      <div ${dataAttr} ${dataId} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
+        <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
+          ${deleteBtn}
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
         <div class="w-14 h-14 rounded-full border-2 ${imgBorder} p-0.5 ${imgClass}">
@@ -219,12 +271,6 @@ function renderNearbyTiles(tiles) {
       </div>`;
   });
 
-  html += `
-    <button id="nearby-clear-all" type="button" class="w-48 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
-      <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
-      <span class="text-text-secondary text-sm font-medium">Clear all</span>
-    </button>`;
-
   previousUserNames = newNames;
   container.innerHTML = html;
   if (countEl) {
@@ -235,7 +281,20 @@ function renderNearbyTiles(tiles) {
 
   document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    showToastError('You do not have the rights to use this feature');
+    clearAllUsers();
+  });
+
+  container.querySelectorAll('.user-tile-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = btn.getAttribute('data-user-id');
+      if (!id) return;
+      if (await deleteUser(id)) {
+        closeUserProfilePanel();
+        await refreshNearby();
+      }
+    });
   });
 }
 
@@ -321,7 +380,15 @@ function initMap() {
     center: [0, 20],
     pitch: 0,
     bearing: 0,
-    antialias: true
+    antialias: true,
+    config: {
+      basemap: {
+        showPlaceLabels: mapDataState.names,
+        showRoadLabels: mapDataState.names,
+        showPointOfInterestLabels: mapDataState.names,
+        showTransitLabels: mapDataState.names
+      }
+    }
   });
 
   appMap.on('load', () => {
@@ -332,7 +399,12 @@ function initMap() {
     discoverMapLayers();
     renderMapDataTiles(mapDataState);
     applyMapDataState(mapDataState);
+    appMap.once('idle', () => {
+      discoverMapLayers();
+      applyMapDataState(mapDataState);
+    });
     LocationService.getIPLocation().then(async (loc) => {
+      await fetchIsAdmin();
       if (loc) {
         flyToLocation(loc.lng, loc.lat, 10);
         addCurrentLocationMarker(loc.lng, loc.lat);
@@ -397,6 +469,7 @@ function wireUserTileCards() {
   const panelContent = document.getElementById('bottom-panel-content');
   if (!panelContent) return;
   panelContent.addEventListener('click', (e) => {
+    if (e.target.closest('.user-tile-delete')) return;
     const el = e.target.closest('[data-user-tile]');
     if (!el || !appMap) return;
     const name = el.getAttribute('data-user-tile');
@@ -485,6 +558,10 @@ function wirePOITabs() {
       activeTab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
     }
     if (activeTiles) activeTiles.classList.remove('hidden');
+    if (active === 'map-data') {
+      discoverMapLayers();
+      applyMapDataState(mapDataState);
+    }
   }
 
   tabNearby.addEventListener('click', () => setActiveTab('nearby'));
@@ -803,11 +880,22 @@ function openUserProfilePanel(tile) {
   const avatar = document.getElementById('user-profile-avatar');
   const nameEl = document.getElementById('user-profile-name');
   const locationEl = document.getElementById('user-profile-location');
+  const deleteBtn = document.getElementById('user-profile-delete');
   if (!panel || !avatar || !nameEl || !locationEl) return;
   avatar.src = tile.avatar || '';
   avatar.alt = tile.name || '';
   nameEl.textContent = tile.name || '—';
   locationEl.textContent = tile.city || tile.country || 'Unknown';
+  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
+  const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
+  if (deleteBtn) {
+    if (canDelete) {
+      deleteBtn.setAttribute('data-user-id', String(tile.id));
+      deleteBtn.classList.remove('hidden');
+    } else {
+      deleteBtn.classList.add('hidden');
+    }
+  }
   panel.style.left = '50%';
   panel.style.top = '50%';
   panel.style.transform = 'translate(-50%, -50%)';
@@ -888,6 +976,16 @@ function initUserProfilePanel() {
   document.addEventListener('touchend', () => isDragging = false);
 
   closeBtn?.addEventListener('click', () => closeUserProfilePanel());
+
+  document.getElementById('user-profile-delete')?.addEventListener('click', async () => {
+    const btn = document.getElementById('user-profile-delete');
+    const id = btn?.getAttribute('data-user-id');
+    if (!id) return;
+    if (await deleteUser(id)) {
+      closeUserProfilePanel();
+      await refreshNearby();
+    }
+  });
 }
 
 function initGeneralMenu() {
@@ -1055,7 +1153,37 @@ function wireControls() {
       spinGlobe();
     }
   });
-  document.getElementById('map-gps')?.addEventListener('click', () => showToastError('Feature not yet implemented'));
+  document.getElementById('map-gps')?.addEventListener('click', async () => {
+    const btn = document.getElementById('map-gps');
+    const icon = btn?.querySelector('.material-symbols-outlined');
+    const origContent = icon?.innerHTML;
+    if (icon) icon.textContent = 'hourglass_empty';
+    btn?.setAttribute('disabled', 'true');
+    try {
+      const loc = await LocationService.getAccurateLocation();
+      flyToLocation(loc.lng, loc.lat, 16);
+      addCurrentLocationMarker(loc.lng, loc.lat);
+    } catch (e) {
+      const code = e?.code;
+      const msg = code === 1 ? 'Location access denied. Allow it in your browser to use GPS.'
+        : code === 3 ? 'GPS timed out. Using approximate location.'
+        : code === 2 ? 'Position unavailable. Using approximate location.'
+        : typeof location !== 'undefined' && location?.protocol === 'http:' && !location?.hostname?.includes('localhost')
+          ? 'GPS requires HTTPS. Using approximate location.'
+          : 'Could not get GPS. Using approximate location.';
+      showToastError(msg);
+      const loc = await LocationService.getIPLocation();
+      if (loc) {
+        flyToLocation(loc.lng, loc.lat, 14);
+        addCurrentLocationMarker(loc.lng, loc.lat);
+      } else {
+        showToastError('Unable to determine your location');
+      }
+    } finally {
+      if (icon) icon.textContent = origContent || 'navigation';
+      btn?.removeAttribute('disabled');
+    }
+  });
 }
 
 function flyToLocation(lng, lat, zoom, opts = {}) {

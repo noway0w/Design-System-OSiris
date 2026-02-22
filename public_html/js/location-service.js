@@ -47,6 +47,35 @@ const LocationService = {
         { enableHighAccuracy: true }
       );
     });
+  },
+
+  /** Request the most accurate position: GPS if available, else browser geolocation. */
+  getAccurateLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      };
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          this.currentLocation = {
+            lat: latitude,
+            lng: longitude,
+            accuracy,
+            source: 'gps'
+          };
+          resolve(this.currentLocation);
+        },
+        (err) => reject(err),
+        options
+      );
+    });
   }
 };
 

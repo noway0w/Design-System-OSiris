@@ -31,10 +31,11 @@ $db->exec('
     )
 ');
 
-$stmt = $db->query('SELECT ip, name, lat, lng, city, country, last_seen FROM users ORDER BY last_seen DESC');
+$stmt = $db->query('SELECT id, ip, name, lat, lng, city, country, last_seen FROM users ORDER BY last_seen DESC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $users = array_map(function ($r) {
     return [
+        'id' => (int)($r['id'] ?? 0),
         'ip' => $r['ip'],
         'name' => $r['name'],
         'lat' => $r['lat'] ? (float)$r['lat'] : null,
