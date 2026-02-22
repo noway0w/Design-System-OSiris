@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OSiris - Enter Code</title>
   <link rel="stylesheet" href="osiris.css">
+  <script src="js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
   <style>
     body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--spacing-lg); background: var(--bg-color); }
     .gate-card { background: var(--surface-color); padding: var(--spacing-2xl); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); max-width: 360px; width: 100%; text-align: center; }
@@ -16,6 +18,11 @@
     .gate-input.code { text-align: center; letter-spacing: 0.5em; }
     .gate-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(3, 88, 140, 0.2); }
     .gate-error { color: var(--error-color); font-size: var(--font-size-sm); margin-bottom: var(--spacing-md); min-height: 1.5em; }
+    .gate-notice { font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: var(--spacing-md); padding: var(--spacing-md); background: var(--surface-active); border-radius: var(--radius-md); text-align: left; line-height: 1.5; }
+    [data-theme="dark"] .gate-notice { background: var(--brand-dark-grey); }
+    .gate-checkbox { display: flex; align-items: flex-start; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); text-align: left; cursor: pointer; }
+    .gate-checkbox input { margin-top: 0.25em; flex-shrink: 0; accent-color: var(--primary-color); }
+    .gate-checkbox label { font-size: var(--font-size-sm); color: var(--text-color); line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -24,14 +31,20 @@
     <h1 class="gate-title">Enter Access Code</h1>
     <p class="gate-subtitle">Enter the code to access the map app</p>
     <input type="text" id="gate-name" class="gate-input" placeholder="Your name" autocomplete="name">
-    <input type="password" id="gate-input" class="gate-input code" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
+    <input type="password" id="gate-input" class="gate-input" placeholder="••••" maxlength="32" autocomplete="one-time-code">
     <p id="gate-error" class="gate-error" aria-live="polite"></p>
+    <p class="gate-notice"><strong>Location Notice:</strong> By using this service, you agree to the collection of your approximate location. This data is used solely to provide relevant local content without identifying your precise coordinates.</p>
+    <label class="gate-checkbox">
+      <input type="checkbox" id="gate-agree" required>
+      <span>I agree to the location notice</span>
+    </label>
     <button type="button" id="gate-validate" class="btn-primary" style="width: 100%;">Validate</button>
   </div>
   <script>
-    const ACCESS_CODE = '7777';
+    const ACCESS_CODE = 'GuillaumeLassiat2026';
     const nameInput = document.getElementById('gate-name');
     const codeInput = document.getElementById('gate-input');
+    const agreeCheckbox = document.getElementById('gate-agree');
     const validateBtn = document.getElementById('gate-validate');
     const errorEl = document.getElementById('gate-error');
     function validate() {
@@ -41,6 +54,11 @@
       if (!name) {
         errorEl.textContent = 'Please enter your name.';
         nameInput.focus();
+        return;
+      }
+      if (!agreeCheckbox.checked) {
+        errorEl.textContent = 'Please agree to the location notice to continue.';
+        agreeCheckbox.focus();
         return;
       }
       if (code === ACCESS_CODE) {

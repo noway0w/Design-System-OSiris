@@ -3,17 +3,23 @@
 let appMap = null;
 let currentLocationMarker = null;
 let userTileMarkers = [];
+let poiMarkers = [];
+let currentPOIs = [];
 let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
 const HEARTBEAT_MS = 5000;
 const AVATARS = [
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBG5IuiIYOXTdp9w8Vqvy75n_LNueDKuBEFzWHEYR4vSNtKmFljOZOYwulNtCGOug88kKgckeXLAbn9bEYo_BCTkxRd4FW-veTWSJmknwOCDw-aoUeYmVDY6fBmmw9TgbldUHC9sqgC58vI_jDVHNCM2ExvKeip3bD-Ff54JwgPjI0927i2MvXNNoijP9MAADijzTJH3SDAKttVxNt-k303UIeUbdqqOlPV432j-VzHpWa_pd9BO4PSBzhc_ySy1EqEsqmV6ByptYw',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAPy7qTrwvb0VVlIC4AUXxu9oKHw1tTdcEK0xLkt_rafxpY8Q5vToM_97fe11fu3YdtVcgOSaHDhvHENwLIUWdcYa1z6fN_7yDLNallyS8GQpbCVKvRhq2TeqH5giXjNxNtxi55QRNrh2opNAEO5jMw1G_Hlo84OPSE_QiTZrrEGU53N6DB-bHImedXVE6qD4A5DErmaCsw3JiPJUTA8qxImYIK2t0mc0eeHwEK_sVwuecL0CKE--Pq2JQhk1us0B4hdPoQI61dye4',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDaldXINzAN1Fx_a7e4Iy4567-I05RjeUkU8oVLpQMAbITvEaxY7zeyfpDOTvrsnSx5o55osuO_dXUOxBz_iF_GPJz7nfoxQi2cIS9fVp8Mpm5gCVS4dluRnAVk-Cp3fP3gNu-RelI-8m0A2aA_pvkXyosiDDuRw8dgo1BVIfGMuzkLjv8eejWl-KN5hUwL-QXrJagvHaqNcYChw-jgp209aYCH4HPaP9QSwLp0LdZuwobK2ZJslE2-yJ3h2P6jViZ8doL-7uN3ANo',
-  'https://i.pravatar.cc/150?u=marie',
-  'https://i.pravatar.cc/150?u=james',
-  'https://i.pravatar.cc/150?u=kenji'
+  'avatars/avatar-1.png',
+  'avatars/avatar-2.png',
+  'avatars/avatar-3.png',
+  'avatars/avatar-4.png',
+  'avatars/avatar-5.png',
+  'avatars/avatar-6.png',
+  'avatars/avatar-7.png',
+  'avatars/avatar-8.png',
+  'avatars/avatar-9.png',
+  'avatars/avatar-10.png'
 ];
 const MS_1_MIN = 60 * 1000;
 const MS_24H = 24 * 60 * 60 * 1000;
@@ -35,6 +41,10 @@ let heartbeatIntervalId = null;
 let currentTiles = [];
 let previousUserNames = new Set();
 let apiMisconfigured = false; // true when server returns PHP source instead of JSON
+
+let mapDataState = { buildings: true, topography: true, names: true, propertyBoundaries: true };
+let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null };
+
 
 function getApiBase() {
   const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
@@ -121,6 +131,20 @@ async function clearAllUsers() {
   }
 }
 
+async function fetchPointsOfInterest() {
+  const url = (typeof window.getPointsOfInterestUrl === 'function' ? window.getPointsOfInterestUrl() : 'points-of-interest.php') + '?_=' + Date.now();
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const text = await res.text();
+    if (!res.ok) return [];
+    if (text.trimStart().startsWith('<') || text.trimStart().startsWith('<?php')) return [];
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 function toTiles(users) {
   currentTiles = users.map((u, i) => ({
     name: u.name,
@@ -151,14 +175,14 @@ function renderNearbyTiles(tiles) {
     const subtext = tile.city || 'Unknown';
     const hasLocation = tile.lat != null && tile.lng != null;
     const iconClass = isActive ? 'text-primary' : 'text-text-secondary';
-    const borderClass = isActive ? 'border-primary/30' : 'border-white/5';
+    const borderClass = isActive ? 'border-primary/30' : 'border-slate-200 dark:border-white/5';
     const imgBorder = isActive ? 'border-primary' : 'border-transparent';
     const imgClass = isActive ? '' : 'grayscale group-hover:grayscale-0 transition-all';
     const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
     const dataAttr = hasLocation ? `data-user-tile="${tile.name}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     html += `
-      <div ${dataAttr} class="w-48 bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
+      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-3">
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
@@ -166,7 +190,7 @@ function renderNearbyTiles(tiles) {
           <img alt="${tile.name}" class="w-full h-full object-cover rounded-full" src="${tile.avatar}"/>
         </div>
         <div>
-          <h3 class="text-white font-bold text-base leading-tight">${tile.name}</h3>
+          <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${tile.name}</h3>
           <div class="flex items-center gap-1 mt-1 ${iconClass} text-sm ${isActive ? 'font-medium' : ''}">
             <span class="material-symbols-outlined text-[16px]">${isActive ? 'near_me' : 'location_on'}</span>
             <span>${subtext}</span>
@@ -176,7 +200,7 @@ function renderNearbyTiles(tiles) {
   });
 
   html += `
-    <button id="nearby-clear-all" type="button" class="w-48 bg-card-dark/50 hover:bg-card-dark/80 p-3 rounded-2xl border border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
+    <button id="nearby-clear-all" type="button" class="w-48 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
       <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
       <span class="text-text-secondary text-sm font-medium">Clear all</span>
     </button>`;
@@ -185,18 +209,13 @@ function renderNearbyTiles(tiles) {
   container.innerHTML = html;
   if (countEl) {
     countEl.textContent = apiMisconfigured && total === 0
-      ? 'Nearby Friends needs PHP enabled on server'
+      ? 'Emerging Tech Specialist needs PHP enabled on server'
       : total === 0 ? 'No users yet' : `${total} user${total === 1 ? '' : 's'} worldwide`;
   }
 
-  document.getElementById('nearby-clear-all')?.addEventListener('click', async (e) => {
+  document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    await clearAllUsers();
-    const users = await fetchUsers();
-    const tiles = toTiles(users);
-    addUserTileMarkers(tiles);
-    renderNearbyTiles(tiles);
-    if (countEl) countEl.textContent = 'No users yet';
+    showToastError('You do not have the rights to use this feature');
   });
 }
 
@@ -251,6 +270,17 @@ function initMapApp() {
   overlay?.classList.add('hidden');
   root?.classList.remove('hidden');
   initMap();
+  document.addEventListener('osiris-theme-change', () => applyMapTheme());
+}
+
+function applyMapTheme() {
+  const effective = typeof ThemeService !== 'undefined' ? ThemeService.resolveEffectiveTheme(ThemeService.getTheme()) : 'dark';
+  const isLight = effective === 'light';
+  try {
+    if (appMap && typeof appMap.setConfigProperty === 'function') {
+      appMap.setConfigProperty('basemap', 'lightPreset', isLight ? 'day' : 'night');
+    }
+  } catch (_) {}
 }
 
 function initMap() {
@@ -272,7 +302,13 @@ function initMap() {
   });
 
   appMap.on('load', () => {
-    setMapPadding(true);
+    applyMapTheme();
+    wirePOITabs();
+    wirePOITileCards();
+    wireMapDataTiles();
+    discoverMapLayers();
+    renderMapDataTiles(mapDataState);
+    applyMapDataState(mapDataState);
     LocationService.getIPLocation().then(async (loc) => {
       if (loc) {
         flyToLocation(loc.lng, loc.lat, 10);
@@ -280,6 +316,9 @@ function initMap() {
       }
       await registerUser(loc || {});
       await refreshNearby();
+      const pois = await fetchPointsOfInterest();
+      addPOIMarkers(pois);
+      renderPOITiles(pois);
       startHeartbeat();
       wireUserTileCards();
     });
@@ -336,7 +375,304 @@ function wireUserTileCards() {
     const name = el.getAttribute('data-user-tile');
     const tile = currentTiles.find((t) => t.name === name);
     if (tile && tile.lat != null && tile.lng != null) {
-      flyToLocation(tile.lng, tile.lat, 14);
+      flyToLocation(tile.lng, tile.lat, 18, { pitch: 45 });
+    }
+  });
+}
+
+function addPOIMarkers(pois) {
+  poiMarkers.forEach(m => m.remove());
+  poiMarkers = [];
+  if (!appMap) return;
+  const valid = (Array.isArray(pois) ? pois : currentPOIs).filter((p) => p.lat != null && p.lng != null);
+  valid.forEach((poi) => {
+    const el = document.createElement('div');
+    el.style.cursor = 'pointer';
+    const icon = document.createElement('div');
+    icon.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d;border:2px solid rgba(255,255,255,0.2)';
+    const img = document.createElement('img');
+    img.src = poi.icon || 'brand/placeholder.png';
+    img.alt = poi.brand;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
+    icon.appendChild(img);
+    el.appendChild(icon);
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([poi.lng, poi.lat])
+      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${poi.brand || ''}</strong><br>${poi.location || ''}<br>${poi.type || ''}`))
+      .addTo(appMap);
+    el.addEventListener('click', () => flyToLocation(poi.lng, poi.lat, 14));
+    poiMarkers.push(marker);
+  });
+}
+
+function renderPOITiles(pois) {
+  const container = document.getElementById('poi-tiles');
+  if (!container) return;
+  currentPOIs = Array.isArray(pois) ? pois : currentPOIs;
+  let html = '';
+  currentPOIs.forEach((poi) => {
+    const hasLocation = poi.lat != null && poi.lng != null;
+    const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
+    const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
+    html += `
+      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
+        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
+          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-full" src="${poi.icon || 'brand/placeholder.png'}"/>
+        </div>
+        <div>
+          <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
+          <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
+            <span class="material-symbols-outlined text-[16px]">location_on</span>
+            <span>${poi.location || ''}</span>
+          </div>
+          <div class="text-text-secondary text-xs mt-0.5">${poi.type || ''}</div>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function wirePOITabs() {
+  const tabNearby = document.getElementById('tab-nearby');
+  const tabPOI = document.getElementById('tab-poi');
+  const tabMapData = document.getElementById('tab-map-data');
+  const tilesNearby = document.getElementById('nearby-friends-tiles');
+  const tilesPOI = document.getElementById('poi-tiles');
+  const tilesMapData = document.getElementById('map-data-tiles');
+  if (!tabNearby || !tabPOI || !tilesNearby || !tilesPOI) return;
+
+  function setActiveTab(active) {
+    [tabNearby, tabPOI, tabMapData].forEach((t) => {
+      if (t) {
+        t.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
+        t.classList.add('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
+      }
+    });
+    [tilesNearby, tilesPOI, tilesMapData].forEach((c) => {
+      if (c) c.classList.add('hidden');
+    });
+    const activeTab = active === 'nearby' ? tabNearby : active === 'poi' ? tabPOI : tabMapData;
+    const activeTiles = active === 'nearby' ? tilesNearby : active === 'poi' ? tilesPOI : tilesMapData;
+    if (activeTab) {
+      activeTab.classList.remove('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
+      activeTab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+    }
+    if (activeTiles) activeTiles.classList.remove('hidden');
+  }
+
+  tabNearby.addEventListener('click', () => setActiveTab('nearby'));
+  tabPOI.addEventListener('click', () => setActiveTab('poi'));
+  tabMapData?.addEventListener('click', () => setActiveTab('map-data'));
+}
+
+function discoverMapLayers() {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  const style = appMap.getStyle();
+  if (!style?.layers) return;
+  const buildingIds = [];
+  const labelIds = [];
+  const propertyBoundaryIds = [];
+  style.layers.forEach((layer) => {
+    const id = layer.id?.toLowerCase() || '';
+    const type = layer.type || '';
+    if (type === 'fill-extrusion' || id.includes('building')) buildingIds.push(layer.id);
+    if (type === 'symbol' && (id.includes('label') || id.includes('place') || id.includes('poi'))) labelIds.push(layer.id);
+    if (type === 'line' && (id.includes('boundary') || id.includes('parcel') || id.includes('property') || id.includes('cadastral'))) propertyBoundaryIds.push(layer.id);
+  });
+  mapLayerInfo.buildingLayerIds = buildingIds;
+  mapLayerInfo.labelLayerIds = labelIds;
+  mapLayerInfo.propertyBoundaryLayerIds = propertyBoundaryIds;
+  if (style.terrain) {
+    mapLayerInfo.terrainConfig = style.terrain;
+  } else if (appMap.getSource?.('mapbox-dem')) {
+    mapLayerInfo.terrainConfig = { source: 'mapbox-dem', exaggeration: 1.2 };
+  }
+}
+
+function applyMapDataState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  const { buildingLayerIds, labelLayerIds, propertyBoundaryLayerIds, terrainConfig } = mapLayerInfo;
+  buildingLayerIds.forEach((id) => {
+    try {
+      appMap.setLayoutProperty(id, 'visibility', state.buildings ? 'visible' : 'none');
+    } catch {}
+  });
+  labelLayerIds.forEach((id) => {
+    try {
+      appMap.setLayoutProperty(id, 'visibility', state.names ? 'visible' : 'none');
+    } catch {}
+  });
+  propertyBoundaryLayerIds.forEach((id) => {
+    try {
+      appMap.setLayoutProperty(id, 'visibility', state.propertyBoundaries ? 'visible' : 'none');
+    } catch {}
+  });
+  try {
+    if (typeof appMap.setConfigProperty === 'function') {
+      try {
+        appMap.setConfigProperty('basemap', 'show3dBuildings', state.buildings);
+        appMap.setConfigProperty('basemap', 'show3dObjects', state.buildings);
+      } catch {}
+      try {
+        appMap.setConfigProperty('basemap', 'showPlaceLabels', state.names);
+        appMap.setConfigProperty('basemap', 'showRoadLabels', state.names);
+        appMap.setConfigProperty('basemap', 'showPointOfInterestLabels', state.names);
+      } catch {}
+    }
+  } catch {}
+  try {
+    if (state.topography && terrainConfig) {
+      appMap.setTerrain(terrainConfig);
+    } else {
+      appMap.setTerrain(null);
+    }
+  } catch {}
+}
+
+function renderMapDataTiles(state) {
+  const container = document.getElementById('map-data-tiles');
+  if (!container) return;
+  const tiles = [
+    { key: 'buildings', label: 'Buildings', icon: 'apartment', on: state.buildings },
+    { key: 'topography', label: 'Topography', icon: 'terrain', on: state.topography },
+    { key: 'names', label: 'Names', icon: 'label', on: state.names },
+    { key: 'propertyBoundaries', label: 'Property boundaries', icon: 'fence', on: state.propertyBoundaries }
+  ];
+  let html = '';
+  tiles.forEach((t) => {
+    const borderClass = t.on ? 'border-primary/30' : 'border-slate-200 dark:border-white/5';
+    const textClass = t.on ? 'text-primary font-medium' : 'text-text-secondary';
+    html += `
+      <div data-toggle="${t.key}" class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 cursor-pointer hover:border-primary/50 transition-colors">
+        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-white/10 flex items-center justify-center ${t.on ? 'border-primary/50' : ''}">
+          <span class="material-symbols-outlined text-3xl ${t.on ? 'text-primary' : 'text-text-secondary'}">${t.icon}</span>
+        </div>
+        <div>
+          <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${t.label}</h3>
+          <div class="flex items-center gap-1 mt-1 ${textClass} text-sm">
+            <span class="material-symbols-outlined text-[16px]">${t.on ? 'toggle_on' : 'toggle_off'}</span>
+            <span>${t.on ? 'On' : 'Off'}</span>
+          </div>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function wireMapDataTiles() {
+  const container = document.getElementById('map-data-tiles');
+  container?.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-toggle]');
+    if (!el || !appMap) return;
+    const key = el.getAttribute('data-toggle');
+    if (key === 'buildings') mapDataState.buildings = !mapDataState.buildings;
+    else if (key === 'topography') mapDataState.topography = !mapDataState.topography;
+    else if (key === 'names') mapDataState.names = !mapDataState.names;
+    else if (key === 'propertyBoundaries') mapDataState.propertyBoundaries = !mapDataState.propertyBoundaries;
+    applyMapDataState(mapDataState);
+    renderMapDataTiles(mapDataState);
+  });
+}
+
+function wirePOITileCards() {
+  const container = document.getElementById('poi-tiles');
+  container?.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-poi-id]');
+    if (!el || !appMap) return;
+    const id = el.getAttribute('data-poi-id');
+    const poi = currentPOIs.find((p) => String(p.id) === String(id));
+    if (poi && poi.lat != null && poi.lng != null) {
+      flyToLocation(poi.lng, poi.lat, 14);
+    }
+  });
+}
+
+function showToastError(message) {
+  const toast = document.getElementById('toast-error');
+  const msgEl = document.getElementById('toast-error-message');
+  if (toast) {
+    if (msgEl && message) msgEl.textContent = message;
+    toast.classList.add('visible');
+  }
+}
+
+function initNotImplementedToast() {
+  const toast = document.getElementById('toast-error');
+  const closeBtn = document.getElementById('toast-error-close');
+  closeBtn?.addEventListener('click', () => toast?.classList.remove('visible'));
+}
+
+function closeBottomPanel() {
+  const panel = document.getElementById('bottom-panel');
+  const toggle = document.getElementById('bottom-panel-toggle');
+  if (!panel || !toggle) return;
+  panel.classList.remove('visible');
+  panel.setAttribute('aria-hidden', 'true');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-label', 'Open Emerging Tech Specialist');
+  toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
+}
+
+function initGeneralMenu() {
+  const wrapper = document.getElementById('general-menu-wrapper');
+  const panel = document.getElementById('general-menu-panel');
+  const btn = document.getElementById('btn-general-menu');
+  const themeOptions = document.getElementById('theme-options');
+
+  function closeMenu() {
+    panel?.classList.remove('visible');
+    panel?.setAttribute('aria-hidden', 'true');
+  }
+
+  function openMenu() {
+    closeBottomPanel();
+    panel?.classList.add('visible');
+    panel?.setAttribute('aria-hidden', 'false');
+    updateThemeButtonStates();
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+  }
+
+  function handleClickOutside(e) {
+    if (!panel?.classList.contains('visible')) return;
+    if (wrapper?.contains(e.target)) return;
+    closeMenu();
+    document.removeEventListener('click', handleClickOutside);
+  }
+
+  function updateThemeButtonStates() {
+    const mode = typeof ThemeService !== 'undefined' ? ThemeService.getTheme() : 'system';
+    themeOptions?.querySelectorAll('.neumorphic-btn').forEach((el) => {
+      el.classList.toggle('active', el.getAttribute('data-theme') === mode);
+    });
+  }
+
+  btn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (panel?.classList.contains('visible')) {
+      closeMenu();
+      document.removeEventListener('click', handleClickOutside);
+    } else {
+      openMenu();
+    }
+  });
+
+  panel?.addEventListener('click', (e) => e.stopPropagation());
+
+  themeOptions?.addEventListener('click', (e) => {
+    const btnEl = e.target.closest('.neumorphic-btn[data-theme]');
+    if (!btnEl || typeof ThemeService === 'undefined') return;
+    const mode = btnEl.getAttribute('data-theme');
+    ThemeService.setTheme(mode);
+    updateThemeButtonStates();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && panel?.classList.contains('visible')) {
+      closeMenu();
+      document.removeEventListener('click', handleClickOutside);
     }
   });
 }
@@ -442,86 +778,90 @@ function wireControls() {
       spinGlobe();
     }
   });
-  document.getElementById('map-gps')?.addEventListener('click', () => {
-    LocationService.getGPSLocation()
-      .then((loc) => {
-        flyToLocation(loc.lng, loc.lat, 14);
-        addCurrentLocationMarker(loc.lng, loc.lat);
-        document.getElementById('gps-status-btn')?.querySelector('span:last-child')?.setAttribute('class', 'text-xs font-semibold tracking-wide text-white');
-      })
-      .catch(() => alert('Could not get GPS location. Check permissions.'));
-  });
+  document.getElementById('map-gps')?.addEventListener('click', () => showToastError('Feature not yet implemented'));
 }
 
-const BOTTOM_SHEET_EXPANDED_PX = 400;
-const BOTTOM_SHEET_COLLAPSED_PX = 40;
-const TRANSITION_MS = 300;
-
-function setMapPadding(expanded) {
-  /* No bottom padding when expanded: avoids globe/atmosphere dissociation artifact */
-  const bottom = expanded ? 0 : BOTTOM_SHEET_COLLAPSED_PX;
-  if (appMap) appMap.setPadding({ top: 0, right: 0, bottom, left: 0 });
-  document.getElementById('map-gradient-overlay')?.classList.toggle('opacity-0', expanded);
-}
-
-function flyToLocation(lng, lat, zoom) {
+function flyToLocation(lng, lat, zoom, opts = {}) {
   if (!appMap) return;
-  const expanded = document.getElementById('bottom-sheet-toggle')?.getAttribute('aria-expanded') === 'true';
-  const bottom = expanded ? 0 : BOTTOM_SHEET_COLLAPSED_PX;
+  const { pitch = 0, duration = 4000 } = opts;
   appMap.flyTo({
     center: [lng, lat],
     zoom,
-    padding: { top: 0, right: 0, bottom, left: 0 },
-    duration: 4000
+    pitch,
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    duration
   });
 }
 
-const PEEK_HEIGHT = '80px';
+function initBottomPanel() {
+  const wrapper = document.getElementById('bottom-panel-wrapper');
+  const panel = document.getElementById('bottom-panel');
+  const toggle = document.getElementById('bottom-panel-toggle');
+  if (!wrapper || !panel || !toggle) return;
 
-function initBottomSheet() {
-  const sheet = document.getElementById('bottom-sheet');
-  const toggle = document.getElementById('bottom-sheet-toggle');
-  const content = document.getElementById('bottom-sheet-content');
-  if (!sheet || !toggle || !content) return;
-
-  const EXPANDED_HEIGHT = '380px';
-
-  function isExpanded() {
-    return toggle.getAttribute('aria-expanded') === 'true';
+  function closePanel() {
+    panel.classList.remove('visible');
+    panel.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Open Emerging Tech Specialist');
+    toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
+    document.removeEventListener('click', handleClickOutside);
   }
 
-  function setContentHeight(height) {
-    content.style.maxHeight = height;
+  function openPanel() {
+    panel.classList.add('visible');
+    panel.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'Close Emerging Tech Specialist');
+    toggle.querySelector('.material-symbols-outlined')?.classList.add('rotate-180');
+    setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
   }
 
-  sheet.addEventListener('click', (e) => {
-    const expanded = isExpanded();
-    if (!expanded) {
-      toggle.setAttribute('aria-expanded', 'true');
-      setContentHeight(EXPANDED_HEIGHT);
-      setMapPadding(false);
-      appMap?.resize();
-      setTimeout(() => appMap?.resize(), TRANSITION_MS);
-    } else if (toggle.contains(e.target)) {
-      toggle.setAttribute('aria-expanded', 'false');
-      setContentHeight('0');
-      setMapPadding(true);
-      appMap?.resize();
-      setTimeout(() => appMap?.resize(), TRANSITION_MS);
+  function handleClickOutside(e) {
+    if (!panel.classList.contains('visible')) return;
+    if (wrapper.contains(e.target)) return;
+    closePanel();
+  }
+
+  toggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (panel.classList.contains('visible')) closePanel();
+    else openPanel();
+  });
+
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && panel.classList.contains('visible')) closePanel();
+  });
+}
+
+function initResumeEmbed() {
+  const btn = document.getElementById('btn-resume');
+  const overlay = document.getElementById('resume-embed-overlay');
+  const iframe = document.getElementById('resume-embed-iframe');
+  const closeBtn = document.getElementById('resume-embed-close');
+
+  function openResume() {
+    if (overlay && iframe) {
+      iframe.src = 'resume.html';
+      overlay.classList.remove('hidden');
     }
-  });
+  }
 
-  sheet.addEventListener('mouseenter', () => {
-    if (!isExpanded()) setContentHeight(PEEK_HEIGHT);
-  });
+  function closeResume() {
+    if (overlay) overlay.classList.add('hidden');
+    if (iframe) iframe.src = 'about:blank';
+  }
 
-  sheet.addEventListener('mouseleave', () => {
-    if (!isExpanded()) setContentHeight('0');
+  btn?.addEventListener('click', openResume);
+  closeBtn?.addEventListener('click', closeResume);
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) closeResume();
   });
-
-  content.style.maxHeight = EXPANDED_HEIGHT;
-  setMapPadding(true);
 }
 
 window.initMapApp = initMapApp;
-window.initBottomSheet = initBottomSheet;
+window.initBottomPanel = initBottomPanel;
+window.initResumeEmbed = initResumeEmbed;

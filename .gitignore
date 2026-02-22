@@ -13,3 +13,4 @@ public_html/js/mapbox-config.js
 # API database
 api/users.db
 public_html/api/users.db
+public_html/api/points-of-interest.db

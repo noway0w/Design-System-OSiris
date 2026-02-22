@@ -16,12 +16,12 @@
   --primary-active: #022a42; /* Darker shade of Deep Teal */
   --on-primary: #ffffff;
 
-  --bg-color: #f8f9fa; /* Keep light theme background distinct from brand dark */
-  --surface-color: #ffffff;
-  --surface-hover: #f1f3f5;
-  --surface-active: #e9ecef;
+  --bg-color: #EFF2F9; /* Neumorphic light background */
+  --surface-color: #E4EBF1; /* Neumorphic light surface */
+  --surface-hover: #e0e7ef;
+  --surface-active: #d8e0e9;
   
-  --text-color: #212529;
+  --text-color: #5a6578; /* Soft gray, readable on light bg */
   --text-secondary: var(--brand-slate);
   --text-tertiary: #adb5bd;
   
@@ -71,15 +71,16 @@
   --transition-base: 0.2s ease-in-out;
 }
 
-/* Dark Theme Overrides - Using Brand Colors as Primary */
-[data-theme="dark"] {
+/* Dark Theme Overrides - Neumorphic dark palette */
+[data-theme="dark"],
+html.dark {
   --primary-color: var(--brand-ocean);
   --primary-hover: var(--brand-teal);
   --primary-active: #022a42;
   --on-primary: #ffffff;
 
-  --bg-color: var(--brand-dark-grey); /* Dark Grey Background */
-  --surface-color: var(--brand-dark-mode); /* Dark Mode Background */
+  --bg-color: #1a1f2e; /* Neumorphic dark background */
+  --surface-color: #252b3b; /* Neumorphic dark surface */
   --surface-hover: var(--brand-teal);
   --surface-active: #03456e;
   

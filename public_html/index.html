@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OSiris Design System</title>
   <link rel="stylesheet" href="osiris.css">
+  <script src="js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.js"></script>
   <style>
@@ -151,6 +153,12 @@
     <h3>OSiris Map App</h3>
     <p>Access the map with location by IP (default) and GPS. Protected by access code.</p>
     <a href="access-gate.html" class="btn-map-app">Open Map App</a>
+  </div>
+
+  <div class="osiris-map-app-section" style="background: linear-gradient(135deg, #733E10, #023859);">
+    <h3>Resume</h3>
+    <p>Guillaume Lassiat – Senior UI/UX Designer. View online or download as PDF.</p>
+    <a href="resume.html" class="btn-map-app">View Resume</a>
   </div>
 
   <div class="usage-box">
@@ -438,7 +446,7 @@
           <span class="user-status-text">User detected</span>
           <div class="user-status-dot"></div>
         </div>
-        <div class="user-name">User Name</div>
+        <div class="user-name">Edouard</div>
       </div>
 
       <!-- Component 6: Stock Tile -->
@@ -500,7 +508,7 @@
     &lt;span class="user-status-text"&gt;User detected&lt;/span&gt;
     &lt;div class="user-status-dot"&gt;&lt;/div&gt;
   &lt;/div&gt;
-  &lt;div class="user-name"&gt;User Name&lt;/div&gt;
+  &lt;div class="user-name"&gt;Edouard&lt;/div&gt;
 &lt;/div&gt;</pre>
     </div>
   </section>
@@ -652,24 +660,19 @@
   </section>
 
   <script>
-    // Theme Toggle Logic
-    const toggle = document.getElementById('theme-toggle');
-    const root = document.documentElement;
-
-    // Check saved theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      root.setAttribute('data-theme', savedTheme);
-      toggle.checked = savedTheme === 'dark';
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      toggle.checked = true;
-    }
-
-    toggle.addEventListener('change', (e) => {
-      const theme = e.target.checked ? 'dark' : 'light';
-      root.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-    });
+    (function () {
+      const toggle = document.getElementById('theme-toggle');
+      if (!toggle || typeof ThemeService === 'undefined') return;
+      function syncToggle() {
+        const effective = ThemeService.resolveEffectiveTheme(ThemeService.getTheme());
+        toggle.checked = effective === 'dark';
+      }
+      syncToggle();
+      toggle.addEventListener('change', function () {
+        ThemeService.setTheme(this.checked ? 'dark' : 'light');
+      });
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncToggle);
+    })();
   </script>
   <script src="js/mapbox-config.js"></script>
   <script src="js/map-component.js?v=2"></script>

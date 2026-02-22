@@ -1,0 +1,159 @@
+/**
+ * OSiris Neumorphic / Glassmorphism General Menu
+ * Soft UI / Modern Skeuomorphism - dual-layer shadows, monochromatic layering
+ */
+
+/* Light mode palette - applied when html has class "light" */
+html.light #general-menu-panel,
+html.light .neumorphic-menu-panel {
+  --neumorphic-bg: rgba(239, 242, 249, 0.75);
+  --neumorphic-surface: rgba(228, 235, 241, 0.8);
+  --neumorphic-text: #6E7F8D;
+  --neumorphic-light-shadow: #FAFBFB;
+  --neumorphic-dark-shadow: rgba(22, 27, 29, 0.23);
+  --neumorphic-border: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark mode palette - applied when html has class "dark" */
+html.dark #general-menu-panel,
+html.dark .neumorphic-menu-panel {
+  --neumorphic-bg: rgba(26, 31, 46, 0.75);
+  --neumorphic-surface: rgba(37, 43, 59, 0.8);
+  --neumorphic-text: #9ca3af;
+  --neumorphic-light-shadow: rgba(255, 255, 255, 0.05);
+  --neumorphic-dark-shadow: rgba(0, 0, 0, 0.4);
+  --neumorphic-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Panel - positioned next to menu button */
+#general-menu-wrapper {
+  position: relative;
+  overflow: visible;
+}
+
+.general-menu-panel {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  z-index: 50;
+  width: min(300px, 85vw);
+  background: var(--neumorphic-surface);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid var(--neumorphic-border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-8px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.general-menu-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* Menu section */
+.neumorphic-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.neumorphic-menu-section label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--neumorphic-text);
+}
+
+/* Theme options - Level 2 floating buttons */
+.neumorphic-theme-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.neumorphic-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px 16px;
+  border: 1px solid var(--neumorphic-border);
+  border-radius: 16px;
+  background: var(--neumorphic-surface);
+  color: var(--neumorphic-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: -6px -6px 12px var(--neumorphic-light-shadow),
+    6px 6px 12px var(--neumorphic-dark-shadow);
+}
+
+.neumorphic-btn:hover {
+  box-shadow: -8px -8px 16px var(--neumorphic-light-shadow),
+    8px 8px 16px var(--neumorphic-dark-shadow);
+}
+
+/* Pressed/active state */
+.neumorphic-btn.active {
+  box-shadow: inset -4px -4px 8px var(--neumorphic-light-shadow),
+    inset 4px 4px 8px var(--neumorphic-dark-shadow);
+  border-color: var(--neumorphic-border);
+}
+
+.neumorphic-btn.active:hover {
+  box-shadow: inset -4px -4px 8px var(--neumorphic-light-shadow),
+    inset 4px 4px 8px var(--neumorphic-dark-shadow);
+}
+
+/* Resume link as neumorphic button */
+.neumorphic-menu-resume {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: 1px solid var(--neumorphic-border);
+  border-radius: 20px;
+  background: var(--neumorphic-surface);
+  color: var(--neumorphic-text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: -6px -6px 12px var(--neumorphic-light-shadow),
+    6px 6px 12px var(--neumorphic-dark-shadow);
+}
+
+.neumorphic-menu-resume:hover {
+  box-shadow: -8px -8px 16px var(--neumorphic-light-shadow),
+    8px 8px 16px var(--neumorphic-dark-shadow);
+}
+
+.neumorphic-menu-resume .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* Bottom panel (Emerging Tech Specialist) */
+.bottom-panel {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.bottom-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
