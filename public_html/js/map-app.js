@@ -41,7 +41,8 @@ let heartbeatIntervalId = null;
 let currentTiles = [];
 let previousUserNames = new Set();
 let apiMisconfigured = false;
-let isAdmin = false; // true when server returns PHP source instead of JSON
+let isAdmin = false;
+let scrollDragJustEnded = false;
 
 let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true };
 let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries'];
@@ -275,8 +276,8 @@ function renderNearbyTiles(tiles) {
   container.innerHTML = html;
   if (countEl) {
     countEl.textContent = apiMisconfigured && total === 0
-      ? 'Emerging Tech Specialist needs PHP enabled on server'
-      : total === 0 ? 'No users yet' : `${total} user${total === 1 ? '' : 's'} worldwide`;
+      ? 'Discover my world needs PHP enabled on server'
+      : total === 0 ? 'No Tech enthusiasts yet' : `${total} Tech enthusiast${total === 1 ? '' : 's'} worldwide`;
   }
 
   document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
@@ -470,6 +471,10 @@ function wireUserTileCards() {
   if (!panelContent) return;
   panelContent.addEventListener('click', (e) => {
     if (e.target.closest('.user-tile-delete')) return;
+    if (scrollDragJustEnded) {
+      scrollDragJustEnded = false;
+      return;
+    }
     const el = e.target.closest('[data-user-tile]');
     if (!el || !appMap) return;
     const name = el.getAttribute('data-user-tile');
@@ -871,7 +876,7 @@ function closeBottomPanel() {
   panel.classList.remove('visible');
   panel.setAttribute('aria-hidden', 'true');
   toggle.setAttribute('aria-expanded', 'false');
-  toggle.setAttribute('aria-label', 'Open Emerging Tech Specialist');
+  toggle.setAttribute('aria-label', 'Open Discover my world');
   toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
 }
 
@@ -1209,7 +1214,7 @@ function initBottomPanel() {
     panel.classList.remove('visible');
     panel.setAttribute('aria-hidden', 'true');
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-label', 'Open Emerging Tech Specialist');
+    toggle.setAttribute('aria-label', 'Open Discover my world');
     toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
     document.removeEventListener('click', handleClickOutside);
   }
@@ -1218,7 +1223,7 @@ function initBottomPanel() {
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
     toggle.setAttribute('aria-expanded', 'true');
-    toggle.setAttribute('aria-label', 'Close Emerging Tech Specialist');
+    toggle.setAttribute('aria-label', 'Close Discover my world');
     toggle.querySelector('.material-symbols-outlined')?.classList.add('rotate-180');
     setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
   }
@@ -1246,6 +1251,57 @@ function initBottomPanel() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && panel.classList.contains('visible')) closePanel();
+  });
+
+  const scrollEl = document.getElementById('bottom-panel-tiles-scroll');
+  const scrollRightBtn = document.getElementById('bottom-panel-scroll-right');
+  if (scrollEl) {
+    const DRAG_THRESHOLD = 6;
+    let isDragScrolling = false;
+    let dragPending = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    const endDrag = () => {
+      if (isDragScrolling) scrollDragJustEnded = true;
+      isDragScrolling = false;
+      dragPending = false;
+      scrollEl.style.cursor = 'grab';
+      scrollEl.style.userSelect = '';
+      scrollEl.style.scrollBehavior = 'smooth';
+    };
+    const onMove = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      if (dragPending && Math.abs(clientX - startX) >= DRAG_THRESHOLD) {
+        dragPending = false;
+        isDragScrolling = true;
+        scrollEl.style.cursor = 'grabbing';
+        scrollEl.style.userSelect = 'none';
+        scrollEl.style.scrollBehavior = 'auto';
+      }
+      if (!isDragScrolling) return;
+      e.preventDefault();
+      scrollEl.scrollLeft = startScrollLeft + (startX - clientX);
+    };
+    const onDown = (e) => {
+      if (e.target.closest('.map-data-tile-draggable, .user-tile-delete, #nearby-clear-all')) return;
+      scrollDragJustEnded = false;
+      dragPending = true;
+      isDragScrolling = false;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      startX = clientX;
+      startScrollLeft = scrollEl.scrollLeft;
+    };
+    scrollEl.addEventListener('mousedown', onDown);
+    scrollEl.addEventListener('touchstart', onDown, { passive: true });
+    scrollEl.addEventListener('mousemove', onMove);
+    scrollEl.addEventListener('touchmove', onMove, { passive: false });
+    scrollEl.addEventListener('mouseup', endDrag);
+    scrollEl.addEventListener('mouseleave', endDrag);
+    scrollEl.addEventListener('touchend', endDrag);
+    scrollEl.addEventListener('touchcancel', endDrag);
+  }
+  scrollRightBtn?.addEventListener('click', () => {
+    if (scrollEl) scrollEl.scrollBy({ left: 200, behavior: 'smooth' });
   });
 }
 
