@@ -107,6 +107,13 @@
     .toggle-checkbox { top: 0; left: 0; right: auto; transition: left 0.2s, right 0.2s; }
     .toggle-checkbox:checked { left: auto; right: 0; border-color: #13a4ec !important; }
     .toggle-checkbox:checked + .toggle-label { background-color: #13a4ec; }
+    .volumetric-altitude-range[orient="vertical"] {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      appearance: slider-vertical;
+      width: 16px;
+      vertical-align: middle;
+    }
   </style>
   <script src="js/theme-service.js"></script>
   <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>

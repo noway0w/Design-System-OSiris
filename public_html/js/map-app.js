@@ -54,10 +54,10 @@ let apiMisconfigured = false;
 let isAdmin = false;
 let scrollDragJustEnded = false;
 
-let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true };
-let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries'];
+let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false };
+let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage'];
 const userProfilePanels = new Map();
-let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null };
+let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null, volumetricWeatherLayerId: null, volumetricWeatherSourceId: null, liveCloudCoverageLayerId: null, liveCloudCoverageSourceId: null };
 
 const MAP_DATA_ORDER_KEY = 'osiris_map_data_tile_order';
 function loadMapDataTileOrder() {
@@ -65,7 +65,7 @@ function loadMapDataTileOrder() {
     const stored = localStorage.getItem(MAP_DATA_ORDER_KEY);
     if (stored) {
       const order = JSON.parse(stored);
-      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries'];
+      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage'];
       if (Array.isArray(order) && order.length === valid.length && valid.every((k) => order.includes(k))) {
         mapDataTileOrder = order;
       }
@@ -909,11 +909,149 @@ function applyPropertyBoundariesState(state) {
   });
 }
 
+const VOLUMETRIC_WEATHER_SOURCE_ID = 'volumetric-weather-source';
+const VOLUMETRIC_WEATHER_LAYER_ID = 'volumetric-weather';
+const VOLUMETRIC_WEATHER_TILESET = 'mapbox://rasterarrayexamples.gfs-winds';
+const ALTITUDE_MAX_M = 9144;
+
+function addVolumetricWeather(layerId, altitude) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  removeVolumetricWeather();
+  try {
+    const sourceOpts = {
+      type: 'raster-array',
+      url: VOLUMETRIC_WEATHER_TILESET,
+      tileSize: 512
+    };
+    if (typeof appMap.addSource === 'function') {
+      appMap.addSource(VOLUMETRIC_WEATHER_SOURCE_ID, sourceOpts);
+    }
+    const layerOpts = {
+      id: layerId || VOLUMETRIC_WEATHER_LAYER_ID,
+      type: 'raster-particle',
+      source: VOLUMETRIC_WEATHER_SOURCE_ID,
+      'source-layer': '10winds',
+      paint: {
+        'raster-particle-speed-factor': 0.26,
+        'raster-particle-fade-opacity-factor': 0.99,
+        'raster-particle-reset-rate-factor': 0.18,
+        'raster-particle-count': 10000,
+        'raster-particle-max-speed': 45,
+        'raster-particle-elevation': Math.max(0, Math.min(altitude, ALTITUDE_MAX_M)),
+        'raster-particle-color': [
+          'interpolate', ['linear'], ['raster-particle-speed'],
+          0.5, 'rgba(3, 88, 140, 55)',
+          2, 'rgba(19, 164, 236, 75)',
+          5, 'rgba(2, 56, 89, 95)',
+          10, 'rgba(19, 164, 236, 110)',
+          18, 'rgba(94, 165, 230, 125)',
+          28, 'rgba(157, 176, 185, 115)',
+          38, 'rgba(200, 230, 245, 100)',
+          45, 'rgba(224, 242, 249, 85)'
+        ]
+      }
+    };
+    const beforeId = mapLayerInfo.buildingLayerIds?.[0] || undefined;
+    appMap.addLayer(layerOpts, beforeId);
+    mapLayerInfo.volumetricWeatherLayerId = layerId || VOLUMETRIC_WEATHER_LAYER_ID;
+    mapLayerInfo.volumetricWeatherSourceId = VOLUMETRIC_WEATHER_SOURCE_ID;
+  } catch (e) {
+    console.warn('[VolumetricWeather] Failed to add layer:', e);
+  }
+}
+
+function removeVolumetricWeather() {
+  if (!appMap || !appMap.getLayer) return;
+  const layerId = mapLayerInfo.volumetricWeatherLayerId;
+  const sourceId = mapLayerInfo.volumetricWeatherSourceId;
+  if (layerId && appMap.getLayer(layerId)) {
+    try { appMap.removeLayer(layerId); } catch (_) {}
+  }
+  if (sourceId && appMap.getSource(sourceId)) {
+    try { appMap.removeSource(sourceId); } catch (_) {}
+  }
+  mapLayerInfo.volumetricWeatherLayerId = null;
+  mapLayerInfo.volumetricWeatherSourceId = null;
+}
+
+function applyVolumetricWeatherState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  if (state.volumetricWeather) {
+    const alt = typeof mapLayerInfo.volumetricWeatherAltitude === 'number' ? mapLayerInfo.volumetricWeatherAltitude : 0;
+    addVolumetricWeather(VOLUMETRIC_WEATHER_LAYER_ID, alt);
+  } else {
+    removeVolumetricWeather();
+  }
+}
+
+const LIVE_CLOUD_SOURCE_ID = 'live-cloud-coverage-source';
+const LIVE_CLOUD_LAYER_ID = 'live-cloud-coverage';
+const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
+
+async function addLiveCloudCoverage() {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  removeLiveCloudCoverage();
+  try {
+    const res = await fetch(RAINVIEWER_API + '?t=' + Date.now(), { cache: 'no-store' });
+    const data = await res.json().catch(() => null);
+    const host = data?.host || 'https://tilecache.rainviewer.com';
+    const radar = data?.radar?.past;
+    const path = radar?.length ? radar[radar.length - 1]?.path : null;
+    if (!path) {
+      showToastError('Cloud coverage data temporarily unavailable');
+      return;
+    }
+    const tileUrl = `${host}${path}/256/{z}/{x}/{y}/0/0_0.png`;
+    appMap.addSource(LIVE_CLOUD_SOURCE_ID, {
+      type: 'raster',
+      tiles: [tileUrl],
+      tileSize: 256,
+      maxzoom: 7
+    });
+    appMap.addLayer({
+      id: LIVE_CLOUD_LAYER_ID,
+      type: 'raster',
+      source: LIVE_CLOUD_SOURCE_ID,
+      paint: { 'raster-opacity': 0.65 }
+    }, mapLayerInfo.buildingLayerIds?.[0]);
+    mapLayerInfo.liveCloudCoverageLayerId = LIVE_CLOUD_LAYER_ID;
+    mapLayerInfo.liveCloudCoverageSourceId = LIVE_CLOUD_SOURCE_ID;
+  } catch (e) {
+    console.warn('[LiveCloudCoverage] Failed to add layer:', e);
+    showToastError('Failed to load cloud coverage');
+  }
+}
+
+function removeLiveCloudCoverage() {
+  if (!appMap || !appMap.getLayer) return;
+  const layerId = mapLayerInfo.liveCloudCoverageLayerId;
+  const sourceId = mapLayerInfo.liveCloudCoverageSourceId;
+  if (layerId && appMap.getLayer(layerId)) {
+    try { appMap.removeLayer(layerId); } catch (_) {}
+  }
+  if (sourceId && appMap.getSource(sourceId)) {
+    try { appMap.removeSource(sourceId); } catch (_) {}
+  }
+  mapLayerInfo.liveCloudCoverageLayerId = null;
+  mapLayerInfo.liveCloudCoverageSourceId = null;
+}
+
+function applyLiveCloudCoverageState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  if (state.liveCloudCoverage) {
+    addLiveCloudCoverage();
+  } else {
+    removeLiveCloudCoverage();
+  }
+}
+
 function applyMapDataState(state) {
   applyBuildingsState(state);
   applyNamesState(state);
   applyPropertyBoundariesState(state);
   applyTopographyState(state);
+  applyVolumetricWeatherState(state);
+  applyLiveCloudCoverageState(state);
 }
 
 function renderMapDataTiles(state) {
@@ -923,26 +1061,32 @@ function renderMapDataTiles(state) {
     buildings: 'assets/map-data/3D-Building.png',
     topography: 'assets/map-data/Topography.png',
     names: 'assets/map-data/Local-Information.png',
-    propertyBoundaries: 'assets/map-data/Road-Boundaries.png'
+    propertyBoundaries: 'assets/map-data/Road-Boundaries.png',
+    volumetricWeather: 'assets/map-data/Live-wind-coverage.png',
+    liveCloudCoverage: 'assets/map-data/Live-rain-coverage.png'
   };
   const thumbDark = {
     buildings: 'assets/map-data/3D-Building-Dark-Mode.png',
     topography: 'assets/map-data/Topography-Dark-Mode.png',
     names: 'assets/map-data/Local-Information-Dark-Mode.png',
-    propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png'
+    propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png',
+    volumetricWeather: 'assets/map-data/Live-wind-coverage-dark-mode.png',
+    liveCloudCoverage: 'assets/map-data/Live-rain-coverage-dark-mode.png'
   };
-  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route' };
-  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries' };
+  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue' };
+  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage' };
   const tiles = mapDataTileOrder.map((key) => ({ key, label: labels[key], on: state[key] }));
   const isDark = document.documentElement.classList.contains('dark');
+  const altM = mapLayerInfo.volumetricWeatherAltitude ?? 0;
   let html = '';
   tiles.forEach((t, i) => {
     const thumbSrc = isDark ? thumbDark[t.key] : thumbLight[t.key];
+    const thumbFallback = isDark ? thumbDark.buildings : thumbLight.buildings;
     const toggleId = `map-data-toggle-${t.key}-${i}`;
     html += `
       <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
         <div class="h-20 overflow-hidden relative">
-          <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"/>
+          <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" onerror="this.src=this.dataset.fallback||''" data-fallback="${thumbFallback}"/>
         </div>
         <div class="p-4 flex flex-col flex-1">
           <div class="flex items-center gap-2 mb-2">
@@ -959,6 +1103,14 @@ function renderMapDataTiles(state) {
         </div>
       </div>`;
   });
+  if (state.volumetricWeather) {
+    html += `
+      <div id="volumetric-weather-slider-wrap" class="flex flex-col items-center justify-center gap-2 w-16 min-w-[64px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">30,000 ft</span>
+        <input type="range" id="volumetric-altitude-slider" data-altitude-slider min="0" max="9144" step="500" value="${altM}" orient="vertical" class="volumetric-altitude-range w-2 h-32 accent-primary cursor-pointer" title="Altitude (meters)"/>
+        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sea level</span>
+      </div>`;
+  }
   container.innerHTML = html;
 }
 
@@ -973,6 +1125,23 @@ function wireMapDataTiles() {
       case 'topography': mapDataState.topography = checked; applyTopographyState(mapDataState); break;
       case 'names': mapDataState.names = checked; applyNamesState(mapDataState); break;
       case 'propertyBoundaries': mapDataState.propertyBoundaries = checked; applyPropertyBoundariesState(mapDataState); break;
+      case 'volumetricWeather':
+        mapDataState.volumetricWeather = checked;
+        mapLayerInfo.volumetricWeatherAltitude = mapLayerInfo.volumetricWeatherAltitude ?? 0;
+        if (checked) {
+          addVolumetricWeather(VOLUMETRIC_WEATHER_LAYER_ID, mapLayerInfo.volumetricWeatherAltitude);
+        } else {
+          removeVolumetricWeather();
+        }
+        break;
+      case 'liveCloudCoverage':
+        mapDataState.liveCloudCoverage = checked;
+        if (checked) {
+          addLiveCloudCoverage();
+        } else {
+          removeLiveCloudCoverage();
+        }
+        break;
       default: return;
     }
     renderMapDataTiles(mapDataState);
@@ -984,6 +1153,18 @@ function wireMapDataTiles() {
       e.stopPropagation();
       const key = toggleEl.getAttribute('data-key');
       handleToggleChange(key, toggleEl.checked);
+    }
+  });
+
+  container.addEventListener('input', (e) => {
+    const slider = e.target.closest('[data-altitude-slider]');
+    if (slider && appMap) {
+      const altM = Number(slider.value) || 0;
+      mapLayerInfo.volumetricWeatherAltitude = altM;
+      const layerId = mapLayerInfo.volumetricWeatherLayerId;
+      if (layerId && appMap.getLayer(layerId)) {
+        try { appMap.setPaintProperty(layerId, 'raster-particle-elevation', altM); } catch (_) {}
+      }
     }
   });
 
@@ -1050,7 +1231,11 @@ function wireMapDataTiles() {
     if (fromIdx === -1 || newToIdx === fromIdx) return;
     mapDataTileOrder.splice(fromIdx, 1);
     mapDataTileOrder.splice(newToIdx, 0, draggedKey);
-    const nextSibling = newToIdx >= rects.length ? null : rects[newToIdx].el;
+    let nextSibling = newToIdx >= rects.length ? null : rects[newToIdx].el;
+    if (nextSibling === null && newToIdx >= rects.length) {
+      const sliderWrap = container.querySelector('#volumetric-weather-slider-wrap');
+      if (sliderWrap) nextSibling = sliderWrap;
+    }
     container.insertBefore(draggedEl, nextSibling);
   }
 
