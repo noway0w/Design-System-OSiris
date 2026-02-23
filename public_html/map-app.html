@@ -170,6 +170,7 @@
         <button id="tab-nearby" type="button" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-primary/20 text-primary border border-primary/30" data-tab="nearby">Tech enthusiast</button>
         <button id="tab-poi" type="button" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20" data-tab="poi">Points of Interest</button>
         <button id="tab-map-data" type="button" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20" data-tab="map-data">Map Data</button>
+        <button id="tab-widgets" type="button" class="tab-btn px-4 py-1.5 rounded-full text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20" data-tab="widgets">Widgets</button>
       </div>
       <div class="relative w-full flex-1 min-h-0 overflow-hidden">
         <div id="bottom-panel-tiles-scroll" class="w-full h-full overflow-x-auto no-scrollbar pb-6 pl-6 scroll-smooth cursor-grab active:cursor-grabbing" tabindex="0">
@@ -181,6 +182,16 @@
         </div>
         <div id="map-data-tiles" class="hidden flex gap-4 pr-16 w-max">
           <!-- Map Data toggle tiles rendered by map-app.js -->
+        </div>
+        <div id="widget-tiles" class="hidden flex gap-4 pr-16 w-max items-center">
+          <button id="add-weather-widget" type="button" class="w-[260px] h-[260px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-4 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-2 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-3xl text-primary">cloud</span>
+            <span class="text-primary text-sm font-medium">Add weather Widget</span>
+          </button>
+          <button id="add-stock-widget" type="button" class="w-[260px] h-[260px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-4 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-2 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-3xl text-amber-600 dark:text-amber-500">candlestick_chart</span>
+            <span class="text-amber-600 dark:text-amber-500 text-sm font-medium">Add Stock Widget</span>
+          </button>
         </div>
         </div>
         <div class="absolute right-0 top-0 bottom-0 w-28 pointer-events-none z-10 bg-gradient-to-r from-transparent via-background-light/20 to-background-light/15 dark:via-background-dark/20 dark:to-background-dark/15"></div>
@@ -214,6 +225,59 @@
             <span class="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
+      </div>
+      <div id="user-profile-widgets" class="p-3 space-y-2 hidden">
+        <!-- Weather widgets rendered by map-app.js -->
+      </div>
+    </div>
+
+    <!-- Add Stock Widget Config Panel -->
+    <div id="stock-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Add Stock Widget</h3>
+          <div class="space-y-3">
+            <input id="stock-config-search" type="text" placeholder="Search symbol (e.g. AAPL, MSFT)..." class="w-full px-4 py-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <div id="stock-config-results" class="max-h-40 overflow-y-auto space-y-1"></div>
+            <button id="stock-config-add" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-xl hidden">Add</button>
+          </div>
+          <div id="stock-widget-loading" class="hidden mt-3 p-3 rounded-xl bg-primary/10 text-primary text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            <span>Adding widget...</span>
+          </div>
+        </div>
+        <button id="stock-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add Weather Widget Config Panel -->
+    <div id="weather-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Add Weather Widget</h3>
+          <div class="flex gap-2 mb-4">
+            <button id="weather-config-by-location" type="button" class="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-primary/20 text-primary border border-primary/30">By location</button>
+            <button id="weather-config-by-city" type="button" class="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10">By city</button>
+          </div>
+          <div id="weather-config-location" class="space-y-3">
+            <p class="text-sm text-text-secondary">Use your current GPS or IP location</p>
+            <button id="weather-config-validate-location" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-xl">Validate</button>
+          </div>
+          <div id="weather-config-city" class="hidden space-y-3">
+            <input id="weather-config-city-input" type="text" placeholder="Search city..." class="w-full px-4 py-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <div id="weather-config-city-results" class="max-h-32 overflow-y-auto space-y-1"></div>
+            <button id="weather-config-validate-city" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-xl hidden">Validate</button>
+          </div>
+          <div id="weather-widget-loading" class="hidden mt-3 p-3 rounded-xl bg-primary/10 text-primary text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            <span>Adding widget...</span>
+          </div>
+        </div>
+        <button id="weather-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined">close</span>
+        </button>
       </div>
     </div>
 
@@ -262,6 +326,8 @@
         initBottomPanel();
         initUserProfilePanel();
         initResumeEmbed();
+        initWeatherWidgetConfig();
+        initStockWidgetConfig();
       });
     }
   </script>

@@ -14,3 +14,6 @@ public_html/js/mapbox-config.js
 api/users.db
 public_html/api/users.db
 public_html/api/points-of-interest.db
+
+# Gemini API key
+public_html/config.php

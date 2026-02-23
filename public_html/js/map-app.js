@@ -213,7 +213,9 @@ function toTiles(users) {
     lastSeen: u.lastSeen,
     lat: u.lat,
     lng: u.lng,
-    city: u.city ?? null
+    city: u.city ?? null,
+    country: u.country ?? null,
+    widgets: Array.isArray(u.widgets) ? u.widgets : []
   }));
   return currentTiles;
 }
@@ -481,6 +483,7 @@ function wireUserTileCards() {
     const tile = currentTiles.find((t) => t.name === name);
     if (tile && tile.lat != null && tile.lng != null) {
       flyToLocation(tile.lng, tile.lat, 18, { pitch: 45 });
+      openUserProfilePanel(tile);
     }
   });
 }
@@ -541,23 +544,27 @@ function wirePOITabs() {
   const tabNearby = document.getElementById('tab-nearby');
   const tabPOI = document.getElementById('tab-poi');
   const tabMapData = document.getElementById('tab-map-data');
+  const tabWidgets = document.getElementById('tab-widgets');
   const tilesNearby = document.getElementById('nearby-friends-tiles');
   const tilesPOI = document.getElementById('poi-tiles');
   const tilesMapData = document.getElementById('map-data-tiles');
+  const tilesWidgets = document.getElementById('widget-tiles');
   if (!tabNearby || !tabPOI || !tilesNearby || !tilesPOI) return;
 
   function setActiveTab(active) {
-    [tabNearby, tabPOI, tabMapData].forEach((t) => {
+    [tabNearby, tabPOI, tabMapData, tabWidgets].forEach((t) => {
       if (t) {
         t.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
         t.classList.add('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
       }
     });
-    [tilesNearby, tilesPOI, tilesMapData].forEach((c) => {
+    [tilesNearby, tilesPOI, tilesMapData, tilesWidgets].forEach((c) => {
       if (c) c.classList.add('hidden');
     });
-    const activeTab = active === 'nearby' ? tabNearby : active === 'poi' ? tabPOI : tabMapData;
-    const activeTiles = active === 'nearby' ? tilesNearby : active === 'poi' ? tilesPOI : tilesMapData;
+    const tabMap = { nearby: tabNearby, poi: tabPOI, 'map-data': tabMapData, widgets: tabWidgets };
+    const tilesMap = { nearby: tilesNearby, poi: tilesPOI, 'map-data': tilesMapData, widgets: tilesWidgets };
+    const activeTab = tabMap[active];
+    const activeTiles = tilesMap[active];
     if (activeTab) {
       activeTab.classList.remove('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
       activeTab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
@@ -572,6 +579,142 @@ function wirePOITabs() {
   tabNearby.addEventListener('click', () => setActiveTab('nearby'));
   tabPOI.addEventListener('click', () => setActiveTab('poi'));
   tabMapData?.addEventListener('click', () => setActiveTab('map-data'));
+  tabWidgets?.addEventListener('click', () => {
+    setActiveTab('widgets');
+    renderWidgetTilesInTab();
+  });
+}
+
+async function renderWidgetTilesInTab() {
+  const container = document.getElementById('widget-tiles');
+  const addWeatherBtn = document.getElementById('add-weather-widget');
+  const addStockBtn = document.getElementById('add-stock-widget');
+  if (!container) return;
+  const name = sessionStorage.getItem('osiris_user_name')?.trim();
+  let widgets = [];
+  if (name) {
+    try {
+      const url = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        widgets = data.widgets || [];
+      }
+    } catch (_) {}
+  }
+  const weatherWidgets = widgets.filter((w) => w.type === 'weather');
+  const stockWidgets = widgets.filter((w) => w.type === 'stock');
+  const isDark = document.documentElement.classList.contains('dark');
+  let cardsHtml = '';
+  for (const w of weatherWidgets) {
+    const imgPath = w.image || w.imageClear || w.imageDark || '';
+    try {
+      const forecastUrl = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
+      const res = await fetch(forecastUrl);
+      const weather = res.ok ? await res.json() : {};
+      cardsHtml += buildWidgetCardHtml(w, weather, imgPath, isDark, true, 'tile');
+    } catch (_) {
+      cardsHtml += buildWidgetCardHtml(w, {}, imgPath, isDark, true, 'tile');
+    }
+  }
+  for (const w of stockWidgets) {
+    try {
+      const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
+      const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(w.symbol || ''));
+      const quote = quoteRes.ok ? await quoteRes.json() : {};
+      cardsHtml += buildStockWidgetCardHtml(w, quote, [], isDark, true, 'tile');
+    } catch (_) {
+      cardsHtml += buildStockWidgetCardHtml(w, {}, [], isDark, true, 'tile');
+    }
+  }
+  const addHtml = (addWeatherBtn ? addWeatherBtn.outerHTML : '') + (addStockBtn ? addStockBtn.outerHTML : '');
+  container.innerHTML = addHtml + cardsHtml;
+  container.querySelector('#add-weather-widget')?.addEventListener('click', () => {
+    document.getElementById('weather-widget-config-overlay')?.classList.remove('hidden');
+  });
+  container.querySelector('#add-stock-widget')?.addEventListener('click', () => {
+    document.getElementById('stock-widget-config-overlay')?.classList.remove('hidden');
+  });
+  container.querySelectorAll('[data-delete-widget-id]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.deleteWidgetId;
+      if (!id || !name) return;
+      await deleteWidget(id);
+      renderWidgetTilesInTab();
+    });
+  });
+}
+
+function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
+  const temp = weather.temperature != null ? Math.round(weather.temperature) + '°C' : '—';
+  const humidity = weather.humidity != null ? weather.humidity + '% humidity' : '—';
+  const overlayClass = isDark ? 'bg-black/50' : 'bg-black/10';
+  const deleteId = w.id || ('w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
+  const deleteBtn = showDelete
+    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer" aria-label="Delete widget">
+         <span class="material-symbols-outlined text-[18px]">delete</span>
+       </button>`
+    : '';
+  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'w-[260px] h-[260px] flex-shrink-0';
+  const layoutClass = variant === 'panel' ? 'flex items-start gap-3' : 'flex flex-col justify-end min-h-0';
+  const textClass = isDark ? 'text-white' : 'text-black';
+  const textMutedClass = isDark ? 'text-white/80' : 'text-black/80';
+  const innerLayout = variant === 'panel'
+    ? `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="w-8 h-8 flex-shrink-0" style="filter:${isDark ? 'brightness(0) invert(1)' : 'brightness(0)'};"/>
+       <div class="min-w-0 flex-1">
+         <div class="text-xs ${textMutedClass} font-medium">Current local weather</div>
+         <div class="${textClass} font-bold text-sm">${(w.city || '—').replace(/</g, '&lt;')}</div>
+         <div class="${textClass} text-sm mt-0.5">${temp} · ${humidity}</div>
+       </div>`
+    : `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="absolute top-3 left-3 w-8 h-8" style="filter:${isDark ? 'brightness(0) invert(1)' : 'brightness(0)'};"/>
+       <div class="mt-auto">
+         <div class="text-xs ${textMutedClass} font-medium">Current local weather</div>
+         <div class="${textClass} font-bold text-sm">${(w.city || '—').replace(/</g, '&lt;')}</div>
+         <div class="${textClass} text-sm mt-0.5">${temp} · ${humidity}</div>
+       </div>`;
+  const bgSrc = imgPath
+    ? (typeof resolveCityImageUrl === 'function' ? resolveCityImageUrl(imgPath) : imgPath)
+    : '';
+  const bgImg = bgSrc
+    ? `<img src="${String(bgSrc).replace(/"/g, '&quot;')}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none" style="transform:scale(1.11)" />`
+    : '';
+  return `
+    <div class="group relative ${sizeClass} rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
+      ${bgImg}
+      <div class="absolute inset-0 ${overlayClass}"></div>
+      ${deleteBtn}
+      <div class="relative p-3 ${layoutClass} h-full z-[1]">
+        ${innerLayout}
+      </div>
+    </div>
+  `;
+}
+
+async function deleteWidget(widgetId) {
+  const name = sessionStorage.getItem('osiris_user_name')?.trim();
+  if (!name) return false;
+  try {
+    const url = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return false;
+    const data = await res.json();
+    let widgets = data.widgets || [];
+    widgets = widgets.filter((w) => {
+      const id = w.id || (w.type === 'stock' ? 'w-' + (w.symbol || '') : 'w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
+      return id !== widgetId;
+    });
+    const patchUrl = typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php';
+    const patchRes = await fetch(patchUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, widgets })
+    });
+    if (patchRes.ok) await refreshNearby();
+    return patchRes.ok;
+  } catch (_) {
+    return false;
+  }
 }
 
 function discoverMapLayers() {
@@ -880,12 +1023,13 @@ function closeBottomPanel() {
   toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
 }
 
-function openUserProfilePanel(tile) {
+async function openUserProfilePanel(tile) {
   const panel = document.getElementById('user-profile-panel');
   const avatar = document.getElementById('user-profile-avatar');
   const nameEl = document.getElementById('user-profile-name');
   const locationEl = document.getElementById('user-profile-location');
   const deleteBtn = document.getElementById('user-profile-delete');
+  const widgetsEl = document.getElementById('user-profile-widgets');
   if (!panel || !avatar || !nameEl || !locationEl) return;
   avatar.src = tile.avatar || '';
   avatar.alt = tile.name || '';
@@ -899,6 +1043,55 @@ function openUserProfilePanel(tile) {
       deleteBtn.classList.remove('hidden');
     } else {
       deleteBtn.classList.add('hidden');
+    }
+  }
+  if (widgetsEl) {
+    const allWidgets = (tile.widgets || []);
+    const weatherWidgets = allWidgets.filter((w) => w.type === 'weather');
+    const stockWidgets = allWidgets.filter((w) => w.type === 'stock');
+    const showDelete = canDelete && allWidgets.length > 0;
+    if (allWidgets.length === 0) {
+      widgetsEl.classList.add('hidden');
+      widgetsEl.innerHTML = '';
+    } else {
+      widgetsEl.classList.remove('hidden');
+      const isDark = document.documentElement.classList.contains('dark');
+      let html = '';
+      for (const w of weatherWidgets) {
+        try {
+          const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
+          const res = await fetch(url);
+          const weather = res.ok ? await res.json() : {};
+          const imgPath = w.image || w.imageDark || w.imageClear;
+          html += buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, 'panel');
+        } catch (_) {
+          const imgPath = w.image || w.imageDark || w.imageClear;
+          html += buildWidgetCardHtml(w, {}, imgPath, isDark, showDelete, 'panel');
+        }
+      }
+      for (const w of stockWidgets) {
+        try {
+          const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
+          const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(w.symbol || ''));
+          const quote = quoteRes.ok ? await quoteRes.json() : {};
+          html += buildStockWidgetCardHtml(w, quote, [], isDark, showDelete, 'panel');
+        } catch (_) {
+          html += buildStockWidgetCardHtml(w, {}, [], isDark, showDelete, 'panel');
+        }
+      }
+      widgetsEl.innerHTML = html;
+      if (showDelete) {
+        widgetsEl.querySelectorAll('[data-delete-widget-id]').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.deleteWidgetId;
+            if (!id || tile.name !== currentUserName) return;
+            await deleteWidget(id);
+            closeUserProfilePanel();
+            await refreshNearby();
+          });
+        });
+      }
     }
   }
   panel.style.left = '50%';
@@ -1305,6 +1498,441 @@ function initBottomPanel() {
   });
 }
 
+const WMO_TO_ICON = {
+  0: 'weather_icons/clear_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  1: 'weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  2: 'weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  3: 'weather_icons/cloud_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  45: 'weather_icons/foggy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  48: 'weather_icons/foggy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  51: 'weather_icons/rainy_light_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  53: 'weather_icons/rainy_light_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  55: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  61: 'weather_icons/rainy_light_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  63: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  65: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  71: 'weather_icons/snowing_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  73: 'weather_icons/snowing_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  75: 'weather_icons/snowing_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  80: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  81: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  82: 'weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  95: 'weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  96: 'weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg',
+  99: 'weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg'
+};
+function getWeatherIcon(code) {
+  if (WMO_TO_ICON[code]) return WMO_TO_ICON[code];
+  if (code >= 4 && code <= 9) return WMO_TO_ICON[3];
+  if (code >= 56 && code <= 67) return WMO_TO_ICON[61];
+  if (code >= 77 && code <= 82) return WMO_TO_ICON[80];
+  return WMO_TO_ICON[0];
+}
+
+function initWeatherWidgetConfig() {
+  const addBtn = document.getElementById('add-weather-widget');
+  const overlay = document.getElementById('weather-widget-config-overlay');
+  const closeBtn = document.getElementById('weather-widget-config-close');
+  const byLocation = document.getElementById('weather-config-by-location');
+  const byCity = document.getElementById('weather-config-by-city');
+  const locationSection = document.getElementById('weather-config-location');
+  const citySection = document.getElementById('weather-config-city');
+  const cityInput = document.getElementById('weather-config-city-input');
+  const cityResults = document.getElementById('weather-config-city-results');
+  const validateLocation = document.getElementById('weather-config-validate-location');
+  const validateCity = document.getElementById('weather-config-validate-city');
+  const loadingEl = document.getElementById('weather-widget-loading');
+  if (!overlay || !addBtn) return;
+
+  let mode = 'location';
+  let selectedCity = null;
+
+  function showLoading(v) {
+    loadingEl?.classList.toggle('hidden', !v);
+  }
+
+  function openPanel() {
+    overlay.classList.remove('hidden');
+    mode = 'location';
+    selectedCity = null;
+    locationSection?.classList.remove('hidden');
+    citySection?.classList.add('hidden');
+    validateCity?.classList.add('hidden');
+    cityInput.value = '';
+    cityResults.innerHTML = '';
+  }
+
+  function closePanel() {
+    overlay.classList.add('hidden');
+    showLoading(false);
+  }
+
+  addBtn?.addEventListener('click', openPanel);
+  closeBtn?.addEventListener('click', closePanel);
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) closePanel();
+  });
+
+  byLocation?.addEventListener('click', () => {
+    mode = 'location';
+    selectedCity = null;
+    locationSection?.classList.remove('hidden');
+    citySection?.classList.add('hidden');
+    byLocation.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+    byCity?.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
+  });
+  byCity?.addEventListener('click', () => {
+    mode = 'city';
+    locationSection?.classList.add('hidden');
+    citySection?.classList.remove('hidden');
+    byCity?.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+    byLocation?.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
+  });
+
+  let searchTimeout = null;
+  cityInput?.addEventListener('input', () => {
+    selectedCity = null;
+    validateCity?.classList.add('hidden');
+    const q = cityInput.value.trim();
+    if (q.length < 2) {
+      cityResults.innerHTML = '';
+      return;
+    }
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+      try {
+        const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=search&name=' + encodeURIComponent(q);
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        const results = data.results || [];
+        cityResults.innerHTML = results.slice(0, 5).map((r) => {
+          const cc = (r.country_code || r.countryCode || '').toString().toUpperCase().slice(0, 2);
+          return `
+          <button type="button" class="weather-city-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-lat="${r.latitude}" data-lng="${r.longitude}" data-city="${r.name}" data-country="${(r.country || '').toString().replace(/"/g, '&quot;')}" data-country-code="${cc}">
+            ${r.name}${r.admin1 ? ', ' + r.admin1 : ''} (${cc})
+          </button>
+        `;
+        }).join('');
+        cityResults.querySelectorAll('.weather-city-result').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            selectedCity = {
+              lat: parseFloat(btn.dataset.lat),
+              lng: parseFloat(btn.dataset.lng),
+              city: btn.dataset.city,
+              country: btn.dataset.country,
+              countryCode: (btn.dataset.countryCode || '').toUpperCase().slice(0, 2)
+            };
+            cityInput.value = selectedCity.city + ' (' + selectedCity.countryCode + ')';
+            cityResults.innerHTML = '';
+            validateCity?.classList.remove('hidden');
+          });
+        });
+      } catch (_) {}
+    }, 300);
+  });
+
+  async function addWeatherWidget(payload) {
+    const name = sessionStorage.getItem('osiris_user_name')?.trim();
+    if (!name) {
+      showToastError('Please log in to add a widget');
+      return;
+    }
+    showLoading(true);
+    try {
+      const url = typeof getCityImageUrl === 'function' ? getCityImageUrl() : 'city-image.php';
+      const imgRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city: payload.city,
+          countryCode: payload.countryCode,
+          lat: payload.lat,
+          lng: payload.lng,
+          weatherCode: payload.weatherCode || 0
+        })
+      });
+      const imgData = await imgRes.json();
+      const hasImage = imgData.image || imgData.imageClear || imgData.imageDark;
+      if (imgData.error && !hasImage) {
+        showToastError(imgData.detail ? `${imgData.error}: ${imgData.detail}` : (imgData.error || 'Failed to get city image'));
+        showLoading(false);
+        return;
+      }
+      const img = imgData.image || imgData.imageClear || imgData.imageDark || '';
+      const widget = {
+        id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
+        type: 'weather',
+        city: payload.city,
+        countryCode: payload.countryCode,
+        lat: payload.lat,
+        lng: payload.lng,
+        image: img,
+        imageClear: img,
+        imageDark: img
+      };
+      const widgetsUrl = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
+      const usersRes = await fetch(widgetsUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      let widgets = [];
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        widgets = usersData.widgets || [];
+      }
+      const patchUrl = typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php';
+      const patchRes = await fetch(patchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          widgets: [...widgets, widget]
+        })
+      });
+      if (!patchRes.ok) {
+        showToastError('Failed to save widget');
+        showLoading(false);
+        return;
+      }
+      closePanel();
+      await refreshNearby();
+      const tabWidgets = document.getElementById('tab-widgets');
+      const tilesWidgets = document.getElementById('widget-tiles');
+      if (tabWidgets?.classList.contains('bg-primary/20') && tilesWidgets) {
+        await renderWidgetTilesInTab();
+      }
+    } catch (e) {
+      showToastError('Failed to add weather widget');
+    }
+    showLoading(false);
+  }
+
+  validateLocation?.addEventListener('click', async () => {
+    const loc = LocationService?.currentLocation || {};
+    if (!loc.lat || !loc.lng) {
+      showToastError('Location not available. Enable GPS or try by city.');
+      return;
+    }
+    const city = loc.city || 'Unknown';
+    const countryCode = (loc.country || '').slice(0, 2).toUpperCase();
+    try {
+      const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + loc.lat + '&lng=' + loc.lng;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Weather fetch failed');
+      const weather = await res.json();
+      await addWeatherWidget({
+        city, countryCode,
+        lat: loc.lat, lng: loc.lng,
+        weatherCode: weather.weatherCode || 0
+      });
+    } catch (_) {
+      showToastError('Failed to get weather data');
+    }
+  });
+
+  validateCity?.addEventListener('click', async () => {
+    if (!selectedCity) {
+      showToastError('Select a city from the results');
+      return;
+    }
+    try {
+      const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + selectedCity.lat + '&lng=' + selectedCity.lng;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Weather fetch failed');
+      const weather = await res.json();
+      await addWeatherWidget({
+        city: selectedCity.city,
+        countryCode: selectedCity.countryCode,
+        lat: selectedCity.lat,
+        lng: selectedCity.lng,
+        weatherCode: weather.weatherCode || 0
+      });
+    } catch (_) {
+      showToastError('Failed to get weather data');
+    }
+  });
+}
+
+function initStockWidgetConfig() {
+  const addBtn = document.getElementById('add-stock-widget');
+  const overlay = document.getElementById('stock-widget-config-overlay');
+  const closeBtn = document.getElementById('stock-widget-config-close');
+  const searchInput = document.getElementById('stock-config-search');
+  const resultsEl = document.getElementById('stock-config-results');
+  const addBtnSubmit = document.getElementById('stock-config-add');
+  const loadingEl = document.getElementById('stock-widget-loading');
+  if (!overlay || !addBtn) return;
+
+  let selectedStock = null;
+
+  function showLoading(v) {
+    loadingEl?.classList.toggle('hidden', !v);
+  }
+
+  function openPanel() {
+    overlay.classList.remove('hidden');
+    selectedStock = null;
+    searchInput.value = '';
+    resultsEl.innerHTML = '';
+    addBtnSubmit?.classList.add('hidden');
+  }
+
+  function closePanel() {
+    overlay.classList.add('hidden');
+    showLoading(false);
+  }
+
+  addBtn?.addEventListener('click', openPanel);
+  closeBtn?.addEventListener('click', closePanel);
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) closePanel();
+  });
+
+  let searchTimeout = null;
+  searchInput?.addEventListener('input', () => {
+    selectedStock = null;
+    addBtnSubmit?.classList.add('hidden');
+    const q = searchInput.value.trim();
+    if (q.length < 1) {
+      resultsEl.innerHTML = '';
+      return;
+    }
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+      try {
+        const url = (typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php') + '?action=search&q=' + encodeURIComponent(q);
+        const res = await fetch(url);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          resultsEl.innerHTML = '<p class="text-sm text-red-500 px-3 py-2">' + (err.error || 'Search failed') + '</p>';
+          return;
+        }
+        const data = await res.json();
+        const results = data.result || data.results || [];
+        if (results.length === 0) {
+          resultsEl.innerHTML = '<p class="text-sm text-text-secondary px-3 py-2">No symbols found</p>';
+          return;
+        }
+        resultsEl.innerHTML = results.map((r) => {
+          const symbol = (r.symbol || r['1. symbol'] || '').replace(/"/g, '&quot;');
+          const desc = (r.description || r.name || r['2. name'] || r.type || r['3. type'] || symbol).toString().replace(/</g, '&lt;');
+          return `<button type="button" class="stock-search-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-symbol="${symbol}" data-description="${desc.replace(/"/g, '&quot;')}">${symbol} — ${desc}</button>`;
+        }).join('');
+        resultsEl.querySelectorAll('.stock-search-result').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            selectedStock = { symbol: btn.dataset.symbol, description: btn.dataset.description || btn.dataset.symbol };
+            searchInput.value = selectedStock.symbol + ' — ' + (selectedStock.description || '');
+            resultsEl.innerHTML = '';
+            addBtnSubmit?.classList.remove('hidden');
+          });
+        });
+      } catch (_) {
+        resultsEl.innerHTML = '<p class="text-sm text-red-500 px-3 py-2">Search failed</p>';
+      }
+    }, 400);
+  });
+
+  addBtnSubmit?.addEventListener('click', async () => {
+    if (!selectedStock) {
+      showToastError('Select a symbol from the results');
+      return;
+    }
+    await addStockWidget(selectedStock.symbol, selectedStock.description, showLoading, closePanel);
+  });
+}
+
+async function addStockWidget(symbol, description, showLoading, closePanel) {
+  const name = sessionStorage.getItem('osiris_user_name')?.trim();
+  if (!name) {
+    showToastError('Please log in to add a widget');
+    return;
+  }
+  showLoading?.(true);
+  try {
+    const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
+    const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(symbol));
+    const quote = quoteRes.ok ? await quoteRes.json() : {};
+    if (quoteRes.status === 503) {
+      showToastError('Stock API not configured. Add ALPHAVANTAGE_API_KEY to config.');
+      showLoading?.(false);
+      return;
+    }
+    const widget = {
+      id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9),
+      type: 'stock',
+      symbol: symbol.toUpperCase(),
+      name: description || symbol,
+      price: quote.price,
+      change: quote.change,
+      changePercent: quote.changePercent,
+      duration: '1 month'
+    };
+    const widgetsUrl = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
+    const usersRes = await fetch(widgetsUrl, { headers: { 'Accept': 'application/json' } });
+    let widgets = [];
+    if (usersRes.ok) {
+      const usersData = await usersRes.json();
+      widgets = usersData.widgets || [];
+    }
+    const patchRes = await fetch(typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, widgets: [...widgets, widget] })
+    });
+    if (!patchRes.ok) {
+      showToastError('Failed to save widget');
+      showLoading?.(false);
+      return;
+    }
+    closePanel?.();
+    await refreshNearby();
+    const tabWidgets = document.getElementById('tab-widgets');
+    if (tabWidgets?.classList.contains('bg-primary/20')) {
+      await renderWidgetTilesInTab();
+    }
+  } catch (e) {
+    showToastError('Failed to add stock widget');
+  }
+  showLoading?.(false);
+}
+
+function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, variant) {
+  const pct = quote?.changePercent ?? w.changePercent;
+  const isUp = pct != null && pct > 0;
+  const isDown = pct != null && pct < 0;
+  const colorClass = isUp ? 'bg-emerald-500/20 dark:bg-emerald-400/20 border-emerald-400/40' : isDown ? 'bg-rose-500/20 dark:bg-rose-400/20 border-rose-400/40' : 'bg-slate-500/20 dark:bg-slate-400/20 border-slate-400/40';
+  const textColorClass = isUp ? 'text-emerald-700 dark:text-emerald-400' : isDown ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400';
+  const price = quote?.price ?? w.price ?? '—';
+  const priceStr = typeof price === 'number' ? '$' + price.toFixed(2) : price;
+  const changeStr = pct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
+  const durationLabel = w.duration ?? '1 month';
+  const deleteId = w.id || ('w-' + (w.symbol || ''));
+  const deleteBtn = showDelete
+    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer" aria-label="Delete widget">
+         <span class="material-symbols-outlined text-[18px]">delete</span>
+       </button>`
+    : '';
+  const isPanel = variant === 'panel';
+  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'w-[260px] h-[268px] flex-shrink-0';
+  const padClass = isPanel ? 'p-2' : 'p-3';
+  const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-lg';
+  return `
+    <div class="group relative ${sizeClass} rounded-xl overflow-hidden border-2 ${colorClass}">
+      <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40"></div>
+      ${deleteBtn}
+      <div class="relative ${padClass} flex flex-col justify-between h-full z-[1]">
+        <div class="relative z-10">
+          <div class="text-xs text-slate-600 dark:text-slate-400 font-medium">Stock</div>
+          <div class="${symbolClass} text-slate-800 dark:text-white">${(w.symbol || w.name || '—').toString().replace(/</g, '&lt;')}</div>
+          <div class="text-sm ${textColorClass} font-semibold mt-0.5">${priceStr} · ${changeStr}</div>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${durationLabel}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function initResumeEmbed() {
   const btn = document.getElementById('btn-resume');
   const overlay = document.getElementById('resume-embed-overlay');
@@ -1333,3 +1961,4 @@ function initResumeEmbed() {
 window.initMapApp = initMapApp;
 window.initBottomPanel = initBottomPanel;
 window.initResumeEmbed = initResumeEmbed;
+window.initWeatherWidgetConfig = initWeatherWidgetConfig;

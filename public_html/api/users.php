@@ -30,10 +30,23 @@ $db->exec('
         created_at INTEGER NOT NULL
     )
 ');
+$cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+$hasWidgets = false;
+foreach ($cols as $c) {
+    if (($c['name'] ?? '') === 'widgets') {
+        $hasWidgets = true;
+        break;
+    }
+}
+if (!$hasWidgets) {
+    $db->exec('ALTER TABLE users ADD COLUMN widgets TEXT');
+}
 
-$stmt = $db->query('SELECT id, ip, name, lat, lng, city, country, last_seen FROM users ORDER BY last_seen DESC');
+$stmt = $db->query('SELECT id, ip, name, lat, lng, city, country, last_seen, widgets FROM users ORDER BY last_seen DESC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $users = array_map(function ($r) {
+    $widgetsRaw = $r['widgets'] ?? null;
+    $widgets = ($widgetsRaw !== null && $widgetsRaw !== '') ? json_decode($widgetsRaw, true) : null;
     return [
         'id' => (int)($r['id'] ?? 0),
         'ip' => $r['ip'],
@@ -42,7 +55,8 @@ $users = array_map(function ($r) {
         'lng' => $r['lng'] ? (float)$r['lng'] : null,
         'city' => $r['city'],
         'country' => $r['country'],
-        'lastSeen' => (int)$r['last_seen']
+        'lastSeen' => (int)$r['last_seen'],
+        'widgets' => is_array($widgets) ? $widgets : []
     ];
 }, $rows);
 echo json_encode($users);

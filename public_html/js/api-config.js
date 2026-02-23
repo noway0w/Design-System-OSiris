@@ -7,3 +7,42 @@ window.getPointsOfInterestUrl = function () {
   const base = window.OSIRIS_API_URL || '';
   return base ? `${base}/points-of-interest.php` : 'points-of-interest.php';
 };
+
+// Weather API URL
+window.getWeatherUrl = function () {
+  const base = window.OSIRIS_API_URL || '';
+  return base ? `${base}/weather.php` : 'weather.php';
+};
+
+// City image API URL
+window.getCityImageUrl = function () {
+  const base = window.OSIRIS_API_URL || '';
+  return base ? `${base}/city-image.php` : 'city-image.php';
+};
+
+// Resolve city image path to absolute URL (for background-image in CSS)
+window.resolveCityImageUrl = function (path) {
+  if (!path || typeof path !== 'string') return '';
+  const base = window.OSIRIS_API_URL || '';
+  if (base) {
+    const clean = path.replace(/^\//, '');
+    return (base.replace(/\/$/, '') + '/' + clean);
+  }
+  try {
+    return new URL(path, window.location.href).href;
+  } catch (_) {
+    return path;
+  }
+};
+
+// Users widgets API URL
+window.getUsersWidgetsUrl = function () {
+  const base = window.OSIRIS_API_URL || '';
+  return base ? `${base}/users-widgets.php` : 'users-widgets.php';
+};
+
+// Stock API URL
+window.getStockUrl = function () {
+  const base = window.OSIRIS_API_URL || '';
+  return base ? `${base}/stock.php` : 'stock.php';
+};

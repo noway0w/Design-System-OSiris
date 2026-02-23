@@ -59,6 +59,17 @@ $db->exec('
         created_at INTEGER NOT NULL
     )
 ');
+$cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+$hasWidgets = false;
+foreach ($cols as $c) {
+    if (($c['name'] ?? '') === 'widgets') {
+        $hasWidgets = true;
+        break;
+    }
+}
+if (!$hasWidgets) {
+    $db->exec('ALTER TABLE users ADD COLUMN widgets TEXT');
+}
 
 $now = (string)round(microtime(true) * 1000);
 $ip = $body['ip'] ?? '';
