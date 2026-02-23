@@ -7,7 +7,20 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 $dbPath = __DIR__ . '/users.db';
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+} elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+    $clientIp = trim($_SERVER['HTTP_X_REAL_IP']);
+}
+$config = @include dirname(__DIR__) . '/config.php';
+$adminIps = $config['ADMIN_IPS'] ?? ['195.139.147.156'];
+$adminIps = is_array($adminIps) ? $adminIps : [$adminIps];
+
 $out = [
+    'yourIp' => $clientIp,
+    'isAdmin' => in_array($clientIp, $adminIps, true),
+    'adminIps' => $adminIps,
     'dbPath' => $dbPath,
     'dbExists' => file_exists($dbPath),
     'dbWritable' => is_writable(dirname($dbPath)),

@@ -1,43 +1,43 @@
 #!/bin/bash
-# Fix database permissions for users-widgets.php (readonly database error)
+# Fix database permissions for users-widgets.php and api/users-delete.php (readonly database error)
 # Run as root: sudo bash scripts/fix-widgets-db-permissions.sh
-# php-fpm typically runs as nobody - database and api dir must be writable by that user
+# Database and api dir must be writable by the PHP-FPM pool user (often nginx or apache)
 
 set -e
 cd "$(dirname "$0")/.."
 API_DIR="public_html/api"
 DB="$API_DIR/users.db"
 
-# Detect web server user (php-fpm pool user, or nginx/apache)
-WWW_USER="nobody"
-if [ -f /etc/php-fpm.d/www.conf ]; then
-  WWW_USER=$(grep -E '^user\s*=' /etc/php-fpm.d/www.conf 2>/dev/null | head -1 | sed 's/.*=\s*//' | tr -d ' ') || true
-fi
-[ -z "$WWW_USER" ] && WWW_USER="nobody"
+# Detect web server user from php-fpm pool config
+WWW_USER=""
+for conf in /etc/php-fpm.d/www.conf /etc/php-fpm.d/nginx.conf /etc/php*/php-fpm.d/www.conf; do
+  [ -f "$conf" ] || continue
+  WWW_USER=$(grep -E '^user\s*=' "$conf" 2>/dev/null | head -1 | sed 's/.*=\s*//' | tr -d ' ') || true
+  [ -n "$WWW_USER" ] && break
+done
+[ -z "$WWW_USER" ] && WWW_USER="nginx"
 
 echo "Using web server user: $WWW_USER"
 
 # Ensure api dir exists
 mkdir -p "$API_DIR"
 
-# Create db if missing (users-register creates it, but ensure it exists)
+# Create db if missing
 if [ ! -f "$DB" ]; then
   touch "$DB"
 fi
 
-# Own api dir and db by web server user (SQLite needs dir writable for -journal/-wal files)
-# Only chown the directory and db file, not PHP scripts
+# Own api dir and db by web server user (SQLite needs parent dir writable for -journal/-wal)
 chown "$WWW_USER:$WWW_USER" "$API_DIR"
-chown "$WWW_USER:$WWW_USER" "$DB" 2>/dev/null || true
+chown "$WWW_USER:$WWW_USER" "$DB"
 chmod 775 "$API_DIR"
 chmod 664 "$DB"
-# Fix any SQLite journal files
 chown "$WWW_USER:$WWW_USER" "$DB"-journal "$DB"-wal 2>/dev/null || true
 
-# SELinux: allow httpd/php-fpm to write (RHEL/CentOS)
-if command -v chcon &>/dev/null; then
+# SELinux: allow httpd/php-fpm to write
+if command -v chcon &>/dev/null && [ "$(getenforce 2>/dev/null)" = "Enforcing" ]; then
   chcon -R -t httpd_sys_rw_content_t "$API_DIR" 2>/dev/null || true
   echo "Applied SELinux httpd_sys_rw_content_t to $API_DIR"
 fi
 
-echo "Done. Try saving a widget again."
+echo "Done. Widget save, user delete, and clear-all should work now."

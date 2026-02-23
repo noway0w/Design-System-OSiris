@@ -17,3 +17,6 @@ public_html/api/points-of-interest.db
 
 # Gemini API key
 public_html/config.php
+
+# User uploads
+public_html/uploads/

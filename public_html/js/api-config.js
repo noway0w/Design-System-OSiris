@@ -51,3 +51,15 @@ window.getStockUrl = function () {
   const base = window.OSIRIS_API_URL || '';
   return base ? `${base}/stock.php` : 'stock.php';
 };
+
+// Profile picture upload API URL
+window.getProfilePictureUploadUrl = function () {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/api/profile-picture-upload.php` : 'api/profile-picture-upload.php';
+};
+
+// Profile picture update API URL
+window.getProfilePictureUpdateUrl = function () {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/api/users-profile-picture.php` : 'api/users-profile-picture.php';
+};

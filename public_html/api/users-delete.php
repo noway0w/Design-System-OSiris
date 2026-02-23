@@ -12,10 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-$adminIp = '195.139.147.156';
+$adminIps = ['195.139.147.156', '127.0.0.1'];
+$config = @include dirname(__DIR__) . '/config.php';
+if (is_array($config) && !empty($config['ADMIN_IPS'])) {
+    $adminIps = is_array($config['ADMIN_IPS']) ? $config['ADMIN_IPS'] : [$config['ADMIN_IPS']];
+}
+
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
-if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+} elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+    $clientIp = trim($_SERVER['HTTP_X_REAL_IP']);
 }
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -44,11 +51,14 @@ if (!$row) {
     exit;
 }
 
-$isAdmin = ($clientIp === $adminIp);
+$isAdmin = in_array($clientIp, $adminIps, true);
 $isOwnProfile = ($row['ip'] === $clientIp);
 if (!$isAdmin && !$isOwnProfile) {
     http_response_code(403);
-    echo json_encode(['error' => 'You can only delete your own profile']);
+    echo json_encode([
+        'error' => 'You can only delete your own profile',
+        'debug' => ['clientIp' => $clientIp, 'adminIps' => $adminIps, 'targetUserIp' => $row['ip']]
+    ]);
     exit;
 }
 

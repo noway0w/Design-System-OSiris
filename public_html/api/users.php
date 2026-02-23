@@ -32,17 +32,20 @@ $db->exec('
 ');
 $cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
 $hasWidgets = false;
+$hasProfilePicture = false;
 foreach ($cols as $c) {
-    if (($c['name'] ?? '') === 'widgets') {
-        $hasWidgets = true;
-        break;
-    }
+    $colName = $c['name'] ?? '';
+    if ($colName === 'widgets') $hasWidgets = true;
+    if ($colName === 'profile_picture') $hasProfilePicture = true;
 }
 if (!$hasWidgets) {
     $db->exec('ALTER TABLE users ADD COLUMN widgets TEXT');
 }
+if (!$hasProfilePicture) {
+    $db->exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
+}
 
-$stmt = $db->query('SELECT id, ip, name, lat, lng, city, country, last_seen, widgets FROM users ORDER BY last_seen DESC');
+$stmt = $db->query('SELECT id, ip, name, lat, lng, city, country, last_seen, widgets, profile_picture FROM users ORDER BY last_seen DESC');
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $users = array_map(function ($r) {
     $widgetsRaw = $r['widgets'] ?? null;
@@ -56,7 +59,8 @@ $users = array_map(function ($r) {
         'city' => $r['city'],
         'country' => $r['country'],
         'lastSeen' => (int)$r['last_seen'],
-        'widgets' => is_array($widgets) ? $widgets : []
+        'widgets' => is_array($widgets) ? $widgets : [],
+        'profilePicture' => trim($r['profile_picture'] ?? '') ?: null
     ];
 }, $rows);
 echo json_encode($users);

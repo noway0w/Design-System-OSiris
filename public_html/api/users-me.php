@@ -7,9 +7,14 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
-$adminIp = '195.139.147.156';
+$config = @include dirname(__DIR__) . '/config.php';
+$adminIps = $config['ADMIN_IPS'] ?? ['195.139.147.156'];
+$adminIps = is_array($adminIps) ? $adminIps : [$adminIps];
+
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
-if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+} elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+    $clientIp = trim($_SERVER['HTTP_X_REAL_IP']);
 }
-echo json_encode(['isAdmin' => ($clientIp === $adminIp)]);
+echo json_encode(['isAdmin' => in_array($clientIp, $adminIps, true)]);

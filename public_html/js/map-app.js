@@ -9,18 +9,28 @@ let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
 const HEARTBEAT_MS = 5000;
-const AVATARS = [
-  'avatars/avatar-1.png',
-  'avatars/avatar-2.png',
-  'avatars/avatar-3.png',
-  'avatars/avatar-4.png',
-  'avatars/avatar-5.png',
-  'avatars/avatar-6.png',
-  'avatars/avatar-7.png',
-  'avatars/avatar-8.png',
-  'avatars/avatar-9.png',
-  'avatars/avatar-10.png'
+const USER_PICT_IMAGES = [
+  'pict/random1.png',
+  'pict/random2.png',
+  'pict/random3.png',
+  'pict/random4.png',
+  'pict/random5.png',
+  'pict/random6.png',
+  'pict/random7.png',
+  'pict/random8.png',
+  'pict/random9.png'
 ];
+
+function getUserImage(userName) {
+  if (!userName || typeof userName !== 'string') return USER_PICT_IMAGES[0];
+  let h = 0;
+  for (let i = 0; i < userName.length; i++) {
+    h = ((h << 5) - h) + userName.charCodeAt(i);
+    h = h & h;
+  }
+  const idx = Math.abs(h) % USER_PICT_IMAGES.length;
+  return USER_PICT_IMAGES[idx];
+}
 const MS_1_MIN = 60 * 1000;
 const MS_24H = 24 * 60 * 60 * 1000;
 
@@ -113,12 +123,29 @@ async function deleteUser(id) {
   const b = getApiBase();
   const url = getUsersDeleteUrl(id);
   const opts = b ? { method: 'DELETE' } : { method: 'GET' };
-  const res = await fetch(url, opts);
-  if (res.status === 403) {
-    showToastError('You do not have the rights to use this feature');
+  try {
+    const res = await fetch(url, opts);
+    if (res.ok) {
+      showToastSuccess('User deleted successfully');
+      return true;
+    }
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      const debug = body.debug;
+      const msg = debug?.clientIp
+        ? `Delete denied. Server sees your IP as ${debug.clientIp} (admin IPs: ${(debug.adminIps || []).join(', ')})`
+        : 'You do not have the rights to delete users';
+      showToastError(msg);
+      return false;
+    }
+    const body = await res.json().catch(() => ({}));
+    const msg = body.error || `Failed to delete user (HTTP ${res.status})`;
+    showToastError(msg);
+    return false;
+  } catch (e) {
+    showToastError(e?.message || 'Network error: could not delete user');
     return false;
   }
-  return res.ok;
 }
 
 async function fetchUsers() {
@@ -182,13 +209,19 @@ async function clearAllUsers() {
   try {
     const b = getApiBase();
     const res = await fetch(getUsersClearUrl(), b ? { method: 'DELETE' } : { method: 'GET' });
-    if (res.status === 403) {
-      showToastError('You do not have the rights to use this feature');
+    if (res.ok) {
+      showToastSuccess('All users cleared successfully');
+      await refreshNearby();
       return;
     }
-    if (res.ok) await refreshNearby();
+    if (res.status === 403) {
+      showToastError('You do not have the rights to clear all users');
+      return;
+    }
+    const body = await res.json().catch(() => ({}));
+    showToastError(body.error || `Failed to clear users (HTTP ${res.status})`);
   } catch (e) {
-    console.warn('Failed to clear users:', e);
+    showToastError(e?.message || 'Network error: could not clear users');
   }
 }
 
@@ -207,10 +240,10 @@ async function fetchPointsOfInterest() {
 }
 
 function toTiles(users) {
-  currentTiles = users.map((u, i) => ({
+  currentTiles = users.map((u) => ({
     id: u.id,
     name: u.name,
-    avatar: AVATARS[i % AVATARS.length],
+    avatar: u.profilePicture || getUserImage(u.name),
     lastSeen: u.lastSeen,
     lat: u.lat,
     lng: u.lng,
@@ -719,11 +752,17 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
 
 async function deleteWidget(widgetId) {
   const name = sessionStorage.getItem('osiris_user_name')?.trim();
-  if (!name) return false;
+  if (!name) {
+    showToastError('Please log in to delete widgets');
+    return false;
+  }
   try {
     const url = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      showToastError(`Failed to load widgets (HTTP ${res.status})`);
+      return false;
+    }
     const data = await res.json();
     let widgets = data.widgets || [];
     widgets = widgets.filter((w) => {
@@ -736,9 +775,17 @@ async function deleteWidget(widgetId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, widgets })
     });
-    if (patchRes.ok) await refreshNearby();
-    return patchRes.ok;
-  } catch (_) {
+    if (patchRes.ok) {
+      showToastSuccess('Widget deleted successfully');
+      await refreshNearby();
+      return true;
+    }
+    const errBody = await patchRes.json().catch(() => ({}));
+    const msg = errBody.error || `Failed to delete widget (HTTP ${patchRes.status})`;
+    showToastError(msg);
+    return false;
+  } catch (e) {
+    showToastError(e?.message || 'Network error: could not delete widget');
     return false;
   }
 }
@@ -835,16 +882,16 @@ function renderMapDataTiles(state) {
   const container = document.getElementById('map-data-tiles');
   if (!container) return;
   const thumbLight = {
-    buildings: 'assets/map-data/3D_Building-16df9d4f-a37a-4b28-82b4-29102ba973cc.png',
-    topography: 'assets/map-data/Topography-f0f7d58d-01de-4a71-a672-5645b1839686.png',
-    names: 'assets/map-data/Local_Information-761468aa-38c3-4dab-98e3-194b0ddc73ad.png',
-    propertyBoundaries: 'assets/map-data/Road_Boundaries-d086e440-e5a5-49d5-95bb-a00e264e36ab.png'
+    buildings: 'assets/map-data/3D-Building.png',
+    topography: 'assets/map-data/Topography.png',
+    names: 'assets/map-data/Local-Information.png',
+    propertyBoundaries: 'assets/map-data/Road-Boundaries.png'
   };
   const thumbDark = {
-    buildings: 'assets/map-data/3D_Building_Dark_Mode-03ad4b23-3a78-423f-afef-6a0c97118e27.png',
-    topography: 'assets/map-data/Topography_Dark_Mode-0e13759c-17de-477e-abde-b9aa409f14b7.png',
-    names: 'assets/map-data/Local_Information_Dark_Mode-c3aa1a4b-5a4b-4225-a85d-d2ce6d35a065.png',
-    propertyBoundaries: 'assets/map-data/Road_Boundaries_Dark_Mode-ca300c9d-f9de-4023-b087-67bc7a8f0127.png'
+    buildings: 'assets/map-data/3D-Building-Dark-Mode.png',
+    topography: 'assets/map-data/Topography-Dark-Mode.png',
+    names: 'assets/map-data/Local-Information-Dark-Mode.png',
+    propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png'
   };
   const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route' };
   const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries' };
@@ -1026,16 +1073,31 @@ function wirePOITileCards() {
 function showToastError(message) {
   const toast = document.getElementById('toast-error');
   const msgEl = document.getElementById('toast-error-message');
+  const successToast = document.getElementById('toast-success');
+  if (successToast) successToast.classList.remove('visible');
   if (toast) {
     if (msgEl && message) msgEl.textContent = message;
     toast.classList.add('visible');
   }
 }
 
+function showToastSuccess(message) {
+  const toast = document.getElementById('toast-success');
+  const msgEl = document.getElementById('toast-success-message');
+  const errorToast = document.getElementById('toast-error');
+  if (errorToast) errorToast.classList.remove('visible');
+  if (toast) {
+    if (msgEl && message) msgEl.textContent = message;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 3000);
+  }
+}
+
 function initNotImplementedToast() {
-  const toast = document.getElementById('toast-error');
-  const closeBtn = document.getElementById('toast-error-close');
-  closeBtn?.addEventListener('click', () => toast?.classList.remove('visible'));
+  const errorToast = document.getElementById('toast-error');
+  const successToast = document.getElementById('toast-success');
+  document.getElementById('toast-error-close')?.addEventListener('click', () => errorToast?.classList.remove('visible'));
+  document.getElementById('toast-success-close')?.addEventListener('click', () => successToast?.classList.remove('visible'));
 }
 
 function closeBottomPanel() {
@@ -1074,6 +1136,177 @@ function closeUserProfilePanel(panelEl) {
   panelEl.remove();
 }
 
+const PROFILE_PICKER_Z = 60;
+let profilePickerPanel = null;
+
+async function openProfilePicturePicker(tile, parentPanel) {
+  const container = document.getElementById('user-profile-panels-container');
+  if (!container) return;
+  if (profilePickerPanel) {
+    profilePickerPanel.remove();
+    profilePickerPanel = null;
+  }
+
+  const currentAvatar = tile.avatar || getUserImage(tile.name);
+  let selectedPath = currentAvatar.startsWith('uploads/profile-pictures/') ? currentAvatar : null;
+  let selectedRandomIndex = currentAvatar.startsWith('uploads/') ? -1 : USER_PICT_IMAGES.indexOf(currentAvatar);
+  if (selectedRandomIndex < 0 && !selectedPath) selectedRandomIndex = 0;
+
+  const panel = document.createElement('div');
+  panel.className = 'profile-picture-picker fixed w-80 rounded-2xl overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
+  panel.style.left = (window.innerWidth / 2 - 160) + 'px';
+  panel.style.top = (window.innerHeight / 2 - 220) + 'px';
+  panel.style.zIndex = String(PROFILE_PICKER_Z);
+
+  let html = `
+    <div class="p-4 border-b border-slate-200 dark:border-white/10">
+      <h3 class="font-bold text-slate-800 dark:text-white">Change profile picture</h3>
+      <p class="text-sm text-text-secondary mt-0.5">Choose one or upload your own</p>
+    </div>
+    <div class="p-4 grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+      <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
+        <div class="profile-pick-add-inner flex flex-col items-center justify-center">
+          <span class="material-symbols-outlined text-3xl text-text-secondary mb-1">add_photo_alternate</span>
+          <span class="text-sm text-text-secondary">Add your profile picture</span>
+          <span class="text-xs text-slate-400 mt-0.5">Click or drag & drop</span>
+        </div>
+        <div class="profile-pick-add-preview hidden w-20 h-20 rounded-full overflow-hidden">
+          <img src="" alt="" class="w-full h-full object-cover"/>
+        </div>
+        <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" id="profile-pick-file-input"/>
+      </div>
+      ${USER_PICT_IMAGES.map((src, i) => `
+        <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
+          <img src="${src}" alt="" class="w-14 h-14 rounded-full object-cover"/>
+        </button>
+      `).join('')}
+    </div>
+    <div class="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
+      <button type="button" class="profile-pick-cancel px-4 py-2 rounded-full border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+      <button type="button" class="profile-pick-validate px-4 py-2 rounded-full bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Validate</button>
+    </div>
+  `;
+
+  panel.innerHTML = html;
+
+  const renderSelected = () => {
+    panel.querySelectorAll('.profile-pick-option').forEach((btn, i) => {
+      const sel = !selectedPath && selectedRandomIndex === i;
+      btn.className = `profile-pick-option flex flex-col items-center p-2 rounded-xl border-2 transition-all hover:border-primary/50 border-slate-200 dark:border-slate-700 ${sel ? 'ring-2 ring-primary ring-offset-2' : ''}`;
+    });
+    const addEl = panel.querySelector('.profile-pick-add');
+    const inner = addEl?.querySelector('.profile-pick-add-inner');
+    const preview = addEl?.querySelector('.profile-pick-add-preview');
+    if (selectedPath && preview) {
+      preview.classList.remove('hidden');
+      preview.querySelector('img').src = selectedPath;
+      inner?.classList.add('hidden');
+      addEl.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+    } else {
+      preview?.classList.add('hidden');
+      inner?.classList.remove('hidden');
+      addEl.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+    }
+  };
+
+  const addEl = panel.querySelector('.profile-pick-add');
+  const fileInput = panel.querySelector('#profile-pick-file-input');
+
+  addEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+  });
+  addEl.addEventListener('dragover', (e) => { e.preventDefault(); addEl.classList.add('border-primary'); });
+  addEl.addEventListener('dragleave', () => addEl.classList.remove('border-primary'));
+  addEl.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    addEl.classList.remove('border-primary');
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    await handleProfileUpload(file, tile.name, (path) => {
+      selectedPath = path;
+      selectedRandomIndex = -1;
+      renderSelected();
+    });
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    await handleProfileUpload(file, tile.name, (path) => {
+      selectedPath = path;
+      selectedRandomIndex = -1;
+      renderSelected();
+    });
+    fileInput.value = '';
+  });
+
+  panel.querySelectorAll('.profile-pick-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedRandomIndex = parseInt(btn.dataset.index ?? '-1', 10);
+      selectedPath = null;
+      renderSelected();
+    });
+  });
+
+  panel.querySelector('.profile-pick-cancel').addEventListener('click', () => {
+    panel.remove();
+    profilePickerPanel = null;
+  });
+
+  panel.querySelector('.profile-pick-validate').addEventListener('click', async () => {
+    const path = selectedPath || (selectedRandomIndex >= 0 ? USER_PICT_IMAGES[selectedRandomIndex] : null);
+    if (!path) return;
+    const url = typeof getProfilePictureUpdateUrl === 'function' ? getProfilePictureUpdateUrl() : 'api/users-profile-picture.php';
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: tile.name, profilePicture: path })
+      });
+      const errBody = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = errBody.error || (res.status === 404 ? 'API not found. Create api/users-profile-picture.php' : `Failed to update profile picture (HTTP ${res.status})`);
+        showToastError(msg);
+        return;
+      }
+      const img = parentPanel?.querySelector('.user-profile-avatar');
+      if (img) img.src = path;
+      tile.avatar = path;
+      const nt = currentTiles.find((t) => t.name === tile.name);
+      if (nt) nt.avatar = path;
+      addUserTileMarkers(currentTiles);
+      renderNearbyTiles(currentTiles);
+      showToastSuccess('Profile picture updated');
+      panel.remove();
+      profilePickerPanel = null;
+    } catch (e) {
+      showToastError(e?.message || 'Failed to update profile picture');
+    }
+  });
+
+  container.appendChild(panel);
+  profilePickerPanel = panel;
+  renderSelected();
+}
+
+async function handleProfileUpload(file, userName, onSuccess) {
+  const url = typeof getProfilePictureUploadUrl === 'function' ? getProfilePictureUploadUrl() : 'api/profile-picture-upload.php';
+  const form = new FormData();
+  form.append('name', userName);
+  form.append('file', file);
+  try {
+    const res = await fetch(url, { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToastError(data.error || 'Upload failed');
+      return;
+    }
+    if (data.path) onSuccess(data.path);
+  } catch (e) {
+    showToastError(e?.message || 'Upload failed');
+  }
+}
+
 async function openUserProfilePanel(tile) {
   const container = document.getElementById('user-profile-panels-container');
   if (!container) return;
@@ -1105,11 +1338,18 @@ async function openUserProfilePanel(tile) {
   const deleteBtnHtml = canDelete
     ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
     : '';
+  const isOwnPanel = tile.name === currentUserName;
+  const avatarEditBtn = isOwnPanel
+    ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
+    : '';
 
   panel.innerHTML = `
     <div class="user-profile-drag-handle flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
-        <img class="user-profile-avatar w-12 h-12 rounded-full object-cover border-2 border-primary/30 flex-shrink-0" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+        <div class="relative flex-shrink-0 group/avatar">
+          <img class="user-profile-avatar w-12 h-12 rounded-full object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+          ${avatarEditBtn}
+        </div>
         <div class="min-w-0">
           <h3 class="user-profile-name font-bold text-slate-800 dark:text-white truncate">${(tile.name || '—').toString().replace(/</g, '&lt;')}</h3>
           <div class="flex items-center gap-1 text-text-secondary text-sm truncate">
@@ -1125,6 +1365,14 @@ async function openUserProfilePanel(tile) {
     </div>
     <div class="user-profile-widgets p-3 space-y-2 hidden"></div>
   `;
+
+  if (isOwnPanel) {
+    const editBtn = panel.querySelector('.user-profile-avatar-edit');
+    editBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openProfilePicturePicker(tile, panel);
+    });
+  }
 
   const widgetsEl = panel.querySelector('.user-profile-widgets');
   const allWidgets = tile.widgets || [];
@@ -1182,9 +1430,9 @@ async function openUserProfilePanel(tile) {
           e.stopPropagation();
           const id = btn.dataset.deleteWidgetId;
           if (!id || tile.name !== currentUserName) return;
-          await deleteWidget(id);
-          closeUserProfilePanel(panel);
-          await refreshNearby();
+          if (await deleteWidget(id)) {
+            closeUserProfilePanel(panel);
+          }
         });
       });
     }
