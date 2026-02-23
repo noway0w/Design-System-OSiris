@@ -46,6 +46,7 @@ let scrollDragJustEnded = false;
 
 let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true };
 let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries'];
+const userProfilePanels = new Map();
 let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null };
 
 const MAP_DATA_ORDER_KEY = 'osiris_map_data_tile_order';
@@ -294,7 +295,8 @@ function renderNearbyTiles(tiles) {
       const id = btn.getAttribute('data-user-id');
       if (!id) return;
       if (await deleteUser(id)) {
-        closeUserProfilePanel();
+        const panel = Array.from(document.querySelectorAll('.user-profile-panel')).find((p) => p.getAttribute('data-user-id') === id);
+        if (panel) closeUserProfilePanel(panel);
         await refreshNearby();
       }
     });
@@ -1023,165 +1025,184 @@ function closeBottomPanel() {
   toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
 }
 
-async function openUserProfilePanel(tile) {
-  const panel = document.getElementById('user-profile-panel');
-  const avatar = document.getElementById('user-profile-avatar');
-  const nameEl = document.getElementById('user-profile-name');
-  const locationEl = document.getElementById('user-profile-location');
-  const deleteBtn = document.getElementById('user-profile-delete');
-  const widgetsEl = document.getElementById('user-profile-widgets');
-  if (!panel || !avatar || !nameEl || !locationEl) return;
-  avatar.src = tile.avatar || '';
-  avatar.alt = tile.name || '';
-  nameEl.textContent = tile.name || '—';
-  locationEl.textContent = tile.city || tile.country || 'Unknown';
-  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
-  const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
-  if (deleteBtn) {
-    if (canDelete) {
-      deleteBtn.setAttribute('data-user-id', String(tile.id));
-      deleteBtn.classList.remove('hidden');
-    } else {
-      deleteBtn.classList.add('hidden');
-    }
-  }
-  if (widgetsEl) {
-    const allWidgets = (tile.widgets || []);
-    const weatherWidgets = allWidgets.filter((w) => w.type === 'weather');
-    const stockWidgets = allWidgets.filter((w) => w.type === 'stock');
-    const showDelete = canDelete && allWidgets.length > 0;
-    if (allWidgets.length === 0) {
-      widgetsEl.classList.add('hidden');
-      widgetsEl.innerHTML = '';
-    } else {
-      widgetsEl.classList.remove('hidden');
-      const isDark = document.documentElement.classList.contains('dark');
-      let html = '';
-      for (const w of weatherWidgets) {
-        try {
-          const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
-          const res = await fetch(url);
-          const weather = res.ok ? await res.json() : {};
-          const imgPath = w.image || w.imageDark || w.imageClear;
-          html += buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, 'panel');
-        } catch (_) {
-          const imgPath = w.image || w.imageDark || w.imageClear;
-          html += buildWidgetCardHtml(w, {}, imgPath, isDark, showDelete, 'panel');
-        }
-      }
-      for (const w of stockWidgets) {
-        try {
-          const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
-          const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(w.symbol || ''));
-          const quote = quoteRes.ok ? await quoteRes.json() : {};
-          html += buildStockWidgetCardHtml(w, quote, [], isDark, showDelete, 'panel');
-        } catch (_) {
-          html += buildStockWidgetCardHtml(w, {}, [], isDark, showDelete, 'panel');
-        }
-      }
-      widgetsEl.innerHTML = html;
-      if (showDelete) {
-        widgetsEl.querySelectorAll('[data-delete-widget-id]').forEach((btn) => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.deleteWidgetId;
-            if (!id || tile.name !== currentUserName) return;
-            await deleteWidget(id);
-            closeUserProfilePanel();
-            await refreshNearby();
-          });
-        });
-      }
-    }
-  }
-  panel.style.left = '50%';
-  panel.style.top = '50%';
-  panel.style.transform = 'translate(-50%, -50%)';
-  panel.classList.remove('hidden');
-  panel.setAttribute('aria-hidden', 'false');
+const PANEL_CASCADE_OFFSET = 28;
+const PANEL_BASE_Z = 40;
+
+function getPanelPosition(panelEl) {
+  const rect = panelEl.getBoundingClientRect();
+  return { left: rect.left, top: rect.top };
 }
 
-function closeUserProfilePanel() {
-  const panel = document.getElementById('user-profile-panel');
-  if (!panel) return;
-  panel.classList.add('hidden');
-  panel.setAttribute('aria-hidden', 'true');
+function setPanelPosition(panelEl, left, top) {
+  const maxLeft = window.innerWidth - panelEl.offsetWidth;
+  const maxTop = window.innerHeight - panelEl.offsetHeight;
+  left = Math.max(0, Math.min(left, maxLeft));
+  top = Math.max(0, Math.min(top, maxTop));
+  panelEl.style.left = left + 'px';
+  panelEl.style.top = top + 'px';
+  panelEl.style.transform = 'none';
+}
+
+function closeUserProfilePanel(panelEl) {
+  if (!panelEl) return;
+  const name = panelEl.getAttribute('data-user-name');
+  if (name) userProfilePanels.delete(name);
+  panelEl.remove();
+}
+
+async function openUserProfilePanel(tile) {
+  const container = document.getElementById('user-profile-panels-container');
+  if (!container) return;
+  const name = tile.name || tile.id || 'user';
+  if (userProfilePanels.has(name)) {
+    const { el } = userProfilePanels.get(name);
+    el.style.zIndex = PANEL_BASE_Z + userProfilePanels.size;
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    return;
+  }
+
+  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
+  const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
+  const count = userProfilePanels.size;
+  const baseX = window.innerWidth / 2 - 144;
+  const baseY = window.innerHeight / 2 - 120;
+  const left = baseX + count * PANEL_CASCADE_OFFSET;
+  const top = baseY + count * PANEL_CASCADE_OFFSET;
+
+  const panel = document.createElement('div');
+  panel.className = 'user-profile-panel fixed w-72 rounded-2xl overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto';
+  panel.setAttribute('aria-hidden', 'false');
+  panel.setAttribute('data-user-name', name);
+  panel.setAttribute('data-user-id', tile.id || '');
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
+  panel.style.zIndex = String(PANEL_BASE_Z + count);
+
+  const deleteBtnHtml = canDelete
+    ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
+    : '';
+
+  panel.innerHTML = `
+    <div class="user-profile-drag-handle flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <img class="user-profile-avatar w-12 h-12 rounded-full object-cover border-2 border-primary/30 flex-shrink-0" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+        <div class="min-w-0">
+          <h3 class="user-profile-name font-bold text-slate-800 dark:text-white truncate">${(tile.name || '—').toString().replace(/</g, '&lt;')}</h3>
+          <div class="flex items-center gap-1 text-text-secondary text-sm truncate">
+            <span class="material-symbols-outlined text-[16px] flex-shrink-0">location_on</span>
+            <span class="user-profile-location truncate">${(tile.city || tile.country || 'Unknown').toString().replace(/</g, '&lt;')}</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        ${deleteBtnHtml}
+        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close profile"><span class="material-symbols-outlined text-[20px]">close</span></button>
+      </div>
+    </div>
+    <div class="user-profile-widgets p-3 space-y-2 hidden"></div>
+  `;
+
+  const widgetsEl = panel.querySelector('.user-profile-widgets');
+  const allWidgets = tile.widgets || [];
+  const weatherWidgets = allWidgets.filter((w) => w.type === 'weather');
+  const stockWidgets = allWidgets.filter((w) => w.type === 'stock');
+  const showDelete = canDelete && allWidgets.length > 0;
+
+  if (allWidgets.length > 0) {
+    widgetsEl.classList.remove('hidden');
+    const isDark = document.documentElement.classList.contains('dark');
+    let html = '';
+    for (const w of weatherWidgets) {
+      try {
+        const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
+        const res = await fetch(url);
+        const weather = res.ok ? await res.json() : {};
+        const imgPath = w.image || w.imageDark || w.imageClear;
+        html += buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, 'panel');
+      } catch (_) {
+        html += buildWidgetCardHtml(w, {}, w.image || w.imageDark || w.imageClear, isDark, showDelete, 'panel');
+      }
+    }
+    for (const w of stockWidgets) {
+      try {
+        const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
+        const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(w.symbol || ''));
+        const quote = quoteRes.ok ? await quoteRes.json() : {};
+        html += buildStockWidgetCardHtml(w, quote, [], isDark, showDelete, 'panel');
+      } catch (_) {
+        html += buildStockWidgetCardHtml(w, {}, [], isDark, showDelete, 'panel');
+      }
+    }
+    widgetsEl.innerHTML = html;
+    if (showDelete) {
+      widgetsEl.querySelectorAll('[data-delete-widget-id]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.deleteWidgetId;
+          if (!id || tile.name !== currentUserName) return;
+          await deleteWidget(id);
+          closeUserProfilePanel(panel);
+          await refreshNearby();
+        });
+      });
+    }
+  }
+
+  container.appendChild(panel);
+  userProfilePanels.set(name, { el: panel, tile });
+
+  const handle = panel.querySelector('.user-profile-drag-handle');
+  if (handle) {
+    handle.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.user-profile-panel-close')) return;
+      const pos = getPanelPosition(panel);
+      window._userPanelDrag = { panel, startX: e.clientX, startY: e.clientY, startLeft: pos.left, startTop: pos.top };
+    });
+    handle.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.user-profile-panel-close')) return;
+      const pos = getPanelPosition(panel);
+      window._userPanelDrag = { panel, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startLeft: pos.left, startTop: pos.top };
+    }, { passive: true });
+  }
 }
 
 function initUserProfilePanel() {
-  const panel = document.getElementById('user-profile-panel');
-  const handle = document.getElementById('user-profile-drag-handle');
-  const closeBtn = document.getElementById('user-profile-close');
-  if (!panel || !handle) return;
-
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-  let startLeft = 0;
-  let startTop = 0;
-
-  function getPanelPosition() {
-    const rect = panel.getBoundingClientRect();
-    return { left: rect.left, top: rect.top };
-  }
-
-  function setPanelPosition(left, top) {
-    const maxLeft = window.innerWidth - panel.offsetWidth;
-    const maxTop = window.innerHeight - panel.offsetHeight;
-    left = Math.max(0, Math.min(left, maxLeft));
-    top = Math.max(0, Math.min(top, maxTop));
-    panel.style.left = left + 'px';
-    panel.style.top = top + 'px';
-    panel.style.transform = 'none';
-  }
-
-  handle.addEventListener('mousedown', (e) => {
-    if (e.target.closest('#user-profile-close')) return;
-    isDragging = true;
-    const pos = getPanelPosition();
-    startX = e.clientX;
-    startY = e.clientY;
-    startLeft = pos.left;
-    startTop = pos.top;
-  });
-
   document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
+    if (!window._userPanelDrag) return;
+    const { panel, startX, startY, startLeft, startTop } = window._userPanelDrag;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    setPanelPosition(startLeft + dx, startTop + dy);
+    setPanelPosition(panel, startLeft + dx, startTop + dy);
   });
-
-  document.addEventListener('mouseup', () => isDragging = false);
-
-  handle.addEventListener('touchstart', (e) => {
-    if (e.target.closest('#user-profile-close')) return;
-    isDragging = true;
-    const pos = getPanelPosition();
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    startLeft = pos.left;
-    startTop = pos.top;
-  }, { passive: true });
-
+  document.addEventListener('mouseup', () => { window._userPanelDrag = null; });
   document.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
+    if (!window._userPanelDrag) return;
+    const { panel, startX, startY, startLeft, startTop } = window._userPanelDrag;
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
-    setPanelPosition(startLeft + dx, startTop + dy);
+    setPanelPosition(panel, startLeft + dx, startTop + dy);
   }, { passive: true });
+  document.addEventListener('touchend', () => { window._userPanelDrag = null; });
 
-  document.addEventListener('touchend', () => isDragging = false);
-
-  closeBtn?.addEventListener('click', () => closeUserProfilePanel());
-
-  document.getElementById('user-profile-delete')?.addEventListener('click', async () => {
-    const btn = document.getElementById('user-profile-delete');
-    const id = btn?.getAttribute('data-user-id');
-    if (!id) return;
-    if (await deleteUser(id)) {
-      closeUserProfilePanel();
-      await refreshNearby();
+  document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('.user-profile-panel-close');
+    if (closeBtn) {
+      const panel = closeBtn.closest('.user-profile-panel');
+      closeUserProfilePanel(panel);
+      return;
+    }
+    const deleteBtn = e.target.closest('.user-profile-panel-delete');
+    if (deleteBtn) {
+      e.preventDefault();
+      const id = deleteBtn.getAttribute('data-user-id');
+      if (!id) return;
+      const panel = deleteBtn.closest('.user-profile-panel');
+      deleteUser(id).then((ok) => {
+        if (ok) {
+          closeUserProfilePanel(panel);
+          refreshNearby();
+        }
+      });
     }
   });
 }
