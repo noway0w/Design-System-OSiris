@@ -1313,7 +1313,7 @@ function initResumeEmbed() {
 
   function openResume() {
     if (overlay && iframe) {
-      iframe.src = 'resume.html';
+      iframe.src = 'resume.html?v=' + Date.now();
       overlay.classList.remove('hidden');
     }
   }
