@@ -4,37 +4,66 @@
  * GET ?name=UserName - return widgets for user
  * POST/PATCH - body: { name, widgets: [...] } - update user widgets
  */
+@ini_set('display_errors', 0);
+error_reporting(E_ALL);
+ob_start();
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit(0);
 }
 
 $dbPath = __DIR__ . '/api/users.db';
+$apiDir = dirname($dbPath);
+if (!is_dir($apiDir)) {
+    @mkdir($apiDir, 0755, true);
+}
 
 try {
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
+    ob_end_clean();
     http_response_code(500);
-    echo json_encode(['error' => 'Database error']);
+    echo json_encode(['error' => 'Database error', 'detail' => $e->getMessage()]);
     exit;
 }
 
-$cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
-$hasWidgets = false;
-foreach ($cols as $c) {
-    if (($c['name'] ?? '') === 'widgets') {
-        $hasWidgets = true;
-        break;
+try {
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            name TEXT NOT NULL,
+            lat REAL,
+            lng REAL,
+            city TEXT,
+            country TEXT,
+            last_seen INTEGER NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    ');
+    $cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+    $hasWidgets = false;
+    foreach ($cols as $c) {
+        if (($c['name'] ?? '') === 'widgets') {
+            $hasWidgets = true;
+            break;
+        }
     }
-}
-if (!$hasWidgets) {
-    $db->exec('ALTER TABLE users ADD COLUMN widgets TEXT');
+    if (!$hasWidgets) {
+        $db->exec('ALTER TABLE users ADD COLUMN widgets TEXT');
+    }
+} catch (PDOException $e) {
+    ob_end_clean();
+    http_response_code(500);
+    echo json_encode(['error' => 'Database schema error', 'detail' => $e->getMessage()]);
+    exit;
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
@@ -75,18 +104,27 @@ if ($method === 'POST' || $method === 'PATCH') {
         echo json_encode(['error' => 'widgets must be array']);
         exit;
     }
-    $stmt = $db->prepare('SELECT id FROM users WHERE name = ?');
-    $stmt->execute([$name]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) {
-        http_response_code(404);
-        echo json_encode(['error' => 'User not found']);
+    try {
+        $stmt = $db->prepare('SELECT id FROM users WHERE name = ?');
+        $stmt->execute([$name]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            $now = (string)round(microtime(true) * 1000);
+            $ins = $db->prepare('INSERT INTO users (ip, name, lat, lng, city, country, last_seen, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $ins->execute(['', $name, null, null, null, null, $now, $now]);
+            $row = ['id' => $db->lastInsertId()];
+        }
+        $json = json_encode($widgets);
+        $up = $db->prepare('UPDATE users SET widgets = ? WHERE id = ?');
+        $up->execute([$json, $row['id']]);
+        echo json_encode(['ok' => true, 'widgets' => $widgets]);
+    } catch (PDOException $e) {
+        ob_end_clean();
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to save widget', 'detail' => $e->getMessage()]);
         exit;
     }
-    $json = json_encode($widgets);
-    $up = $db->prepare('UPDATE users SET widgets = ? WHERE id = ?');
-    $up->execute([$json, $row['id']]);
-    echo json_encode(['ok' => true, 'widgets' => $widgets]);
+    ob_end_flush();
     exit;
 }
 

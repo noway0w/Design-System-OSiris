@@ -1,0 +1,17 @@
+{
+  "Amsterdam": { "lat": 52.3676, "lng": 4.9041 },
+  "Annecy": { "lat": 45.8992, "lng": 6.1294 },
+  "Berlin": { "lat": 52.52, "lng": 13.405 },
+  "Bruxelle": { "lat": 50.8503, "lng": 4.3517 },
+  "Copenhagen": { "lat": 55.6761, "lng": 12.5683 },
+  "Geneve": { "lat": 46.2044, "lng": 6.1432 },
+  "Munich": { "lat": 48.1351, "lng": 11.582 },
+  "Oslo": { "lat": 59.9139, "lng": 10.7522 },
+  "Paris": { "lat": 48.8566, "lng": 2.3522 },
+  "Royan": { "lat": 45.6281, "lng": -1.0281 },
+  "Stockholm": { "lat": 59.3293, "lng": 18.0686 },
+  "Toulon": { "lat": 43.1242, "lng": 5.928 },
+  "Trollhättan": { "lat": 58.2836, "lng": 12.2886 },
+  "Vienna": { "lat": 48.2082, "lng": 16.3738 },
+  "Zurich": { "lat": 47.3769, "lng": 8.5417 }
+}

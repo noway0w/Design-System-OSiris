@@ -38,7 +38,12 @@ window.resolveCityImageUrl = function (path) {
 // Users widgets API URL
 window.getUsersWidgetsUrl = function () {
   const base = window.OSIRIS_API_URL || '';
-  return base ? `${base}/users-widgets.php` : 'users-widgets.php';
+  if (base) return `${base.replace(/\/$/, '')}/users-widgets.php`;
+  try {
+    return new URL('users-widgets.php', window.location.href).href;
+  } catch (_) {
+    return 'users-widgets.php';
+  }
 };
 
 // Stock API URL

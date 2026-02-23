@@ -609,7 +609,25 @@ async function renderWidgetTilesInTab() {
   const isDark = document.documentElement.classList.contains('dark');
   let cardsHtml = '';
   for (const w of weatherWidgets) {
-    const imgPath = w.image || w.imageClear || w.imageDark || '';
+    let imgPath = w.image || w.imageClear || w.imageDark || '';
+    if (!imgPath && w.lat != null && w.lng != null) {
+      try {
+        const url = typeof getCityImageUrl === 'function' ? getCityImageUrl() : 'city-image.php';
+        const imgRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city: w.city || 'Unknown',
+            countryCode: (w.countryCode || 'XX').slice(0, 2).toUpperCase(),
+            lat: w.lat,
+            lng: w.lng,
+            weatherCode: 0
+          })
+        });
+        const imgData = await imgRes.json();
+        imgPath = imgData.image || imgData.imageClear || imgData.imageDark || '';
+      } catch (_) {}
+    }
     try {
       const forecastUrl = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
       const res = await fetch(forecastUrl);
@@ -631,11 +649,13 @@ async function renderWidgetTilesInTab() {
   }
   const addHtml = (addWeatherBtn ? addWeatherBtn.outerHTML : '') + (addStockBtn ? addStockBtn.outerHTML : '');
   container.innerHTML = addHtml + cardsHtml;
-  container.querySelector('#add-weather-widget')?.addEventListener('click', () => {
-    document.getElementById('weather-widget-config-overlay')?.classList.remove('hidden');
+  container.querySelector('#add-weather-widget')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof window.openWeatherWidgetPanel === 'function') window.openWeatherWidgetPanel();
   });
-  container.querySelector('#add-stock-widget')?.addEventListener('click', () => {
-    document.getElementById('stock-widget-config-overlay')?.classList.remove('hidden');
+  container.querySelector('#add-stock-widget')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof window.openStockWidgetPanel === 'function') window.openStockWidgetPanel();
   });
   container.querySelectorAll('[data-delete-widget-id]').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
@@ -653,8 +673,11 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const humidity = weather.humidity != null ? weather.humidity + '% humidity' : '—';
   const overlayClass = isDark ? 'bg-black/50' : 'bg-black/10';
   const deleteId = w.id || ('w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
+  const deleteBtnClass = variant === 'panel'
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white cursor-pointer'
+    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
-    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer" aria-label="Delete widget">
+    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
          <span class="material-symbols-outlined text-[18px]">delete</span>
        </button>`
     : '';
@@ -678,13 +701,14 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const bgSrc = imgPath
     ? (typeof resolveCityImageUrl === 'function' ? resolveCityImageUrl(imgPath) : imgPath)
     : '';
+  const fallbackSvg = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27400%27 height=%27400%27%3E%3Crect fill=%27%2387CEEB%27 width=%27400%27 height=%27400%27/%3E%3C/svg%3E";
   const bgImg = bgSrc
-    ? `<img src="${String(bgSrc).replace(/"/g, '&quot;')}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none" style="transform:scale(1.11)" />`
+    ? `<img src="${String(bgSrc).replace(/"/g, '&quot;')}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none" style="transform:scale(1.11)" onerror="this.onerror=null;this.src='${fallbackSvg}'" />`
     : '';
   return `
     <div class="group relative ${sizeClass} rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
       ${bgImg}
-      <div class="absolute inset-0 ${overlayClass}"></div>
+      <div class="absolute inset-0 ${overlayClass} pointer-events-none"></div>
       ${deleteBtn}
       <div class="relative p-3 ${layoutClass} h-full z-[1]">
         ${innerLayout}
@@ -1113,14 +1137,32 @@ async function openUserProfilePanel(tile) {
     const isDark = document.documentElement.classList.contains('dark');
     let html = '';
     for (const w of weatherWidgets) {
+      let imgPath = w.image || w.imageDark || w.imageClear || '';
+      if (!imgPath && w.lat != null && w.lng != null) {
+        try {
+          const url = typeof getCityImageUrl === 'function' ? getCityImageUrl() : 'city-image.php';
+          const imgRes = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              city: w.city || 'Unknown',
+              countryCode: ((w.countryCode || 'XX') + '').slice(0, 2).toUpperCase(),
+              lat: w.lat,
+              lng: w.lng,
+              weatherCode: 0
+            })
+          });
+          const imgData = await imgRes.json();
+          imgPath = imgData.image || imgData.imageClear || imgData.imageDark || '';
+        } catch (_) {}
+      }
       try {
         const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
         const res = await fetch(url);
         const weather = res.ok ? await res.json() : {};
-        const imgPath = w.image || w.imageDark || w.imageClear;
         html += buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, 'panel');
       } catch (_) {
-        html += buildWidgetCardHtml(w, {}, w.image || w.imageDark || w.imageClear, isDark, showDelete, 'panel');
+        html += buildWidgetCardHtml(w, {}, imgPath, isDark, showDelete, 'panel');
       }
     }
     for (const w of stockWidgets) {
@@ -1497,7 +1539,7 @@ function initBottomPanel() {
       scrollEl.scrollLeft = startScrollLeft + (startX - clientX);
     };
     const onDown = (e) => {
-      if (e.target.closest('.map-data-tile-draggable, .user-tile-delete, #nearby-clear-all')) return;
+      if (e.target.closest('.map-data-tile-draggable, .user-tile-delete, #nearby-clear-all, #add-weather-widget, #add-stock-widget, [data-delete-widget-id]')) return;
       scrollDragJustEnded = false;
       dragPending = true;
       isDragScrolling = false;
@@ -1563,7 +1605,7 @@ function initWeatherWidgetConfig() {
   const validateLocation = document.getElementById('weather-config-validate-location');
   const validateCity = document.getElementById('weather-config-validate-city');
   const loadingEl = document.getElementById('weather-widget-loading');
-  if (!overlay || !addBtn) return;
+  if (!overlay) return;
 
   let mode = 'location';
   let selectedCity = null;
@@ -1588,7 +1630,10 @@ function initWeatherWidgetConfig() {
     showLoading(false);
   }
 
-  addBtn?.addEventListener('click', openPanel);
+  window.openWeatherWidgetPanel = openPanel;
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#add-weather-widget')) openPanel();
+  });
   closeBtn?.addEventListener('click', closePanel);
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closePanel();
@@ -1661,6 +1706,8 @@ function initWeatherWidgetConfig() {
     }
     showLoading(true);
     try {
+      const loc = LocationService?.currentLocation || {};
+      await registerUser({ ...loc, ip: loc.ip ?? LocationService?.currentIP ?? '' });
       const url = typeof getCityImageUrl === 'function' ? getCityImageUrl() : 'city-image.php';
       const imgRes = await fetch(url, {
         method: 'POST',
@@ -1692,27 +1739,34 @@ function initWeatherWidgetConfig() {
         imageClear: img,
         imageDark: img
       };
-      const widgetsUrl = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
-      const usersRes = await fetch(widgetsUrl, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      });
+      const baseUrl = typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php';
+      const widgetsUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'name=' + encodeURIComponent(name);
+      let usersRes;
+      try {
+        usersRes = await fetch(widgetsUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      } catch (fetchErr) {
+        const isFile = typeof window !== 'undefined' && window.location?.protocol === 'file:';
+        throw new Error(isFile ? 'Cannot save: open the app via http:// or https:// (not file://)' : (fetchErr?.message || 'Network error'));
+      }
       let widgets = [];
       if (usersRes.ok) {
-        const usersData = await usersRes.json();
+        const usersData = await usersRes.json().catch(() => ({}));
         widgets = usersData.widgets || [];
+      } else if (!usersRes.ok && usersRes.status === 404) {
+        throw new Error('API not found (404). Ensure users-widgets.php is served by your web server.');
       }
-      const patchUrl = typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php';
-      const patchRes = await fetch(patchUrl, {
+      const patchRes = await fetch(baseUrl.replace(/\?.*$/, ''), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name,
-          widgets: [...widgets, widget]
-        })
+        body: JSON.stringify({ name, widgets: [...widgets, widget] })
       });
       if (!patchRes.ok) {
-        showToastError('Failed to save widget');
+        const text = await patchRes.text();
+        let errBody = {};
+        try { errBody = JSON.parse(text); } catch (_) {}
+        const msg = errBody.error || 'Failed to save widget';
+        const detail = errBody.detail || (text && text.length < 100 ? text : `HTTP ${patchRes.status}`);
+        showToastError(detail ? `${msg}: ${detail}` : msg);
         showLoading(false);
         return;
       }
@@ -1724,19 +1778,25 @@ function initWeatherWidgetConfig() {
         await renderWidgetTilesInTab();
       }
     } catch (e) {
-      showToastError('Failed to add weather widget');
+      const msg = e?.message || 'Failed to add weather widget';
+      showToastError(msg);
     }
     showLoading(false);
   }
 
   validateLocation?.addEventListener('click', async () => {
-    const loc = LocationService?.currentLocation || {};
+    let loc = LocationService?.currentLocation || {};
     if (!loc.lat || !loc.lng) {
+      try {
+        loc = await LocationService.getIPLocation?.() || loc;
+      } catch (_) {}
+    }
+    if (!loc?.lat || !loc?.lng) {
       showToastError('Location not available. Enable GPS or try by city.');
       return;
     }
     const city = loc.city || 'Unknown';
-    const countryCode = (loc.country || '').slice(0, 2).toUpperCase();
+    const countryCode = ((loc.country || '') + '').slice(0, 2).toUpperCase() || 'XX';
     try {
       const url = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + loc.lat + '&lng=' + loc.lng;
       const res = await fetch(url);
@@ -1783,7 +1843,7 @@ function initStockWidgetConfig() {
   const resultsEl = document.getElementById('stock-config-results');
   const addBtnSubmit = document.getElementById('stock-config-add');
   const loadingEl = document.getElementById('stock-widget-loading');
-  if (!overlay || !addBtn) return;
+  if (!overlay) return;
 
   let selectedStock = null;
 
@@ -1804,7 +1864,10 @@ function initStockWidgetConfig() {
     showLoading(false);
   }
 
-  addBtn?.addEventListener('click', openPanel);
+  window.openStockWidgetPanel = openPanel;
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#add-stock-widget')) openPanel();
+  });
   closeBtn?.addEventListener('click', closePanel);
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closePanel();
@@ -1871,6 +1934,8 @@ async function addStockWidget(symbol, description, showLoading, closePanel) {
   }
   showLoading?.(true);
   try {
+    const loc = LocationService?.currentLocation || {};
+    await registerUser({ ...loc, ip: loc.ip ?? LocationService?.currentIP ?? '' });
     const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
     const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(symbol));
     const quote = quoteRes.ok ? await quoteRes.json() : {};
@@ -1889,20 +1954,34 @@ async function addStockWidget(symbol, description, showLoading, closePanel) {
       changePercent: quote.changePercent,
       duration: '1 month'
     };
-    const widgetsUrl = (typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php') + '?name=' + encodeURIComponent(name);
-    const usersRes = await fetch(widgetsUrl, { headers: { 'Accept': 'application/json' } });
+    const baseUrl = typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php';
+    const widgetsUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'name=' + encodeURIComponent(name);
+    let usersRes;
+    try {
+      usersRes = await fetch(widgetsUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    } catch (fetchErr) {
+      const isFile = typeof window !== 'undefined' && window.location?.protocol === 'file:';
+      throw new Error(isFile ? 'Cannot save: open the app via http:// or https:// (not file://)' : (fetchErr?.message || 'Network error'));
+    }
     let widgets = [];
     if (usersRes.ok) {
-      const usersData = await usersRes.json();
+      const usersData = await usersRes.json().catch(() => ({}));
       widgets = usersData.widgets || [];
+    } else if (usersRes.status === 404) {
+      throw new Error('API not found (404). Ensure users-widgets.php is served by your web server.');
     }
-    const patchRes = await fetch(typeof getUsersWidgetsUrl === 'function' ? getUsersWidgetsUrl() : 'users-widgets.php', {
+    const patchRes = await fetch(baseUrl.replace(/\?.*$/, ''), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, widgets: [...widgets, widget] })
     });
     if (!patchRes.ok) {
-      showToastError('Failed to save widget');
+      const text = await patchRes.text();
+      let errBody = {};
+      try { errBody = JSON.parse(text); } catch (_) {}
+      const msg = errBody.error || 'Failed to save widget';
+      const detail = errBody.detail || (text && text.length < 100 ? text : `HTTP ${patchRes.status}`);
+      showToastError(detail ? `${msg}: ${detail}` : msg);
       showLoading?.(false);
       return;
     }
@@ -1913,7 +1992,8 @@ async function addStockWidget(symbol, description, showLoading, closePanel) {
       await renderWidgetTilesInTab();
     }
   } catch (e) {
-    showToastError('Failed to add stock widget');
+    const msg = e?.message || 'Failed to add stock widget';
+    showToastError(msg);
   }
   showLoading?.(false);
 }
@@ -1929,8 +2009,11 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const changeStr = pct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
   const durationLabel = w.duration ?? '1 month';
   const deleteId = w.id || ('w-' + (w.symbol || ''));
+  const deleteBtnClass = variant === 'panel'
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white cursor-pointer'
+    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
-    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer" aria-label="Delete widget">
+    ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
          <span class="material-symbols-outlined text-[18px]">delete</span>
        </button>`
     : '';
@@ -1940,7 +2023,7 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-lg';
   return `
     <div class="group relative ${sizeClass} rounded-xl overflow-hidden border-2 ${colorClass}">
-      <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40 pointer-events-none"></div>
       ${deleteBtn}
       <div class="relative ${padClass} flex flex-col justify-between h-full z-[1]">
         <div class="relative z-10">

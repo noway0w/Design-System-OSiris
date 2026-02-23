@@ -22,9 +22,12 @@ $countryCode = strtoupper(substr(trim($input['countryCode'] ?? $input['country']
 $lat = isset($input['lat']) ? (float)$input['lat'] : null;
 $lng = isset($input['lng']) ? (float)$input['lng'] : null;
 
-if ($city === '' || $countryCode === '') {
+// Require either (city + countryCode) or (lat + lng) for closest-city lookup
+$hasCity = $city !== '' && $countryCode !== '';
+$hasCoords = $lat !== null && $lng !== null && $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180;
+if (!$hasCity && !$hasCoords) {
     http_response_code(400);
-    echo json_encode(['error' => 'city and countryCode required']);
+    echo json_encode(['error' => 'city and countryCode required, or lat and lng for closest-city lookup']);
     exit;
 }
 
