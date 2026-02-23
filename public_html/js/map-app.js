@@ -473,24 +473,45 @@ function addCurrentLocationMarker(lng, lat) {
   currentLocationMarker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(appMap);
 }
 
+const MARKER_SIZE = 40;
+const MARKER_GAP = 4;
+const MARKER_STEP = MARKER_SIZE + MARKER_GAP;
+
+function getMarkerOffsetForPosition(tiles, idx, lat, lng) {
+  const key = (a, b) => `${Math.round(a * 1e5)}_${Math.round(b * 1e5)}`;
+  const posKey = key(lat, lng);
+  const samePos = tiles
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => t.lat != null && t.lng != null && key(t.lat, t.lng) === posKey)
+    .sort((a, b) => a.i - b.i);
+  const rank = samePos.findIndex(({ i }) => i === idx);
+  if (rank <= 0) return [0, 0];
+  const rowSize = 5;
+  const row = Math.floor(rank / rowSize);
+  const col = rank % rowSize;
+  const cx = Math.floor(rowSize / 2);
+  return [(col - cx) * MARKER_STEP, row * MARKER_STEP];
+}
+
 function addUserTileMarkers(tiles = []) {
   userTileMarkers.forEach(m => m.remove());
   userTileMarkers = [];
   if (!appMap) return;
   const withLoc = (tiles.length ? tiles : currentTiles).filter((t) => t.lat != null && t.lng != null);
-  withLoc.forEach((tile) => {
+  withLoc.forEach((tile, idx) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
     const avatar = document.createElement('div');
     const status = getStatusFromLastSeen(tile.lastSeen);
-    avatar.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${status === 'connected' ? '#13a4ec' : 'rgba(255,255,255,0.2)'};overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d`;
+    avatar.style.cssText = `width:${MARKER_SIZE}px;height:${MARKER_SIZE}px;border-radius:50%;border:2px solid ${status === 'connected' ? '#13a4ec' : 'rgba(255,255,255,0.2)'};overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d`;
     const img = document.createElement('img');
     img.src = tile.avatar;
     img.alt = tile.name;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
     avatar.appendChild(img);
     el.appendChild(avatar);
-    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    const [ox, oy] = getMarkerOffsetForPosition(withLoc, idx, tile.lat, tile.lng);
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center', offset: [ox, oy] })
       .setLngLat([tile.lng, tile.lat])
       .addTo(appMap);
     el.addEventListener('click', () => {
@@ -523,23 +544,40 @@ function wireUserTileCards() {
   });
 }
 
+function getPOIMarkerOffset(pois, idx, lat, lng) {
+  const key = (a, b) => `${Math.round(a * 1e5)}_${Math.round(b * 1e5)}`;
+  const posKey = key(lat, lng);
+  const samePos = pois
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.lat != null && p.lng != null && key(p.lat, p.lng) === posKey)
+    .sort((a, b) => a.i - b.i);
+  const rank = samePos.findIndex(({ i }) => i === idx);
+  if (rank <= 0) return [0, 0];
+  const rowSize = 5;
+  const row = Math.floor(rank / rowSize);
+  const col = rank % rowSize;
+  const cx = Math.floor(rowSize / 2);
+  return [(col - cx) * MARKER_STEP, row * MARKER_STEP];
+}
+
 function addPOIMarkers(pois) {
   poiMarkers.forEach(m => m.remove());
   poiMarkers = [];
   if (!appMap) return;
   const valid = (Array.isArray(pois) ? pois : currentPOIs).filter((p) => p.lat != null && p.lng != null);
-  valid.forEach((poi) => {
+  valid.forEach((poi, idx) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
     const icon = document.createElement('div');
-    icon.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d;border:2px solid rgba(255,255,255,0.2)';
+    icon.style.cssText = `width:${MARKER_SIZE}px;height:${MARKER_SIZE}px;border-radius:50%;overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d;border:2px solid rgba(255,255,255,0.2)`;
     const img = document.createElement('img');
     img.src = poi.icon || 'brand/placeholder.png';
     img.alt = poi.brand;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
     icon.appendChild(img);
     el.appendChild(icon);
-    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+    const [ox, oy] = getPOIMarkerOffset(valid, idx, poi.lat, poi.lng);
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center', offset: [ox, oy] })
       .setLngLat([poi.lng, poi.lat])
       .setPopup(new mapboxgl.Popup().setHTML(`<strong>${poi.brand || ''}</strong><br>${poi.location || ''}<br>${poi.type || ''}`))
       .addTo(appMap);
@@ -707,7 +745,7 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const overlayClass = isDark ? 'bg-black/50' : 'bg-black/10';
   const deleteId = w.id || ('w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white cursor-pointer'
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
     : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
@@ -2258,7 +2296,7 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const durationLabel = w.duration ?? '1 month';
   const deleteId = w.id || ('w-' + (w.symbol || ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white cursor-pointer'
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
     : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
