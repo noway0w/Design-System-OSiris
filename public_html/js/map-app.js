@@ -332,9 +332,15 @@ function renderNearbyTiles(tiles) {
   previousUserNames = newNames;
   container.innerHTML = html;
   if (countEl) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const short = isMobile;
     countEl.textContent = apiMisconfigured && total === 0
-      ? 'Discover my world needs PHP enabled on server'
-      : total === 0 ? 'No Tech enthusiasts yet' : `${total} Tech enthusiast${total === 1 ? '' : 's'} worldwide`;
+      ? (short ? 'PHP needed' : 'Discover my world needs PHP enabled on server')
+      : total === 0
+        ? (short ? 'No enthusiasts yet' : 'No Tech enthusiasts yet')
+        : short
+          ? `${total} enthusiast${total === 1 ? '' : 's'} worldwide`
+          : `${total} Tech enthusiast${total === 1 ? '' : 's'} worldwide`;
   }
 
   document.getElementById(toggleId)?.addEventListener('change', (e) => {
@@ -1544,6 +1550,43 @@ function closeUserProfilePanel(panelEl) {
 const PROFILE_PICKER_Z = 60;
 let profilePickerPanel = null;
 
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < 768;
+}
+
+function wireConfigOverlaySwipeToClose(overlayEl, closeFn) {
+  if (!overlayEl || !closeFn) return;
+  const handle = overlayEl.querySelector('.config-overlay-handle');
+  const inner = overlayEl.querySelector('.config-overlay-inner');
+  if (!handle || !inner) return;
+  let startY = 0;
+  let startTime = 0;
+  handle.addEventListener('touchstart', (e) => {
+    if (overlayEl.classList.contains('hidden')) return;
+    startY = e.touches[0].clientY;
+    startTime = Date.now();
+  }, { passive: true });
+  handle.addEventListener('touchmove', (e) => {
+    if (overlayEl.classList.contains('hidden')) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) {
+      e.preventDefault();
+      inner.style.transition = 'none';
+      inner.style.transform = `translateY(${dy}px)`;
+    }
+  }, { passive: false });
+  handle.addEventListener('touchend', (e) => {
+    if (overlayEl.classList.contains('hidden')) return;
+    const endY = e.changedTouches?.[0]?.clientY ?? startY;
+    const dy = endY - startY;
+    const elapsed = Date.now() - startTime;
+    const velocity = elapsed > 0 ? dy / elapsed : 0;
+    inner.style.transition = '';
+    inner.style.transform = '';
+    if (dy > 80 || velocity > 0.5) closeFn();
+  }, { passive: true });
+}
+
 async function openProfilePicturePicker(tile, parentPanel) {
   const container = document.getElementById('user-profile-panels-container');
   if (!container) return;
@@ -1557,13 +1600,18 @@ async function openProfilePicturePicker(tile, parentPanel) {
   let selectedRandomIndex = currentAvatar.startsWith('uploads/') ? -1 : USER_PICT_IMAGES.indexOf(currentAvatar);
   if (selectedRandomIndex < 0 && !selectedPath) selectedRandomIndex = 0;
 
+  const isMobile = isMobileViewport();
   const panel = document.createElement('div');
-  panel.className = 'profile-picture-picker fixed w-80 rounded-lg overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
-  panel.style.left = (window.innerWidth / 2 - 160) + 'px';
-  panel.style.top = (window.innerHeight / 2 - 220) + 'px';
+  const mobileClasses = isMobile ? ' profile-picker-mobile mobile-bottom-sheet mobile-sheet-open' : '';
+  panel.className = 'profile-picture-picker fixed w-80 rounded-lg overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto' + mobileClasses;
+  if (!isMobile) {
+    panel.style.left = (window.innerWidth / 2 - 160) + 'px';
+    panel.style.top = (window.innerHeight / 2 - 220) + 'px';
+  }
   panel.style.zIndex = String(PROFILE_PICKER_Z);
 
-  let html = `
+  const mobileHandleHtml = isMobile ? '<div class="profile-picker-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>' : '';
+  let html = mobileHandleHtml + `
     <div class="p-4 border-b border-slate-200 dark:border-white/10">
       <h3 class="font-bold text-slate-800 dark:text-white">Change profile picture</h3>
       <p class="text-sm text-text-secondary mt-0.5">Choose one or upload your own</p>
@@ -1692,6 +1740,39 @@ async function openProfilePicturePicker(tile, parentPanel) {
   container.appendChild(panel);
   profilePickerPanel = panel;
   renderSelected();
+
+  if (isMobile) {
+    const closePicker = () => {
+      panel.remove();
+      profilePickerPanel = null;
+    };
+    const swipeHandle = panel.querySelector('.profile-picker-mobile-handle');
+    if (swipeHandle) {
+      let startY = 0;
+      let startTime = 0;
+      swipeHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+      }, { passive: true });
+      swipeHandle.addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0) {
+          e.preventDefault();
+          panel.style.transition = 'none';
+          panel.style.transform = `translateY(${dy}px)`;
+        }
+      }, { passive: false });
+      swipeHandle.addEventListener('touchend', (e) => {
+        const endY = e.changedTouches?.[0]?.clientY ?? startY;
+        const dy = endY - startY;
+        const elapsed = Date.now() - startTime;
+        const velocity = elapsed > 0 ? dy / elapsed : 0;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (dy > 80 || velocity > 0.5) closePicker();
+      }, { passive: true });
+    }
+  }
 }
 
 async function handleProfileUpload(file, userName, onSuccess) {
@@ -1726,6 +1807,7 @@ async function openUserProfilePanel(tile) {
   const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
   const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
   const count = userProfilePanels.size;
+  const isMobile = isMobileViewport();
   const topBarMargin = 24;
   const baseX = window.innerWidth * (0.5 + 0.07);
   const baseY = topBarMargin;
@@ -1733,12 +1815,15 @@ async function openUserProfilePanel(tile) {
   const top = baseY + count * PANEL_CASCADE_OFFSET;
 
   const panel = document.createElement('div');
-  panel.className = 'user-profile-panel fixed w-72 rounded-lg overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col max-h-[calc(100vh-24px)]';
+  const mobileSheetClasses = isMobile ? ' user-profile-panel-mobile mobile-bottom-sheet mobile-sheet-open' : '';
+  panel.className = 'user-profile-panel fixed w-72 rounded-lg overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col max-h-[calc(100vh-24px)]' + mobileSheetClasses;
   panel.setAttribute('aria-hidden', 'false');
   panel.setAttribute('data-user-name', name);
   panel.setAttribute('data-user-id', tile.id || '');
-  panel.style.left = left + 'px';
-  panel.style.top = top + 'px';
+  if (!isMobile) {
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+  }
   panel.style.zIndex = String(PANEL_BASE_Z + count);
 
   const deleteBtnHtml = canDelete
@@ -1749,7 +1834,8 @@ async function openUserProfilePanel(tile) {
     ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded-lg bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
     : '';
 
-  panel.innerHTML = `
+  const mobileHandleHtml = isMobile ? '<div class="user-profile-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0" data-swipe-close></div>' : '';
+  panel.innerHTML = mobileHandleHtml + `
     <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <div class="relative flex-shrink-0 group/avatar">
@@ -1848,18 +1934,47 @@ async function openUserProfilePanel(tile) {
   container.appendChild(panel);
   userProfilePanels.set(name, { el: panel, tile });
 
-  const handle = panel.querySelector('.user-profile-drag-handle');
-  if (handle) {
-    handle.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.user-profile-panel-close')) return;
-      const pos = getPanelPosition(panel);
-      window._userPanelDrag = { panel, startX: e.clientX, startY: e.clientY, startLeft: pos.left, startTop: pos.top };
-    });
-    handle.addEventListener('touchstart', (e) => {
-      if (e.target.closest('.user-profile-panel-close')) return;
-      const pos = getPanelPosition(panel);
-      window._userPanelDrag = { panel, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startLeft: pos.left, startTop: pos.top };
-    }, { passive: true });
+  if (isMobile) {
+    const swipeHandle = panel.querySelector('.user-profile-mobile-handle');
+    if (swipeHandle) {
+      let startY = 0;
+      let startTime = 0;
+      swipeHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+      }, { passive: true });
+      swipeHandle.addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0) {
+          e.preventDefault();
+          panel.style.transition = 'none';
+          panel.style.transform = `translateY(${dy}px)`;
+        }
+      }, { passive: false });
+      swipeHandle.addEventListener('touchend', (e) => {
+        const endY = e.changedTouches?.[0]?.clientY ?? startY;
+        const dy = endY - startY;
+        const elapsed = Date.now() - startTime;
+        const velocity = elapsed > 0 ? dy / elapsed : 0;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (dy > 80 || velocity > 0.5) closeUserProfilePanel(panel);
+      }, { passive: true });
+    }
+  } else {
+    const handle = panel.querySelector('.user-profile-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.user-profile-panel-close')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.clientX, startY: e.clientY, startLeft: pos.left, startTop: pos.top };
+      });
+      handle.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.user-profile-panel-close')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startLeft: pos.left, startTop: pos.top };
+      }, { passive: true });
+    }
   }
 }
 
@@ -2183,7 +2298,7 @@ function closePOIContentPanel() {
   const finishClose = () => {
     if (done) return;
     done = true;
-    panel.classList.remove('poi-panel-closing', 'animate-fade-in-right');
+    panel.classList.remove('poi-panel-closing', 'animate-fade-in-right', 'animate-fade-in-up');
     panel.setAttribute('aria-hidden', 'true');
     currentOpenPOI = null;
     document.getElementById('map-app-root')?.classList.remove('poi-panel-open');
@@ -2430,7 +2545,8 @@ async function openPOIContentPanel(poi) {
     galleryEl.appendChild(div);
   });
 
-  panel.classList.add('poi-panel-open', 'animate-fade-in-right');
+  const isMobile = window.innerWidth < 768;
+  panel.classList.add('poi-panel-open', isMobile ? 'animate-fade-in-up' : 'animate-fade-in-right');
   panel.setAttribute('aria-hidden', 'false');
   document.getElementById('map-app-root')?.classList.add('poi-panel-open');
   if (window.innerWidth < 768) document.getElementById('bottom-panel-wrapper')?.classList.add('poi-panel-blocking');
@@ -2613,6 +2729,37 @@ function initBottomPanel() {
   scrollRightBtn?.addEventListener('click', () => {
     if (scrollEl) scrollEl.scrollBy({ left: 200, behavior: 'smooth' });
   });
+
+  /* Mobile: swipe-to-close on drag handle (handle is hidden on desktop via md:hidden) */
+  const handle = document.getElementById('bottom-panel-drag-handle');
+  if (handle) {
+    let startY = 0;
+    let startTime = 0;
+    handle.addEventListener('touchstart', (e) => {
+      if (!panel.classList.contains('visible')) return;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+    }, { passive: true });
+    handle.addEventListener('touchmove', (e) => {
+      if (!panel.classList.contains('visible')) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 0) {
+        e.preventDefault();
+        panel.style.transition = 'none';
+        panel.style.transform = `translateY(${dy}px)`;
+      }
+    }, { passive: false });
+    handle.addEventListener('touchend', (e) => {
+      if (!panel.classList.contains('visible')) return;
+      const endY = e.changedTouches?.[0]?.clientY ?? e.touches?.[0]?.clientY ?? startY;
+      const dy = endY - startY;
+      const elapsed = Date.now() - startTime;
+      const velocity = elapsed > 0 ? dy / elapsed : 0;
+      panel.style.transition = '';
+      panel.style.transform = '';
+      if (dy > 80 || velocity > 0.5) closePanel();
+    }, { passive: true });
+  }
 }
 
 const WMO_TO_ICON = {
@@ -2692,6 +2839,7 @@ function initWeatherWidgetConfig() {
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closePanel();
   });
+  wireConfigOverlaySwipeToClose(overlay, closePanel);
 
   byLocation?.addEventListener('click', () => {
     mode = 'location';
@@ -2926,6 +3074,7 @@ function initStockWidgetConfig() {
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closePanel();
   });
+  wireConfigOverlaySwipeToClose(overlay, closePanel);
 
   let searchTimeout = null;
   searchInput?.addEventListener('input', () => {
@@ -3115,6 +3264,7 @@ function initResumeEmbed() {
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closeResume();
   });
+  wireConfigOverlaySwipeToClose(overlay, closeResume);
 }
 
 window.initMapApp = initMapApp;
