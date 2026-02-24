@@ -56,13 +56,13 @@ let apiMisconfigured = false;
 let isAdmin = false;
 let scrollDragJustEnded = false;
 
-let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false };
+let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false, auroraNorthernLights: false };
 const SHOW_OTHER_USERS_KEY = 'osiris_show_other_users_on_map';
 function getShowOtherUsersOnMap() { return localStorage.getItem(SHOW_OTHER_USERS_KEY) === 'true'; }
 function setShowOtherUsersOnMap(on) { localStorage.setItem(SHOW_OTHER_USERS_KEY, on ? 'true' : ''); }
-let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage'];
+let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights'];
 const userProfilePanels = new Map();
-let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null, volumetricWeatherLayerId: null, volumetricWeatherSourceId: null, liveCloudCoverageLayerId: null, liveCloudCoverageSourceId: null };
+let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null, volumetricWeatherLayerId: null, volumetricWeatherSourceId: null, liveCloudCoverageLayerId: null, liveCloudCoverageSourceId: null, auroraLayerId: null, auroraSourceId: null };
 
 const MAP_DATA_ORDER_KEY = 'osiris_map_data_tile_order';
 function loadMapDataTileOrder() {
@@ -70,7 +70,7 @@ function loadMapDataTileOrder() {
     const stored = localStorage.getItem(MAP_DATA_ORDER_KEY);
     if (stored) {
       const order = JSON.parse(stored);
-      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage'];
+      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights'];
       if (Array.isArray(order) && order.length === valid.length && valid.every((k) => order.includes(k))) {
         mapDataTileOrder = order;
       }
@@ -1078,6 +1078,108 @@ function applyLiveCloudCoverageState(state) {
   }
 }
 
+const AURORA_SOURCE_ID = 'aurora-source';
+const AURORA_LAYER_ID = 'aurora-layer';
+const NOAA_OVATION_AURORA_URL = 'https://services.swpc.noaa.gov/json/ovation_aurora_latest.json';
+
+/** Fetch NOAA OVATION aurora JSON and convert to GeoJSON FeatureCollection. Filters out background noise (prob < 10%) and anomalous error codes. */
+async function fetchAuroraGeoJSON() {
+  const res = await fetch(NOAA_OVATION_AURORA_URL + '?t=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch aurora data');
+  const data = await res.json().catch(() => null);
+  if (!data || !Array.isArray(data.coordinates)) throw new Error('Invalid aurora data');
+  const featureCollection = {
+    type: 'FeatureCollection',
+    features: data.coordinates
+      .filter((item) => item[2] >= 10 && item[2] <= 100)
+      .map((item) => {
+        let lon = item[0];
+        const lat = item[1];
+        const probability = item[2];
+        if (lon > 180) lon -= 360;
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [lon, lat] },
+          properties: { intensity: probability / 100 }
+        };
+      })
+  };
+  return featureCollection;
+}
+
+async function addAuroraNorthernLights() {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  removeAuroraNorthernLights();
+  try {
+    const geojson = await fetchAuroraGeoJSON();
+    appMap.addSource(AURORA_SOURCE_ID, { type: 'geojson', data: geojson });
+    appMap.addLayer({
+      id: AURORA_LAYER_ID,
+      type: 'heatmap',
+      source: AURORA_SOURCE_ID,
+      layout: { visibility: 'none' },
+      paint: {
+        'heatmap-weight': [
+          'interpolate', ['linear'], ['get', 'intensity'],
+          0, 0,
+          1, 1
+        ],
+        'heatmap-intensity': [
+          'interpolate', ['linear'], ['zoom'],
+          0, 1,
+          9, 3
+        ],
+        'heatmap-color': [
+          'interpolate', ['linear'], ['heatmap-density'],
+          0, 'rgba(0, 255, 0, 0)',
+          0.2, 'rgba(0, 255, 0, 0.2)',
+          0.5, 'rgba(100, 255, 0, 0.6)',
+          0.8, 'rgba(255, 255, 0, 0.8)',
+          1, 'rgba(255, 0, 0, 1)'
+        ],
+        'heatmap-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          0, 10,
+          9, 30
+        ],
+        'heatmap-opacity': 0.7
+      }
+    }, mapLayerInfo.buildingLayerIds?.[0]);
+    mapLayerInfo.auroraLayerId = AURORA_LAYER_ID;
+    mapLayerInfo.auroraSourceId = AURORA_SOURCE_ID;
+  } catch (e) {
+    console.warn('[AuroraNorthernLights] Failed to add layer:', e);
+    showToastError('Failed to load Northern Lights data');
+  }
+}
+
+function removeAuroraNorthernLights() {
+  if (!appMap || !appMap.getLayer) return;
+  const layerId = mapLayerInfo.auroraLayerId;
+  const sourceId = mapLayerInfo.auroraSourceId;
+  if (layerId && appMap.getLayer(layerId)) {
+    try { appMap.removeLayer(layerId); } catch (_) {}
+  }
+  if (sourceId && appMap.getSource(sourceId)) {
+    try { appMap.removeSource(sourceId); } catch (_) {}
+  }
+  mapLayerInfo.auroraLayerId = null;
+  mapLayerInfo.auroraSourceId = null;
+}
+
+function applyAuroraNorthernLightsState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  if (state.auroraNorthernLights) {
+    addAuroraNorthernLights().then(() => {
+      if (mapLayerInfo.auroraLayerId && appMap?.getLayer(mapLayerInfo.auroraLayerId)) {
+        try { appMap.setLayoutProperty(AURORA_LAYER_ID, 'visibility', 'visible'); } catch (_) {}
+      }
+    });
+  } else {
+    removeAuroraNorthernLights();
+  }
+}
+
 function applyMapDataState(state) {
   applyBuildingsState(state);
   applyNamesState(state);
@@ -1085,6 +1187,7 @@ function applyMapDataState(state) {
   applyTopographyState(state);
   applyVolumetricWeatherState(state);
   applyLiveCloudCoverageState(state);
+  applyAuroraNorthernLightsState(state);
 }
 
 function renderMapDataTiles(state) {
@@ -1096,7 +1199,8 @@ function renderMapDataTiles(state) {
     names: 'assets/map-data/Local-Information.png',
     propertyBoundaries: 'assets/map-data/Road-Boundaries.png',
     volumetricWeather: 'assets/map-data/Live-wind-coverage.png',
-    liveCloudCoverage: 'assets/map-data/Live-rain-coverage.png'
+    liveCloudCoverage: 'assets/map-data/Live-rain-coverage.png',
+    auroraNorthernLights: 'assets/map-data/Aurora.png'
   };
   const thumbDark = {
     buildings: 'assets/map-data/3D-Building-Dark-Mode.png',
@@ -1104,10 +1208,11 @@ function renderMapDataTiles(state) {
     names: 'assets/map-data/Local-Information-Dark-Mode.png',
     propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png',
     volumetricWeather: 'assets/map-data/Live-wind-coverage-dark-mode.png',
-    liveCloudCoverage: 'assets/map-data/Live-rain-coverage-dark-mode.png'
+    liveCloudCoverage: 'assets/map-data/Live-rain-coverage-dark-mode.png',
+    auroraNorthernLights: 'assets/map-data/Aurora-Dark-Mode.png'
   };
-  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue' };
-  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage' };
+  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue', auroraNorthernLights: 'nights_stay' };
+  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage', auroraNorthernLights: 'Live Aurora' };
   const tiles = mapDataTileOrder.map((key) => ({ key, label: labels[key], on: state[key] }));
   const isDark = document.documentElement.classList.contains('dark');
   const altM = mapLayerInfo.volumetricWeatherAltitude ?? 0;
@@ -1163,6 +1268,7 @@ function wireMapDataTiles() {
         mapLayerInfo.volumetricWeatherAltitude = mapLayerInfo.volumetricWeatherAltitude ?? 0;
         if (checked) {
           addVolumetricWeather(VOLUMETRIC_WEATHER_LAYER_ID, mapLayerInfo.volumetricWeatherAltitude);
+          flyToGlobeView();
         } else {
           removeVolumetricWeather();
         }
@@ -1173,6 +1279,19 @@ function wireMapDataTiles() {
           addLiveCloudCoverage();
         } else {
           removeLiveCloudCoverage();
+        }
+        break;
+      case 'auroraNorthernLights':
+        mapDataState.auroraNorthernLights = checked;
+        if (checked) {
+          addAuroraNorthernLights().then(() => {
+            if (mapLayerInfo.auroraLayerId && appMap?.getLayer(mapLayerInfo.auroraLayerId)) {
+              try { appMap.setLayoutProperty(AURORA_LAYER_ID, 'visibility', 'visible'); } catch (_) {}
+              flyToGlobeView();
+            }
+          });
+        } else {
+          removeAuroraNorthernLights();
         }
         break;
       default: return;
@@ -1953,13 +2072,25 @@ function wireControls() {
 
 function flyToLocation(lng, lat, zoom, opts = {}) {
   if (!appMap) return;
-  const { pitch = 0, duration = 4000 } = opts;
+  const { pitch = 0, duration = 4000, padding } = opts;
   appMap.flyTo({
     center: [lng, lat],
     zoom,
     pitch,
-    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    padding: padding || { top: 0, right: 0, bottom: 0, left: 0 },
     duration
+  });
+}
+
+function flyToGlobeView() {
+  if (!appMap) return;
+  const pad = 80;
+  appMap.flyTo({
+    center: [0, 25],
+    zoom: 1.5,
+    pitch: 0,
+    padding: { top: pad, right: pad, bottom: pad, left: pad },
+    duration: 2000
   });
 }
 
