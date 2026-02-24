@@ -68,7 +68,7 @@
       gap: 12px;
       padding: 14px 18px;
       border: 1px solid rgba(239, 68, 68, 0.5);
-      border-radius: 4px;
+      border-radius: 8px;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -86,7 +86,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 4px;
+      border-radius: 8px;
       background: rgba(0,0,0,0.08);
       color: inherit;
       cursor: pointer;
@@ -106,7 +106,7 @@
       gap: 12px;
       padding: 14px 18px;
       border: 1px solid rgba(34, 197, 94, 0.5);
-      border-radius: 4px;
+      border-radius: 8px;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -151,11 +151,11 @@
       <!-- Header -->
       <header class="flex items-center justify-between px-8 py-6 border-b border-white/5 shrink-0">
         <div class="flex items-center gap-4">
-          <button type="button" class="poi-panel-close poi-btn-circle p-2 rounded hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Close">
+          <button type="button" class="poi-panel-close poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Close">
             <span class="material-symbols-outlined">arrow_back</span>
           </button>
           <div class="flex items-center gap-3">
-            <div class="poi-panel-logo-wrap w-10 h-10 rounded bg-contain bg-no-repeat bg-center border border-white/10 flex-shrink-0" style="background-image: url('')" data-alt="Logo"></div>
+            <div class="poi-panel-logo-wrap w-10 h-10 rounded-lg bg-contain bg-no-repeat bg-center border border-white/10 flex-shrink-0" style="background-image: url('')" data-alt="Logo"></div>
             <div>
               <h2 class="poi-panel-title text-sm font-bold text-white tracking-wide uppercase"></h2>
               <span class="poi-panel-subtitle text-xs text-slate-400"></span>
@@ -163,13 +163,13 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button" class="poi-panel-prev poi-btn-circle p-2 rounded hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Previous POI">
+          <button type="button" class="poi-panel-prev poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Previous POI">
             <span class="material-symbols-outlined text-[20px]">arrow_back</span>
           </button>
-          <button type="button" class="poi-panel-next poi-btn-circle p-2 rounded hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Next POI">
+          <button type="button" class="poi-panel-next poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Next POI">
             <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
           </button>
-          <a class="poi-panel-website ml-2 px-5 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded transition-colors shadow-[0_4px_12px_rgba(19,146,236,0.3)]" href="#" target="_blank" rel="noopener">Visit Website</a>
+          <a class="poi-panel-website ml-2 px-5 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-lg transition-colors shadow-[0_4px_12px_rgba(19,146,236,0.3)]" href="#" target="_blank" rel="noopener">Visit Website</a>
         </div>
       </header>
       <!-- Scrollable Editorial Content -->
@@ -177,7 +177,7 @@
         <!-- Hero Title & Tags -->
         <div class="mb-12">
           <div class="poi-panel-featured flex items-center gap-2 mb-6 text-primary text-sm font-bold tracking-widest uppercase">
-            <span class="w-2 h-2 rounded bg-primary"></span>
+            <span class="w-2 h-2 rounded-lg bg-primary"></span>
             <span class="poi-panel-featured-label">Featured Project</span>
           </div>
           <h1 class="poi-panel-hero-title text-6xl md:text-7xl font-bold text-white leading-[0.9] tracking-tighter mb-8">
@@ -186,7 +186,7 @@
           <div class="poi-panel-tags flex flex-wrap gap-3"></div>
         </div>
         <!-- Hero Image -->
-        <div class="poi-panel-hero-wrap w-full h-64 md:h-80 rounded overflow-hidden mb-12 relative group">
+        <div class="poi-panel-hero-wrap w-full h-64 md:h-80 rounded-lg overflow-hidden mb-12 relative group">
           <div class="absolute inset-0 bg-gradient-to-t from-background-dark/80 to-transparent z-10"></div>
           <div class="absolute bottom-6 left-6 z-20">
             <p class="poi-panel-hero-caption text-white font-medium text-lg"></p>
@@ -198,7 +198,7 @@
         <div class="mb-16 border-l-4 border-primary pl-8 py-2">
           <p class="poi-panel-quote text-2xl md:text-3xl font-light text-slate-200 leading-relaxed italic"></p>
           <div class="poi-panel-quote-attribution mt-6 flex items-center gap-4">
-            <div class="poi-panel-quote-avatar w-12 h-12 rounded bg-slate-700 bg-cover bg-center flex-shrink-0" style="background-image: url('Guillaume_Lassiat.png')"></div>
+            <div class="poi-panel-quote-avatar w-12 h-12 rounded-lg bg-slate-700 bg-cover bg-center flex-shrink-0" style="background-image: url('Guillaume_Lassiat.png')"></div>
             <div>
               <p class="poi-panel-quote-author text-white font-bold"></p>
               <p class="poi-panel-quote-role text-primary text-sm"></p>
@@ -209,7 +209,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
           <div class="space-y-6">
             <h3 class="text-xl font-bold text-white flex items-center gap-3">
-              <span class="poi-mission-icon w-10 h-10 flex items-center justify-center rounded bg-white/5 text-primary"><span class="material-symbols-outlined">light_mode</span></span>
+              <span class="poi-mission-icon w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">light_mode</span></span>
               Our Mission
             </h3>
             <div class="poi-panel-mission text-slate-400 leading-relaxed text-lg space-y-4"></div>
@@ -228,7 +228,7 @@
         </div>
         <!-- Footer CTA -->
         <div class="mt-8 pt-8 border-t border-white/5 flex justify-center">
-          <button type="button" class="poi-panel-cta w-1/3 min-w-[140px] py-2.5 text-sm rounded bg-white/5 hover:bg-white/10 text-white font-bold transition-colors flex items-center justify-center gap-2 border border-white/5 cursor-pointer">
+          <button type="button" class="poi-panel-cta w-1/3 min-w-[140px] py-2.5 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold transition-colors flex items-center justify-center gap-2 border border-white/5 cursor-pointer">
             <span class="material-symbols-outlined text-lg">explore</span>
             Discover more
           </button>
@@ -237,23 +237,23 @@
     </aside>
     <!-- Image viewer overlay with prev/next navigation -->
     <div id="poi-image-overlay" class="poi-media-overlay hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
-      <button type="button" class="poi-viewer-prev absolute left-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded transition-colors" aria-label="Previous"><span class="material-symbols-outlined text-3xl">arrow_back</span></button>
+      <button type="button" class="poi-viewer-prev absolute left-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-lg transition-colors" aria-label="Previous"><span class="material-symbols-outlined text-3xl">arrow_back</span></button>
       <div class="poi-media-viewer relative" onclick="event.stopPropagation()">
         <div class="poi-media-viewer-content relative">
-          <button type="button" class="poi-media-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+          <button type="button" class="poi-media-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
           <img id="poi-image-viewer-img" class="poi-media-viewer-visual" alt=""/>
           <div class="poi-media-viewer-caption">
             <p class="poi-media-viewer-caption-text">Descriptive content placeholder</p>
           </div>
         </div>
       </div>
-      <button type="button" class="poi-viewer-next absolute right-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded transition-colors" aria-label="Next"><span class="material-symbols-outlined text-3xl">arrow_forward</span></button>
+      <button type="button" class="poi-viewer-next absolute right-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-lg transition-colors" aria-label="Next"><span class="material-symbols-outlined text-3xl">arrow_forward</span></button>
     </div>
     <!-- Video overlay (70% width, close top-left) -->
     <div id="poi-video-overlay" class="poi-media-overlay hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
       <div class="poi-media-viewer relative" onclick="event.stopPropagation()">
         <div class="poi-media-viewer-content relative">
-          <button type="button" class="poi-media-overlay-close poi-video-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close video"><span class="material-symbols-outlined">close</span></button>
+          <button type="button" class="poi-media-overlay-close poi-video-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close video"><span class="material-symbols-outlined">close</span></button>
           <video id="poi-video-player" class="poi-media-viewer-visual" controls playsinline></video>
           <div class="poi-media-viewer-caption poi-media-viewer-caption-video">
             <p class="poi-media-viewer-caption-text">Descriptive content placeholder</p>
@@ -265,7 +265,7 @@
     <div id="top-bar-overlay" class="absolute top-0 left-0 right-0 z-20 pt-6 px-6 pb-4 flex items-center justify-between pointer-events-none">
       <div class="pointer-events-auto">
         <div id="general-menu-wrapper" class="relative">
-          <button id="btn-general-menu" type="button" class="flex items-center justify-center w-10 h-10 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer">
+          <button id="btn-general-menu" type="button" class="flex items-center justify-center w-10 h-10 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer">
             <span class="material-symbols-outlined">menu</span>
           </button>
           <div id="general-menu-panel" class="general-menu-panel neumorphic-menu-panel" role="dialog" aria-label="General menu" aria-hidden="true">
@@ -284,54 +284,54 @@
           </div>
         </div>
       </div>
-      <button id="gps-status-btn" class="pointer-events-auto flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded border border-white/30 dark:border-white/10 shadow-lg">
+      <button id="gps-status-btn" class="pointer-events-auto flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 shadow-lg">
         <span class="material-symbols-outlined text-green-500 dark:text-green-400 text-[18px]">my_location</span>
         <span class="text-xs font-semibold tracking-wide text-slate-700 dark:text-white">Location Active</span>
       </button>
     </div>
     <!-- Right Side Controls -->
     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-20">
-        <button id="map-zoom-in" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
+        <button id="map-zoom-in" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
           <span class="material-symbols-outlined">add</span>
         </button>
-        <button id="map-zoom-out" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
+        <button id="map-zoom-out" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
           <span class="material-symbols-outlined">remove</span>
         </button>
-        <button id="map-rotate" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 mt-2 active:scale-95 transition-transform" aria-pressed="false" title="Rotate globe">
+        <button id="map-rotate" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 mt-2 active:scale-95 transition-transform" aria-pressed="false" title="Rotate globe">
           <span class="material-symbols-outlined">autorenew</span>
         </button>
-        <button id="map-gps" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded flex items-center justify-center text-primary shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-wait" title="Center on my accurate location (GPS)">
+        <button id="map-gps" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-primary shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-wait" title="Center on my accurate location (GPS)">
           <span class="material-symbols-outlined transform rotate-45">navigation</span>
         </button>
       </div>
     <!-- Bottom Panel (Discover my world) - trigger button centered, panel stays left -->
     <div id="bottom-panel-wrapper" class="absolute bottom-6 left-0 right-0 z-30 pointer-events-none overflow-visible h-12">
       <div class="pointer-events-auto relative w-full h-full">
-        <button id="bottom-panel-toggle" type="button" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" aria-expanded="false" aria-label="Open Discover my world">
+        <button id="bottom-panel-toggle" type="button" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" aria-expanded="false" aria-label="Open Discover my world">
           <span class="material-symbols-outlined transition-transform duration-200">keyboard_arrow_up</span>
         </button>
-        <div id="bottom-panel" class="bottom-panel absolute bottom-full left-6 mb-2 w-[calc(100vw-48px)] max-w-[calc(100vw-48px)] max-h-[70vh] overflow-hidden flex flex-col rounded border border-white/30 dark:border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" aria-hidden="true">
-          <div id="bottom-panel-content" class="overflow-y-auto overflow-x-hidden flex flex-col bg-background-light/15 dark:bg-background-dark/15 backdrop-blur-xl rounded flex-1 min-h-0">
+        <div id="bottom-panel" class="bottom-panel absolute bottom-full left-6 mb-2 w-[calc(100vw-48px)] max-w-[calc(100vw-48px)] max-h-[70vh] overflow-hidden flex flex-col rounded-lg border border-white/30 dark:border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" aria-hidden="true">
+          <div id="bottom-panel-content" class="overflow-y-auto overflow-x-hidden flex flex-col bg-background-light/15 dark:bg-background-dark/15 backdrop-blur-xl rounded-lg flex-1 min-h-0">
       <div class="px-6 pt-6 pb-4 flex items-center justify-between flex-shrink-0">
         <div>
           <h2 class="text-lg font-bold text-slate-800 dark:text-white">Discover my world</h2>
           <p id="nearby-friends-count" class="text-sm text-text-secondary">Tech enthusiasts</p>
         </div>
         <div class="flex items-center gap-2">
-          <button id="btn-resume" type="button" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded shadow-[0_4px_20px_rgba(19,164,236,0.3)] flex items-center gap-2 active:scale-95 transition-transform cursor-pointer">
+          <button id="btn-resume" type="button" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg shadow-[0_4px_20px_rgba(19,164,236,0.3)] flex items-center gap-2 active:scale-95 transition-transform cursor-pointer">
             <span class="material-symbols-outlined fill-current">description</span>
             <span>Guillaume's Resume</span>
           </button>
-          <button id="bottom-panel-close" type="button" class="flex items-center justify-center w-10 h-10 rounded bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Close panel">
+          <button id="bottom-panel-close" type="button" class="flex items-center justify-center w-10 h-10 rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Close panel">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
       </div>
       <div class="flex gap-2 px-6 pb-2 flex-shrink-0">
-        <button id="tab-nearby" type="button" class="tab-btn px-4 py-1.5 rounded text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-primary border border-primary/30" data-tab="nearby">Tech enthusiast</button>
-        <button id="tab-poi" type="button" class="tab-btn px-4 py-1.5 rounded text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="poi">Points of Interest</button>
-        <button id="tab-map-data" type="button" class="tab-btn px-4 py-1.5 rounded text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="map-data">Map Data</button>
-        <button id="tab-widgets" type="button" class="tab-btn px-4 py-1.5 rounded text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="widgets">Widgets</button>
+        <button id="tab-nearby" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-primary border border-primary/30" data-tab="nearby">Tech enthusiast</button>
+        <button id="tab-poi" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="poi">Points of Interest</button>
+        <button id="tab-map-data" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="map-data">Map Data</button>
+        <button id="tab-widgets" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="widgets">Widgets</button>
       </div>
       <div class="relative w-full flex-1 min-h-0 overflow-hidden">
         <div id="bottom-panel-tiles-scroll" class="w-full h-full overflow-x-auto no-scrollbar pb-6 pl-6 scroll-smooth cursor-grab active:cursor-grabbing" tabindex="0">
@@ -345,18 +345,18 @@
           <!-- Map Data toggle tiles rendered by map-app.js -->
         </div>
         <div id="widget-tiles" class="hidden flex gap-4 pr-16 w-max items-center">
-          <button id="add-weather-widget" type="button" class="w-[260px] h-[260px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-4 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-2 items-center justify-center transition-colors cursor-pointer">
-            <span class="material-symbols-outlined text-3xl text-primary">cloud</span>
-            <span class="text-primary text-sm font-medium">Add weather Widget</span>
+          <button id="add-weather-widget" type="button" class="w-[130px] h-[130px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-2 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-1 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-xl text-primary">cloud</span>
+            <span class="text-primary text-xs font-medium">Add weather Widget</span>
           </button>
-          <button id="add-stock-widget" type="button" class="w-[260px] h-[260px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-4 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-2 items-center justify-center transition-colors cursor-pointer">
-            <span class="material-symbols-outlined text-3xl text-amber-600 dark:text-amber-500">candlestick_chart</span>
-            <span class="text-amber-600 dark:text-amber-500 text-sm font-medium">Add Stock Widget</span>
+          <button id="add-stock-widget" type="button" class="w-[130px] h-[130px] flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-2 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-1 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-xl text-amber-600 dark:text-amber-500">candlestick_chart</span>
+            <span class="text-amber-600 dark:text-amber-500 text-xs font-medium">Add Stock Widget</span>
           </button>
         </div>
         </div>
         <div class="absolute right-0 top-0 bottom-0 w-28 pointer-events-none z-10 bg-gradient-to-r from-transparent via-background-light/20 to-background-light/15 dark:via-background-dark/20 dark:to-background-dark/15"></div>
-        <button id="bottom-panel-scroll-right" type="button" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded bg-card-light/60 dark:bg-card-dark/60 hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Scroll right">
+        <button id="bottom-panel-scroll-right" type="button" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-card-light/60 dark:bg-card-dark/60 hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Scroll right">
           <span class="material-symbols-outlined">chevron_right</span>
         </button>
       </div>
@@ -372,20 +372,20 @@
 
     <!-- Add Stock Widget Config Panel -->
     <div id="stock-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-lg shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
         <div class="p-5">
           <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Add Stock Widget</h3>
           <div class="space-y-3">
-            <input id="stock-config-search" type="text" placeholder="Search symbol (e.g. AAPL, MSFT)..." class="w-full px-4 py-2.5 rounded bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <input id="stock-config-search" type="text" placeholder="Search symbol (e.g. AAPL, MSFT)..." class="w-full px-4 py-2.5 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
             <div id="stock-config-results" class="max-h-40 overflow-y-auto space-y-1"></div>
-            <button id="stock-config-add" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded hidden">Add</button>
+            <button id="stock-config-add" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg hidden">Add</button>
           </div>
-          <div id="stock-widget-loading" class="hidden mt-3 p-3 rounded bg-primary/10 text-primary text-sm flex items-center gap-2">
+          <div id="stock-widget-loading" class="hidden mt-3 p-3 rounded-lg bg-primary/10 text-primary text-sm flex items-center gap-2">
             <span class="material-symbols-outlined animate-spin">progress_activity</span>
             <span>Adding widget...</span>
           </div>
         </div>
-        <button id="stock-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+        <button id="stock-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
@@ -393,28 +393,28 @@
 
     <!-- Add Weather Widget Config Panel -->
     <div id="weather-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+      <div class="relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-lg shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
         <div class="p-5">
           <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Add Weather Widget</h3>
           <div class="flex gap-2 mb-4">
-            <button id="weather-config-by-location" type="button" class="flex-1 px-4 py-2 rounded text-sm font-medium bg-primary/20 text-primary border border-primary/30">By location</button>
-            <button id="weather-config-by-city" type="button" class="flex-1 px-4 py-2 rounded text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10">By city</button>
+            <button id="weather-config-by-location" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary border border-primary/30">By location</button>
+            <button id="weather-config-by-city" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10">By city</button>
           </div>
           <div id="weather-config-location" class="space-y-3">
             <p class="text-sm text-text-secondary">Use your current GPS or IP location</p>
-            <button id="weather-config-validate-location" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded">Validate</button>
+            <button id="weather-config-validate-location" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg">Validate</button>
           </div>
           <div id="weather-config-city" class="hidden space-y-3">
-            <input id="weather-config-city-input" type="text" placeholder="Search city..." class="w-full px-4 py-2.5 rounded bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <input id="weather-config-city-input" type="text" placeholder="Search city..." class="w-full px-4 py-2.5 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
             <div id="weather-config-city-results" class="max-h-32 overflow-y-auto space-y-1"></div>
-            <button id="weather-config-validate-city" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded hidden">Validate</button>
+            <button id="weather-config-validate-city" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg hidden">Validate</button>
           </div>
-          <div id="weather-widget-loading" class="hidden mt-3 p-3 rounded bg-primary/10 text-primary text-sm flex items-center gap-2">
+          <div id="weather-widget-loading" class="hidden mt-3 p-3 rounded-lg bg-primary/10 text-primary text-sm flex items-center gap-2">
             <span class="material-symbols-outlined animate-spin">progress_activity</span>
             <span>Adding widget...</span>
           </div>
         </div>
-        <button id="weather-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+        <button id="weather-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
@@ -422,11 +422,11 @@
 
     <!-- Resume Embedded View (overlay on map) -->
     <div id="resume-embed-overlay" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-      <div class="relative w-full max-w-[720px] bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl rounded shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden flex flex-col" style="max-height: 90vh;">
-        <button id="resume-embed-close" type="button" class="absolute top-3 right-3 z-50 w-10 h-10 flex items-center justify-center rounded bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors" aria-label="Close resume">
+      <div class="relative w-full max-w-[720px] bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl rounded-lg shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden flex flex-col" style="max-height: 90vh;">
+        <button id="resume-embed-close" type="button" class="absolute top-3 right-3 z-50 w-10 h-10 flex items-center justify-center rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors" aria-label="Close resume">
           <span class="material-symbols-outlined">close</span>
         </button>
-        <iframe id="resume-embed-iframe" src="about:blank" class="w-full flex-1 min-h-[70vh] rounded-b border-0" title="Resume"></iframe>
+        <iframe id="resume-embed-iframe" src="about:blank" class="w-full flex-1 min-h-[70vh] rounded-b-lg border-0" title="Resume"></iframe>
       </div>
     </div>
   </div>
@@ -450,11 +450,11 @@
 
   <!-- Token Prompt Overlay (shown when no Mapbox token) -->
   <div id="map-token-overlay" class="hidden fixed inset-0 z-50 bg-background-light/25 dark:bg-background-dark/25 flex items-center justify-center p-6">
-    <div class="bg-card-light dark:bg-card-dark rounded p-8 max-w-md w-full border border-slate-200 dark:border-white/5">
+    <div class="bg-card-light dark:bg-card-dark rounded-lg p-8 max-w-md w-full border border-slate-200 dark:border-white/5">
       <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Mapbox Token Required</h3>
       <p class="text-text-secondary text-sm mb-6">Enter your Mapbox Access Token to view the map.</p>
-      <input type="text" id="mapbox-token-app" class="w-full px-4 py-3 rounded bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 mb-4" placeholder="Paste your Mapbox Access Token (pk....)">
-      <button id="load-map-app" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded">Load Map</button>
+      <input type="text" id="mapbox-token-app" class="w-full px-4 py-3 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 mb-4" placeholder="Paste your Mapbox Access Token (pk....)">
+      <button id="load-map-app" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg">Load Map</button>
     </div>
   </div>
 

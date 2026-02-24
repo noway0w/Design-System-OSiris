@@ -40,7 +40,7 @@ html.dark .neumorphic-menu-panel {
   background: var(--neumorphic-surface);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 4px;
+  border-radius: 8px;
   border: 1px solid var(--neumorphic-border);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   padding: 24px 20px;
@@ -87,7 +87,7 @@ html.dark .neumorphic-menu-panel {
   min-width: 80px;
   padding: 12px 16px;
   border: 1px solid var(--neumorphic-border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--neumorphic-surface);
   color: var(--neumorphic-text);
   font-size: 0.875rem;
@@ -123,7 +123,7 @@ html.dark .neumorphic-menu-panel {
   gap: 8px;
   padding: 14px 20px;
   border: 1px solid var(--neumorphic-border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--neumorphic-surface);
   color: var(--neumorphic-text);
   font-size: 0.9375rem;

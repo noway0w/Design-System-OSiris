@@ -44,9 +44,9 @@ function getStatusFromLastSeen(lastSeen) {
 }
 
 function getStatusDot(status) {
-  if (status === 'connected' || status === 'online') return 'bg-green-500 rounded shadow-[0_0_8px_rgba(34,197,94,0.6)]';
-  if (status === 'recently' || status === 'idle') return 'bg-orange-500 rounded';
-  return 'bg-gray-500 rounded';
+  if (status === 'connected' || status === 'online') return 'bg-green-500 rounded-lg shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+  if (status === 'recently' || status === 'idle') return 'bg-orange-500 rounded-lg';
+  return 'bg-gray-500 rounded-lg';
 }
 
 let heartbeatIntervalId = null;
@@ -57,6 +57,9 @@ let isAdmin = false;
 let scrollDragJustEnded = false;
 
 let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false };
+const SHOW_OTHER_USERS_KEY = 'osiris_show_other_users_on_map';
+function getShowOtherUsersOnMap() { return localStorage.getItem(SHOW_OTHER_USERS_KEY) === 'true'; }
+function setShowOtherUsersOnMap(on) { localStorage.setItem(SHOW_OTHER_USERS_KEY, on ? 'true' : ''); }
 let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage'];
 const userProfilePanels = new Map();
 let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null, volumetricWeatherLayerId: null, volumetricWeatherSourceId: null, liveCloudCoverageLayerId: null, liveCloudCoverageSourceId: null };
@@ -266,9 +269,25 @@ function renderNearbyTiles(tiles) {
   const newNames = new Set(userTiles.map((t) => t.name));
   const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
 
-  let html = '';
+  const showOthers = getShowOtherUsersOnMap();
+  const toggleId = 'nearby-show-others-toggle';
+  let html = `
+    <div id="nearby-show-others-tile" class="w-48 flex-shrink-0 p-3 rounded border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 bg-gradient-to-br from-primary/15 via-primary/8 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-xl">people</span>
+        <span class="text-slate-800 dark:text-white font-bold text-sm">Show others on map</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="nearby-toggle-status text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">${showOthers ? 'On' : 'Off'}</span>
+        <div class="relative inline-block w-10 align-middle select-none">
+          <input class="toggle-checkbox absolute top-0 block w-5 h-5 rounded-lg bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" ${showOthers ? 'checked' : ''}/>
+          <label class="toggle-label block overflow-hidden h-5 rounded-lg bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
+        </div>
+      </div>
+    </div>`;
+
   if (isAdmin) {
-    html = `
+    html += `
     <button id="nearby-clear-all" type="button" class="w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
       <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
       <span class="text-text-secondary text-sm font-medium">Clear all</span>
@@ -290,15 +309,15 @@ function renderNearbyTiles(tiles) {
     const dataId = tile.id != null ? `data-user-id="${tile.id}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
-    const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
+    const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
     html += `
       <div ${dataAttr} ${dataId} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
           ${deleteBtn}
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
-        <div class="w-14 h-14 rounded border-2 ${imgBorder} p-0.5 ${imgClass}">
-          <img alt="${tile.name}" class="w-full h-full object-cover rounded" src="${tile.avatar}"/>
+        <div class="w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass}">
+          <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/>
         </div>
         <div>
           <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${tile.name}</h3>
@@ -317,6 +336,15 @@ function renderNearbyTiles(tiles) {
       ? 'Discover my world needs PHP enabled on server'
       : total === 0 ? 'No Tech enthusiasts yet' : `${total} Tech enthusiast${total === 1 ? '' : 's'} worldwide`;
   }
+
+  document.getElementById(toggleId)?.addEventListener('change', (e) => {
+    const on = e.target.checked;
+    setShowOtherUsersOnMap(on);
+    addUserTileMarkers(currentTiles);
+    const tileEl = document.getElementById('nearby-show-others-tile');
+    const label = tileEl?.querySelector('.nearby-toggle-status');
+    if (label) label.textContent = on ? 'On' : 'Off';
+  });
 
   document.getElementById('nearby-clear-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -499,7 +527,10 @@ function addUserTileMarkers(tiles = []) {
   userTileMarkers.forEach(m => m.remove());
   userTileMarkers = [];
   if (!appMap) return;
-  const withLoc = (tiles.length ? tiles : currentTiles).filter((t) => t.lat != null && t.lng != null);
+  const all = (tiles.length ? tiles : currentTiles).filter((t) => t.lat != null && t.lng != null);
+  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
+  const showOthers = getShowOtherUsersOnMap();
+  const withLoc = showOthers ? all : all.filter((t) => t.name === currentUserName);
   withLoc.forEach((tile, idx) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
@@ -598,8 +629,8 @@ function renderPOITiles(pois) {
     const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
     html += `
       <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
-        <div class="w-14 h-14 rounded border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
-          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded" src="${poi.icon || 'brand/placeholder.png'}"/>
+        <div class="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
+          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${poi.icon || 'brand/placeholder.png'}"/>
         </div>
         <div>
           <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
@@ -746,29 +777,30 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const overlayClass = isDark ? 'bg-black/50' : 'bg-black/10';
   const deleteId = w.id || ('w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
-    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-lg bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
+    : 'absolute top-1 right-1 z-10 w-6 h-6 flex items-center justify-center rounded-lg bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+  const deleteIconSize = variant === 'panel' ? 'text-[18px]' : 'text-[14px]';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
-         <span class="material-symbols-outlined text-[18px]">delete</span>
+         <span class="material-symbols-outlined ${deleteIconSize}">delete</span>
        </button>`
     : '';
-  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'w-[260px] h-[260px] flex-shrink-0';
+  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'w-[130px] h-[130px] flex-shrink-0';
   const layoutClass = variant === 'panel' ? 'flex items-start gap-3' : 'flex flex-col justify-end min-h-0';
-  const textClass = isDark ? 'text-white' : 'text-black';
-  const textMutedClass = isDark ? 'text-white/80' : 'text-black/80';
+  const textClass = 'text-white';
+  const textMutedClass = 'text-white/80';
   const innerLayout = variant === 'panel'
-    ? `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="w-8 h-8 flex-shrink-0" style="filter:${isDark ? 'brightness(0) invert(1)' : 'brightness(0)'};"/>
+    ? `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="w-8 h-8 flex-shrink-0" style="filter:brightness(0) invert(1);"/>
        <div class="min-w-0 flex-1">
          <div class="text-xs ${textMutedClass} font-medium">Current local weather</div>
          <div class="${textClass} font-bold text-sm">${(w.city || '—').replace(/</g, '&lt;')}</div>
          <div class="${textClass} text-sm mt-0.5">${temp} · ${humidity}</div>
        </div>`
-    : `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="absolute top-3 left-3 w-8 h-8" style="filter:${isDark ? 'brightness(0) invert(1)' : 'brightness(0)'};"/>
+    : `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="absolute top-2 left-2 w-6 h-6" style="filter:brightness(0) invert(1);"/>
        <div class="mt-auto">
-         <div class="text-xs ${textMutedClass} font-medium">Current local weather</div>
-         <div class="${textClass} font-bold text-sm">${(w.city || '—').replace(/</g, '&lt;')}</div>
-         <div class="${textClass} text-sm mt-0.5">${temp} · ${humidity}</div>
+         <div class="text-[10px] ${textMutedClass} font-medium">Current local weather</div>
+         <div class="${textClass} font-bold text-xs">${(w.city || '—').replace(/</g, '&lt;')}</div>
+         <div class="${textClass} text-xs mt-0.5">${temp} · ${humidity}</div>
        </div>`;
   const bgSrc = imgPath
     ? (typeof resolveCityImageUrl === 'function' ? resolveCityImageUrl(imgPath) : imgPath)
@@ -782,7 +814,7 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
       ${bgImg}
       <div class="absolute inset-0 ${overlayClass} pointer-events-none"></div>
       ${deleteBtn}
-      <div class="relative p-3 ${layoutClass} h-full z-[1]">
+      <div class="relative ${variant === 'panel' ? 'p-3' : 'p-2'} ${layoutClass} h-full z-[1]">
         ${innerLayout}
       </div>
     </div>
@@ -1097,8 +1129,8 @@ function renderMapDataTiles(state) {
           <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span class="text-[8px] font-medium text-slate-400 uppercase tracking-widest">${t.on ? 'Enabled' : 'Disabled'}</span>
             <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-              <input class="toggle-checkbox map-data-toggle absolute top-0 block w-5 h-5 rounded bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" data-key="${t.key}" ${t.on ? 'checked' : ''}/>
-              <label class="toggle-label block overflow-hidden h-5 rounded bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
+              <input class="toggle-checkbox map-data-toggle absolute top-0 block w-5 h-5 rounded-lg bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" data-key="${t.key}" ${t.on ? 'checked' : ''}/>
+              <label class="toggle-label block overflow-hidden h-5 rounded-lg bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
             </div>
           </div>
         </div>
@@ -1377,7 +1409,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
   if (selectedRandomIndex < 0 && !selectedPath) selectedRandomIndex = 0;
 
   const panel = document.createElement('div');
-  panel.className = 'profile-picture-picker fixed w-80 rounded overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
+  panel.className = 'profile-picture-picker fixed w-80 rounded-lg overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
   panel.style.left = (window.innerWidth / 2 - 160) + 'px';
   panel.style.top = (window.innerHeight / 2 - 220) + 'px';
   panel.style.zIndex = String(PROFILE_PICKER_Z);
@@ -1388,26 +1420,26 @@ async function openProfilePicturePicker(tile, parentPanel) {
       <p class="text-sm text-text-secondary mt-0.5">Choose one or upload your own</p>
     </div>
     <div class="p-4 grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-      <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
+      <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
         <div class="profile-pick-add-inner flex flex-col items-center justify-center">
           <span class="material-symbols-outlined text-3xl text-text-secondary mb-1">add_photo_alternate</span>
           <span class="text-sm text-text-secondary">Add your profile picture</span>
           <span class="text-xs text-slate-400 mt-0.5">Click or drag & drop</span>
         </div>
-        <div class="profile-pick-add-preview hidden w-20 h-20 rounded overflow-hidden">
+        <div class="profile-pick-add-preview hidden w-20 h-20 rounded-lg overflow-hidden">
           <img src="" alt="" class="w-full h-full object-cover"/>
         </div>
         <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" id="profile-pick-file-input"/>
       </div>
       ${USER_PICT_IMAGES.map((src, i) => `
-        <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
-          <img src="${src}" alt="" class="w-14 h-14 rounded object-cover"/>
+        <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded-lg border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
+          <img src="${src}" alt="" class="w-14 h-14 rounded-lg object-cover"/>
         </button>
       `).join('')}
     </div>
     <div class="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
-      <button type="button" class="profile-pick-cancel px-4 py-2 rounded border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
-      <button type="button" class="profile-pick-validate px-4 py-2 rounded bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Validate</button>
+      <button type="button" class="profile-pick-cancel px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+      <button type="button" class="profile-pick-validate px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Validate</button>
     </div>
   `;
 
@@ -1416,7 +1448,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
   const renderSelected = () => {
     panel.querySelectorAll('.profile-pick-option').forEach((btn, i) => {
       const sel = !selectedPath && selectedRandomIndex === i;
-      btn.className = `profile-pick-option flex flex-col items-center p-2 rounded border-2 transition-all hover:border-primary/50 border-slate-200 dark:border-slate-700 ${sel ? 'ring-2 ring-primary ring-offset-2' : ''}`;
+      btn.className = `profile-pick-option flex flex-col items-center p-2 rounded-lg border-2 transition-all hover:border-primary/50 border-slate-200 dark:border-slate-700 ${sel ? 'ring-2 ring-primary ring-offset-2' : ''}`;
     });
     const addEl = panel.querySelector('.profile-pick-add');
     const inner = addEl?.querySelector('.profile-pick-add-inner');
@@ -1551,7 +1583,7 @@ async function openUserProfilePanel(tile) {
   const top = baseY + count * PANEL_CASCADE_OFFSET;
 
   const panel = document.createElement('div');
-  panel.className = 'user-profile-panel fixed w-72 rounded overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto';
+  panel.className = 'user-profile-panel fixed w-72 rounded-lg overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col max-h-[calc(100vh-24px)]';
   panel.setAttribute('aria-hidden', 'false');
   panel.setAttribute('data-user-name', name);
   panel.setAttribute('data-user-id', tile.id || '');
@@ -1560,18 +1592,18 @@ async function openUserProfilePanel(tile) {
   panel.style.zIndex = String(PANEL_BASE_Z + count);
 
   const deleteBtnHtml = canDelete
-    ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
+    ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
     : '';
   const isOwnPanel = tile.name === currentUserName;
   const avatarEditBtn = isOwnPanel
-    ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
+    ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded-lg bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
     : '';
 
   panel.innerHTML = `
-    <div class="user-profile-drag-handle flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
+    <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <div class="relative flex-shrink-0 group/avatar">
-          <img class="user-profile-avatar w-12 h-12 rounded object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+          <img class="user-profile-avatar w-12 h-12 rounded-lg object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
           ${avatarEditBtn}
         </div>
         <div class="min-w-0">
@@ -1584,10 +1616,10 @@ async function openUserProfilePanel(tile) {
       </div>
       <div class="flex items-center gap-1 flex-shrink-0">
         ${deleteBtnHtml}
-        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close profile"><span class="material-symbols-outlined text-[20px]">close</span></button>
+        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close profile"><span class="material-symbols-outlined text-[20px]">close</span></button>
       </div>
     </div>
-    <div class="user-profile-widgets p-3 space-y-2 hidden"></div>
+    <div class="user-profile-widgets p-3 space-y-2 hidden overflow-y-auto min-h-0 flex-1 max-h-[calc(100vh-180px)]"></div>
   `;
 
   if (isOwnPanel) {
@@ -2108,7 +2140,7 @@ async function openPOIContentPanel(poi) {
   if (tagsEl) {
     const tags = content.tags && content.tags.length ? content.tags : [type, poi.location ? poi.location.split(',')[0] : null].filter(Boolean);
     tagsEl.innerHTML = tags.map((t) => `
-      <div class="glass-card px-4 py-2 rounded flex items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer">
+      <div class="glass-card px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer">
         <span class="material-symbols-outlined text-primary text-sm">tag</span>
         <span class="text-sm font-medium text-slate-300">${escapeHtml(t)}</span>
       </div>`).join('');
@@ -2160,7 +2192,7 @@ async function openPOIContentPanel(poi) {
     ];
     const figures = content.keyFigures && content.keyFigures.length ? content.keyFigures : defaults;
     keyFiguresEl.innerHTML = figures.map((f) => `
-      <div class="glass-card p-5 rounded flex items-center justify-between group poi-key-figure hover:bg-white/5 transition-all">
+      <div class="glass-card p-5 rounded-lg flex items-center justify-between group poi-key-figure hover:bg-white/5 transition-all">
         <div>
           <p class="text-slate-400 text-sm mb-1">${escapeHtml(f.label || '')}</p>
           <p class="text-3xl font-bold text-white">${escapeHtml(f.value || '')}</p>
@@ -2186,10 +2218,10 @@ async function openPOIContentPanel(poi) {
     const div = document.createElement('div');
     div.className = 'poi-gallery-item poi-gallery-quote break-inside-avoid';
     div.innerHTML = `
-      <div class="w-full bg-primary p-8 flex flex-col justify-between min-h-[12rem] rounded">
+      <div class="w-full bg-primary p-8 flex flex-col justify-between min-h-[12rem] rounded-lg">
         <span class="material-symbols-outlined text-white text-4xl">format_quote</span>
         <p class="text-white text-xl font-bold leading-tight">"${escapeHtml(q)}"</p>
-        <div class="h-1 w-12 bg-white/30 rounded"></div>
+        <div class="h-1 w-12 bg-white/30 rounded-lg"></div>
       </div>`;
     galleryEl.appendChild(div);
   }
@@ -2382,7 +2414,7 @@ function initBottomPanel() {
       scrollEl.scrollLeft = startScrollLeft + (startX - clientX);
     };
     const onDown = (e) => {
-      if (e.target.closest('.map-data-tile-draggable, .user-tile-delete, #nearby-clear-all, #add-weather-widget, #add-stock-widget, [data-delete-widget-id]')) return;
+      if (e.target.closest('.map-data-tile-draggable, .user-tile-delete, #nearby-clear-all, #nearby-show-others-tile, #add-weather-widget, #add-stock-widget, [data-delete-widget-id]')) return;
       scrollDragJustEnded = false;
       dragPending = true;
       isDragScrolling = false;
@@ -2518,7 +2550,7 @@ function initWeatherWidgetConfig() {
         cityResults.innerHTML = results.slice(0, 5).map((r) => {
           const cc = (r.country_code || r.countryCode || '').toString().toUpperCase().slice(0, 2);
           return `
-          <button type="button" class="weather-city-result w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-lat="${r.latitude}" data-lng="${r.longitude}" data-city="${r.name}" data-country="${(r.country || '').toString().replace(/"/g, '&quot;')}" data-country-code="${cc}">
+          <button type="button" class="weather-city-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-lat="${r.latitude}" data-lng="${r.longitude}" data-city="${r.name}" data-country="${(r.country || '').toString().replace(/"/g, '&quot;')}" data-country-code="${cc}">
             ${r.name}${r.admin1 ? ', ' + r.admin1 : ''} (${cc})
           </button>
         `;
@@ -2744,7 +2776,7 @@ function initStockWidgetConfig() {
         resultsEl.innerHTML = results.map((r) => {
           const symbol = (r.symbol || r['1. symbol'] || '').replace(/"/g, '&quot;');
           const desc = (r.description || r.name || r['2. name'] || r.type || r['3. type'] || symbol).toString().replace(/</g, '&lt;');
-          return `<button type="button" class="stock-search-result w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-symbol="${symbol}" data-description="${desc.replace(/"/g, '&quot;')}">${symbol} — ${desc}</button>`;
+          return `<button type="button" class="stock-search-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-symbol="${symbol}" data-description="${desc.replace(/"/g, '&quot;')}">${symbol} — ${desc}</button>`;
         }).join('');
         resultsEl.querySelectorAll('.stock-search-result').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -2853,26 +2885,27 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const durationLabel = w.duration ?? '1 month';
   const deleteId = w.id || ('w-' + (w.symbol || ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
-    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-lg bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
+    : 'absolute top-1 right-1 z-10 w-6 h-6 flex items-center justify-center rounded-lg bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+  const deleteIconSize = variant === 'panel' ? 'text-[18px]' : 'text-[14px]';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
-         <span class="material-symbols-outlined text-[18px]">delete</span>
+         <span class="material-symbols-outlined ${deleteIconSize}">delete</span>
        </button>`
     : '';
   const isPanel = variant === 'panel';
-  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'w-[260px] h-[268px] flex-shrink-0';
-  const padClass = isPanel ? 'p-2' : 'p-3';
-  const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-lg';
+  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'w-[130px] h-[134px] flex-shrink-0';
+  const padClass = isPanel ? 'p-2' : 'p-2';
+  const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-sm';
   return `
     <div class="group relative ${sizeClass} rounded overflow-hidden border-2 ${colorClass}">
       <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40 pointer-events-none"></div>
       ${deleteBtn}
       <div class="relative ${padClass} flex flex-col justify-between h-full z-[1]">
         <div class="relative z-10">
-          <div class="text-xs text-slate-600 dark:text-slate-400 font-medium">Stock</div>
+          <div class="${isPanel ? 'text-xs' : 'text-[10px]'} text-slate-600 dark:text-slate-400 font-medium">Stock</div>
           <div class="${symbolClass} text-slate-800 dark:text-white">${(w.symbol || w.name || '—').toString().replace(/</g, '&lt;')}</div>
-          <div class="text-sm ${textColorClass} font-semibold mt-0.5">${priceStr} · ${changeStr}</div>
+          <div class="${isPanel ? 'text-sm' : 'text-xs'} ${textColorClass} font-semibold mt-0.5">${priceStr} · ${changeStr}</div>
           <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${durationLabel}</div>
         </div>
       </div>

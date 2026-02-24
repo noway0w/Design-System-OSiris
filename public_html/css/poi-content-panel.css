@@ -29,7 +29,7 @@
     height: 66.67vh;
     max-height: 85vh;
     transform: translateY(100%);
-    border-radius: 4px 4px 0 0;
+    border-radius: 8px 8px 0 0;
   }
 
   .poi-content-panel.poi-panel-open {
@@ -50,7 +50,7 @@
     bottom: 0;
     width: 50vw;
     transform: translateX(-100%);
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 8px 8px 0;
   }
 
   .poi-content-panel.poi-panel-open {
@@ -89,7 +89,7 @@
   margin-bottom: 1rem;
   cursor: pointer;
   position: relative;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -129,7 +129,7 @@
   transform: translate(-50%, -50%);
   width: 40px;
   height: 40px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.9);
   color: #1e293b;
   display: flex;
@@ -170,7 +170,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   background: #0f172a;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -218,7 +218,7 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
   cursor: pointer;
@@ -306,12 +306,12 @@ html:not(.dark) .poi-content-panel .poi-panel-key-figures .text-white {
 /* Perfect circle for POI panel icon buttons */
 .poi-btn-circle {
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .poi-panel-close-btn {
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 /* Glass card overlay: same text colors as dark mode (white/primary on dark overlay) */
