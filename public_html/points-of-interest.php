@@ -30,46 +30,30 @@ $db->exec('
     )
 ');
 
-$count = (int)$db->query('SELECT COUNT(*) FROM point_of_interest')->fetchColumn();
+// Migration: fix Oslo address/coordinates (Tjuvholmen allé 3)
+$db->exec("UPDATE point_of_interest SET location = 'Tjuvholmen allé 3, 0252 Oslo', lat = 59.908741, lng = 10.722761 WHERE brand = 'Autodesk' AND location LIKE '%Tjuvholmen%'");
+// Migration: fix Pier 9 GPS 37°48'00.2"N 122°23'50.9"W = 37.80006, -122.39747
+$db->exec("UPDATE point_of_interest SET lat = 37.80006, lng = -122.39747 WHERE brand = 'Autodesk' AND location LIKE '%Pier 9%'");
+// Migration: fix Mazars coordinates (La Défense area)
+$db->exec("UPDATE point_of_interest SET lat = 48.892050, lng = 2.243972 WHERE brand = 'Mazars'");
 
-// Permanent POI: Mazars Florence UCOM Event (insert if not exists)
-$mazarsFlorence = $db->query("SELECT 1 FROM point_of_interest WHERE brand = 'Mazars' AND location = 'Florence' AND type = 'UCOM Event' LIMIT 1")->fetch();
-if (!$mazarsFlorence) {
-    $db->prepare('INSERT INTO point_of_interest (brand, location, type, lat, lng, icon) VALUES (?, ?, ?, ?, ?, ?)')
-        ->execute(['Mazars', 'Florence', 'UCOM Event', 43.7696, 11.2558, 'brand/mazars.png']);
-}
-
-if ($count === 0) {
-    $icons = [
-        'Autodesk' => 'brand/autodesk.png',
-        'Woodoo' => 'brand/woodoo.png',
-        'Freelance' => 'brand/freelance.png',
-        'Mazars' => 'brand/mazars.png',
-        'Second Design Studio' => 'brand/second-design-studio.png',
-        'Biosens' => 'brand/biosens.png'
-    ];
-    $seed = [
-        ['Autodesk', 'San Diego', 'Autodesk University', 32.7157, -117.1611],
-        ['Autodesk', 'Las Vegas', 'Autodesk University', 36.1699, -115.1398],
-        ['Autodesk', 'San Francisco', 'DevCon', 37.7749, -122.4194],
-        ['Autodesk', 'Oslo Aker Brygge', 'Product Work', 59.9086, 10.7275],
-        ['Autodesk', 'Paris Bercy', 'BIM World', 48.8356, 2.3868],
-        ['Woodoo', 'Paris Montparnasse', 'Product work', 48.8422, 2.3219],
-        ['Freelance', 'Auckland', 'Freelance work', -36.8509, 174.7645],
-        ['Freelance', 'Sydney', 'Freelance work', -33.8688, 151.2093],
-        ['Freelance', 'Singapour', 'Freelance work', 1.3521, 103.8198],
-        ['Mazars', 'Paris la défense', 'Product work', 48.8919, 2.2386],
-        ['Freelance', 'Switzerland', 'Freelance work', 46.8182, 8.2275],
-        ['Freelance', 'Martinique', 'Freelance work', 14.6415, -61.0242],
-        ['Freelance', 'Paris étoile', 'Freelance work', 48.8738, 2.2950],
-        ['Freelance', 'Paris', 'Freelance work', 48.8566, 2.3522],
-        ['Second Design Studio', 'Lyon', 'Product work', 45.7640, 4.8357],
-        ['Biosens', 'Allemagne', 'Product work', 51.1657, 10.4515]
+// Migration: replace old POIs with new 8 POIs (detect old data by absence of Pier 9)
+$hasNewPOIs = $db->query("SELECT 1 FROM point_of_interest WHERE brand = 'Autodesk' AND location LIKE '%Pier 9%' LIMIT 1")->fetch();
+if (!$hasNewPOIs) {
+    $db->exec('DELETE FROM point_of_interest');
+    $newSeed = [
+        ['Autodesk', 'Pier 9, San Francisco, CA 94111', 'Autodesk', 37.80006, -122.39747, 'projects/Autodesk Forma/Autodesk.png'],
+        ['Autodesk', 'Tjuvholmen allé 3, 0252 Oslo', 'Product Work', 59.908741, 10.722761, 'projects/Autodesk Forma/Autodesk.png'],
+        ['Mazars', '61 Rue Henri Regnault, 92400 Courbevoie', 'Product Work', 48.892050, 2.243972, 'projects/Mazars/Mazars.png'],
+        ['Blue Ocean Sailing', 'Le Marin 97290, Martinique', 'Freelance Work', 14.4724, -60.8831, 'projects/Blue Ocean sailing/Freelance.png'],
+        ['Biomerieux', 'Voie Romaine, 69290 Craponne, France', 'Product Work', 45.7456, 4.7250, 'projects/Biomerieux/Second-Design-Studio.png'],
+        ['Biosens Numerique', '6 Rue de Nice, 75011 Paris', 'Diasys', 48.8556, 2.3761, 'projects/Diasys/Biosens.png'],
+        ['Renault', 'Place de l\'Étoile, Paris', 'Freelance Work', 48.8738, 2.2950, 'projects/Renault/Freelance.png'],
+        ['Woodoo', 'Tour Montparnasse, Paris', 'Product Work', 48.8422, 2.3219, 'projects/Woodoo/Freelance.png'],
     ];
     $stmt = $db->prepare('INSERT INTO point_of_interest (brand, location, type, lat, lng, icon) VALUES (?, ?, ?, ?, ?, ?)');
-    foreach ($seed as $row) {
-        $icon = $icons[$row[0]] ?? 'brand/freelance.png';
-        $stmt->execute([$row[0], $row[1], $row[2], $row[3], $row[4], $icon]);
+    foreach ($newSeed as $row) {
+        $stmt->execute($row);
     }
 }
 

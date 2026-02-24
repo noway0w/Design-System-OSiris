@@ -1,0 +1,26 @@
+{
+  "heroStatement": "Global Audit & Tax",
+  "quote": "Operating as a united partnership, we work as one integrated team, leveraging expertise, scale and cultural understanding.",
+  "quoteAuthor": "Hervé Hélias",
+  "quoteRole": "Group CEO",
+  "intro": "At Mazars Group Communication, I oversaw the brand image globally, managed communication campaigns such as #CreatingSharedValue, developed the Mazars Live app, and coordinated workshops for events involving all communication players worldwide.",
+  "featuredLabel": "Featured Project",
+  "tags": ["Audit", "Consulting", "Global"],
+  "heroCaption": "Headquarters View",
+  "heroSubcaption": "La Défense, Paris",
+  "mission": [
+    "Mazars is a leading international audit, tax and advisory firm. We deliver exceptional and tailored services in audit and accounting, as well as tax, financial advisory, consulting and legal services.",
+    "We empower our people to help clients navigate complex challenges and seize opportunities."
+  ],
+  "keyFigures": [
+    { "label": "Countries & Territories", "value": "90+", "icon": "public" },
+    { "label": "Professionals", "value": "47,000", "icon": "groups" },
+    { "label": "Global Revenue", "value": "€2.8bn", "icon": "trending_up" }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    { "title": "Mission", "text": "Create cross-media communication that integrates the brand's evolving image, rallies communication teams worldwide, and delivers on time." },
+    { "title": "Process", "text": "Collaboration with stakeholders, design iterations, internal testing, and delivery to offices in 80+ countries." },
+    { "title": "KPI", "text": "Cross-media, long-term programme delivered in multiple countries. Awards: Awwwards, Stratégies, Digital Award Berlin." }
+  ]
+}

@@ -5,6 +5,8 @@ let currentLocationMarker = null;
 let userTileMarkers = [];
 let poiMarkers = [];
 let currentPOIs = [];
+let currentOpenPOI = null;
+let poiViewerGallery = { items: [], index: 0 };
 let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
@@ -42,9 +44,9 @@ function getStatusFromLastSeen(lastSeen) {
 }
 
 function getStatusDot(status) {
-  if (status === 'connected' || status === 'online') return 'bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]';
-  if (status === 'recently' || status === 'idle') return 'bg-orange-500 rounded-full';
-  return 'bg-gray-500 rounded-full';
+  if (status === 'connected' || status === 'online') return 'bg-green-500 rounded shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+  if (status === 'recently' || status === 'idle') return 'bg-orange-500 rounded';
+  return 'bg-gray-500 rounded';
 }
 
 let heartbeatIntervalId = null;
@@ -267,7 +269,7 @@ function renderNearbyTiles(tiles) {
   let html = '';
   if (isAdmin) {
     html = `
-    <button id="nearby-clear-all" type="button" class="w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
+    <button id="nearby-clear-all" type="button" class="w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
       <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
       <span class="text-text-secondary text-sm font-medium">Clear all</span>
     </button>`;
@@ -288,15 +290,15 @@ function renderNearbyTiles(tiles) {
     const dataId = tile.id != null ? `data-user-id="${tile.id}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
-    const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
+    const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
     html += `
-      <div ${dataAttr} ${dataId} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
+      <div ${dataAttr} ${dataId} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
           ${deleteBtn}
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
-        <div class="w-14 h-14 rounded-full border-2 ${imgBorder} p-0.5 ${imgClass}">
-          <img alt="${tile.name}" class="w-full h-full object-cover rounded-full" src="${tile.avatar}"/>
+        <div class="w-14 h-14 rounded border-2 ${imgBorder} p-0.5 ${imgClass}">
+          <img alt="${tile.name}" class="w-full h-full object-cover rounded" src="${tile.avatar}"/>
         </div>
         <div>
           <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${tile.name}</h3>
@@ -579,9 +581,8 @@ function addPOIMarkers(pois) {
     const [ox, oy] = getPOIMarkerOffset(valid, idx, poi.lat, poi.lng);
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center', offset: [ox, oy] })
       .setLngLat([poi.lng, poi.lat])
-      .setPopup(new mapboxgl.Popup().setHTML(`<strong>${poi.brand || ''}</strong><br>${poi.location || ''}<br>${poi.type || ''}`))
       .addTo(appMap);
-    el.addEventListener('click', () => flyToLocation(poi.lng, poi.lat, 14));
+    el.addEventListener('click', () => flyToPOI(poi));
     poiMarkers.push(marker);
   });
 }
@@ -596,9 +597,9 @@ function renderPOITiles(pois) {
     const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
     const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
     html += `
-      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
-        <div class="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
-          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-full" src="${poi.icon || 'brand/placeholder.png'}"/>
+      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
+        <div class="w-14 h-14 rounded border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
+          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded" src="${poi.icon || 'brand/placeholder.png'}"/>
         </div>
         <div>
           <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
@@ -627,8 +628,8 @@ function wirePOITabs() {
   function setActiveTab(active) {
     [tabNearby, tabPOI, tabMapData, tabWidgets].forEach((t) => {
       if (t) {
-        t.classList.remove('bg-primary/20', 'text-primary', 'border-primary/30');
-        t.classList.add('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
+        t.classList.remove('text-primary', 'border-primary/30');
+        t.classList.add('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
       }
     });
     [tilesNearby, tilesPOI, tilesMapData, tilesWidgets].forEach((c) => {
@@ -639,8 +640,8 @@ function wirePOITabs() {
     const activeTab = tabMap[active];
     const activeTiles = tilesMap[active];
     if (activeTab) {
-      activeTab.classList.remove('bg-transparent', 'text-text-secondary', 'border-slate-200', 'dark:border-white/10');
-      activeTab.classList.add('bg-primary/20', 'text-primary', 'border-primary/30');
+      activeTab.classList.remove('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
+      activeTab.classList.add('text-primary', 'border-primary/30');
     }
     if (activeTiles) activeTiles.classList.remove('hidden');
     if (active === 'map-data') {
@@ -745,8 +746,8 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const overlayClass = isDark ? 'bg-black/50' : 'bg-black/10';
   const deleteId = w.id || ('w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
-    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
+    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-black/40 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
          <span class="material-symbols-outlined text-[18px]">delete</span>
@@ -777,7 +778,7 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
     ? `<img src="${String(bgSrc).replace(/"/g, '&quot;')}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none" style="transform:scale(1.11)" onerror="this.onerror=null;this.src='${fallbackSvg}'" />`
     : '';
   return `
-    <div class="group relative ${sizeClass} rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
+    <div class="group relative ${sizeClass} rounded overflow-hidden border border-slate-200 dark:border-white/10">
       ${bgImg}
       <div class="absolute inset-0 ${overlayClass} pointer-events-none"></div>
       ${deleteBtn}
@@ -1084,7 +1085,7 @@ function renderMapDataTiles(state) {
     const thumbFallback = isDark ? thumbDark.buildings : thumbLight.buildings;
     const toggleId = `map-data-toggle-${t.key}-${i}`;
     html += `
-      <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
+      <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
         <div class="h-20 overflow-hidden relative">
           <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" onerror="this.src=this.dataset.fallback||''" data-fallback="${thumbFallback}"/>
         </div>
@@ -1096,8 +1097,8 @@ function renderMapDataTiles(state) {
           <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span class="text-[8px] font-medium text-slate-400 uppercase tracking-widest">${t.on ? 'Enabled' : 'Disabled'}</span>
             <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-              <input class="toggle-checkbox map-data-toggle absolute top-0 block w-5 h-5 rounded-full bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" data-key="${t.key}" ${t.on ? 'checked' : ''}/>
-              <label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
+              <input class="toggle-checkbox map-data-toggle absolute top-0 block w-5 h-5 rounded bg-white dark:bg-slate-100 border-4 border-slate-300 dark:border-slate-600 appearance-none cursor-pointer focus:ring-0 outline-none" id="${toggleId}" type="checkbox" data-key="${t.key}" ${t.on ? 'checked' : ''}/>
+              <label class="toggle-label block overflow-hidden h-5 rounded bg-slate-300 dark:bg-slate-700 cursor-pointer" for="${toggleId}"></label>
             </div>
           </div>
         </div>
@@ -1105,7 +1106,7 @@ function renderMapDataTiles(state) {
   });
   if (state.volumetricWeather) {
     html += `
-      <div id="volumetric-weather-slider-wrap" class="flex flex-col items-center justify-center gap-2 w-16 min-w-[64px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+      <div id="volumetric-weather-slider-wrap" class="flex flex-col items-center justify-center gap-2 w-16 min-w-[64px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-4">
         <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">30,000 ft</span>
         <input type="range" id="volumetric-altitude-slider" data-altitude-slider min="0" max="9144" step="500" value="${altM}" orient="vertical" class="volumetric-altitude-range w-2 h-32 accent-primary cursor-pointer" title="Altitude (meters)"/>
         <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sea level</span>
@@ -1288,7 +1289,7 @@ function wirePOITileCards() {
     const id = el.getAttribute('data-poi-id');
     const poi = currentPOIs.find((p) => String(p.id) === String(id));
     if (poi && poi.lat != null && poi.lng != null) {
-      flyToLocation(poi.lng, poi.lat, 14);
+      flyToPOI(poi);
     }
   });
 }
@@ -1376,7 +1377,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
   if (selectedRandomIndex < 0 && !selectedPath) selectedRandomIndex = 0;
 
   const panel = document.createElement('div');
-  panel.className = 'profile-picture-picker fixed w-80 rounded-2xl overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
+  panel.className = 'profile-picture-picker fixed w-80 rounded overflow-hidden bg-background-light dark:bg-background-dark border border-slate-200 dark:border-white/10 shadow-xl pointer-events-auto';
   panel.style.left = (window.innerWidth / 2 - 160) + 'px';
   panel.style.top = (window.innerHeight / 2 - 220) + 'px';
   panel.style.zIndex = String(PROFILE_PICKER_Z);
@@ -1387,26 +1388,26 @@ async function openProfilePicturePicker(tile, parentPanel) {
       <p class="text-sm text-text-secondary mt-0.5">Choose one or upload your own</p>
     </div>
     <div class="p-4 grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-      <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
+      <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
         <div class="profile-pick-add-inner flex flex-col items-center justify-center">
           <span class="material-symbols-outlined text-3xl text-text-secondary mb-1">add_photo_alternate</span>
           <span class="text-sm text-text-secondary">Add your profile picture</span>
           <span class="text-xs text-slate-400 mt-0.5">Click or drag & drop</span>
         </div>
-        <div class="profile-pick-add-preview hidden w-20 h-20 rounded-full overflow-hidden">
+        <div class="profile-pick-add-preview hidden w-20 h-20 rounded overflow-hidden">
           <img src="" alt="" class="w-full h-full object-cover"/>
         </div>
         <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" id="profile-pick-file-input"/>
       </div>
       ${USER_PICT_IMAGES.map((src, i) => `
-        <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
-          <img src="${src}" alt="" class="w-14 h-14 rounded-full object-cover"/>
+        <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
+          <img src="${src}" alt="" class="w-14 h-14 rounded object-cover"/>
         </button>
       `).join('')}
     </div>
     <div class="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
-      <button type="button" class="profile-pick-cancel px-4 py-2 rounded-full border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
-      <button type="button" class="profile-pick-validate px-4 py-2 rounded-full bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Validate</button>
+      <button type="button" class="profile-pick-cancel px-4 py-2 rounded border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+      <button type="button" class="profile-pick-validate px-4 py-2 rounded bg-primary text-white font-medium hover:bg-primary/90 transition-colors">Validate</button>
     </div>
   `;
 
@@ -1415,7 +1416,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
   const renderSelected = () => {
     panel.querySelectorAll('.profile-pick-option').forEach((btn, i) => {
       const sel = !selectedPath && selectedRandomIndex === i;
-      btn.className = `profile-pick-option flex flex-col items-center p-2 rounded-xl border-2 transition-all hover:border-primary/50 border-slate-200 dark:border-slate-700 ${sel ? 'ring-2 ring-primary ring-offset-2' : ''}`;
+      btn.className = `profile-pick-option flex flex-col items-center p-2 rounded border-2 transition-all hover:border-primary/50 border-slate-200 dark:border-slate-700 ${sel ? 'ring-2 ring-primary ring-offset-2' : ''}`;
     });
     const addEl = panel.querySelector('.profile-pick-add');
     const inner = addEl?.querySelector('.profile-pick-add-inner');
@@ -1550,7 +1551,7 @@ async function openUserProfilePanel(tile) {
   const top = baseY + count * PANEL_CASCADE_OFFSET;
 
   const panel = document.createElement('div');
-  panel.className = 'user-profile-panel fixed w-72 rounded-2xl overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto';
+  panel.className = 'user-profile-panel fixed w-72 rounded overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto';
   panel.setAttribute('aria-hidden', 'false');
   panel.setAttribute('data-user-name', name);
   panel.setAttribute('data-user-id', tile.id || '');
@@ -1559,18 +1560,18 @@ async function openUserProfilePanel(tile) {
   panel.style.zIndex = String(PANEL_BASE_Z + count);
 
   const deleteBtnHtml = canDelete
-    ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
+    ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
     : '';
   const isOwnPanel = tile.name === currentUserName;
   const avatarEditBtn = isOwnPanel
-    ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
+    ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
     : '';
 
   panel.innerHTML = `
     <div class="user-profile-drag-handle flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <div class="relative flex-shrink-0 group/avatar">
-          <img class="user-profile-avatar w-12 h-12 rounded-full object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+          <img class="user-profile-avatar w-12 h-12 rounded object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
           ${avatarEditBtn}
         </div>
         <div class="min-w-0">
@@ -1583,7 +1584,7 @@ async function openUserProfilePanel(tile) {
       </div>
       <div class="flex items-center gap-1 flex-shrink-0">
         ${deleteBtnHtml}
-        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close profile"><span class="material-symbols-outlined text-[20px]">close</span></button>
+        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close profile"><span class="material-symbols-outlined text-[20px]">close</span></button>
       </div>
     </div>
     <div class="user-profile-widgets p-3 space-y-2 hidden"></div>
@@ -1930,6 +1931,377 @@ function flyToLocation(lng, lat, zoom, opts = {}) {
   });
 }
 
+function flyToPOI(poi, opts = {}) {
+  if (!appMap || !poi || poi.lat == null || poi.lng == null) return;
+  closeBottomPanel();
+  openPOIContentPanel(poi);
+  const isMobile = window.innerWidth < 768;
+  const padding = isMobile
+    ? { left: 0, right: 0, top: 0, bottom: Math.floor(window.innerHeight * (2 / 3)) }
+    : { left: Math.floor(window.innerWidth * 0.5), right: 0, top: 0, bottom: 0 };
+  appMap.flyTo({
+    center: [poi.lng, poi.lat],
+    zoom: opts.zoom ?? 17.5,
+    pitch: opts.pitch ?? 50,
+    padding,
+    duration: opts.duration ?? 2500
+  });
+}
+
+function getPOIAssets(poi) {
+  const logo = poi.icon || 'brand/placeholder.png';
+  const hashtags = [`#${(poi.type || 'ProductWork').replace(/\s+/g, '')}`, `#${(poi.brand || '').replace(/\s+/g, '')}`].filter(Boolean);
+  return { logo, hashtags };
+}
+
+function getCurrentPOIIndex() {
+  if (!currentOpenPOI || !currentPOIs.length) return -1;
+  const id = currentOpenPOI.id;
+  return currentPOIs.findIndex((p) => String(p.id) === String(id));
+}
+
+function updatePOINavButtons() {
+  /* No disable - wrap around enabled */
+}
+
+function goToPrevPOI() {
+  const idx = getCurrentPOIIndex();
+  if (idx < 0 || !currentPOIs.length) return;
+  const nextIdx = idx <= 0 ? currentPOIs.length - 1 : idx - 1;
+  const poi = currentPOIs[nextIdx];
+  if (poi) { currentOpenPOI = poi; flyToPOI(poi, { duration: 1200 }); }
+}
+
+function goToNextPOI() {
+  const idx = getCurrentPOIIndex();
+  if (idx < 0 || !currentPOIs.length) return;
+  const nextIdx = idx >= currentPOIs.length - 1 ? 0 : idx + 1;
+  const poi = currentPOIs[nextIdx];
+  if (poi) { currentOpenPOI = poi; flyToPOI(poi, { duration: 1200 }); }
+}
+
+function closePOIContentPanel() {
+  const panel = document.getElementById('poi-content-panel');
+  if (!panel) return;
+  currentOpenPOI = null;
+  panel.classList.remove('poi-panel-open', 'animate-fade-in-right');
+  panel.setAttribute('aria-hidden', 'true');
+  document.getElementById('map-app-root')?.classList.remove('poi-panel-open');
+  document.getElementById('bottom-panel-wrapper')?.classList.remove('poi-panel-blocking');
+  if (appMap) {
+    const center = appMap.getCenter();
+    if (center) {
+      appMap.flyTo({ center: [center.lng, center.lat], zoom: Math.max(2, appMap.getZoom() - 1.5), pitch: 0, duration: 800 });
+    }
+  }
+  const videoOverlay = document.getElementById('poi-video-overlay');
+  if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
+    const v = document.getElementById('poi-video-player');
+    if (v) { v.pause(); v.src = ''; }
+    videoOverlay.classList.add('hidden');
+  }
+  const imageOverlay = document.getElementById('poi-image-overlay');
+  if (imageOverlay) imageOverlay.classList.add('hidden');
+}
+
+function openPOIImageViewer(src, caption, items, index) {
+  const overlay = document.getElementById('poi-image-overlay');
+  const img = document.getElementById('poi-image-viewer-img');
+  const capEl = overlay?.querySelector('.poi-media-viewer-caption-text');
+  if (!overlay || !img) return;
+  poiViewerGallery = { items: items && items.length ? items : [{ url: src, caption: caption || 'Image' }], index: index >= 0 ? index : 0 };
+  const cur = poiViewerGallery.items[poiViewerGallery.index];
+  img.src = cur.url;
+  if (capEl) capEl.textContent = cur.caption;
+  overlay.classList.remove('hidden');
+  updatePOIViewerNavVisibility();
+}
+
+function updatePOIViewerNavVisibility() {
+  const prev = document.querySelector('.poi-viewer-prev');
+  const next = document.querySelector('.poi-viewer-next');
+  const n = poiViewerGallery.items.length;
+  if (prev) prev.style.visibility = n > 1 && poiViewerGallery.index > 0 ? 'visible' : 'hidden';
+  if (next) next.style.visibility = n > 1 && poiViewerGallery.index < n - 1 ? 'visible' : 'hidden';
+}
+
+function poiViewerGoPrev() {
+  if (poiViewerGallery.items.length <= 1 || poiViewerGallery.index <= 0) return;
+  poiViewerGallery.index--;
+  const cur = poiViewerGallery.items[poiViewerGallery.index];
+  const img = document.getElementById('poi-image-viewer-img');
+  const capEl = document.querySelector('#poi-image-overlay .poi-media-viewer-caption-text');
+  if (img) img.src = cur.url;
+  if (capEl) capEl.textContent = cur.caption;
+  updatePOIViewerNavVisibility();
+}
+
+function poiViewerGoNext() {
+  const n = poiViewerGallery.items.length;
+  if (n <= 1 || poiViewerGallery.index >= n - 1) return;
+  poiViewerGallery.index++;
+  const cur = poiViewerGallery.items[poiViewerGallery.index];
+  const img = document.getElementById('poi-image-viewer-img');
+  const capEl = document.querySelector('#poi-image-overlay .poi-media-viewer-caption-text');
+  if (img) img.src = cur.url;
+  if (capEl) capEl.textContent = cur.caption;
+  updatePOIViewerNavVisibility();
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const INSPIRATIONAL_QUOTES = [
+  { q: 'The only way to do great work is to love what you do.', a: 'Steve Jobs' },
+  { q: 'Design is not just what it looks like and feels like. Design is how it works.', a: 'Steve Jobs' },
+  { q: 'Innovation distinguishes between a leader and a follower.', a: 'Steve Jobs' },
+  { q: 'Simplicity is the ultimate sophistication.', a: 'Leonardo da Vinci' },
+  { q: 'Creativity is intelligence having fun.', a: 'Albert Einstein' },
+  { q: 'Design creates culture. Culture shapes values. Values determine the future.', a: 'Robert L. Peters' },
+  { q: 'Be the change you wish to see in the world.', a: 'Mahatma Gandhi' },
+  { q: 'The best way to predict the future is to create it.', a: 'Peter Drucker' },
+  { q: 'Quality is not an act, it is a habit.', a: 'Aristotle' },
+  { q: 'Strive for progress, not perfection.', a: 'Unknown' },
+];
+
+function getRandomInspirationalQuote() {
+  return INSPIRATIONAL_QUOTES[Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length)];
+}
+
+async function openPOIContentPanel(poi) {
+  const panel = document.getElementById('poi-content-panel');
+  if (!panel || !poi) return;
+  currentOpenPOI = poi;
+  const assets = getPOIAssets(poi);
+  const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '');
+  let content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null };
+  try {
+    const res = await fetch(contentUrl);
+    if (res.ok) content = await res.json();
+  } catch (_) {}
+  const brand = poi.brand || 'Partner';
+  const type = poi.type || 'Project work';
+  const subtitle = content.heroStatement || type;
+
+  const logoWrap = panel.querySelector('.poi-panel-logo-wrap');
+  if (logoWrap) logoWrap.style.backgroundImage = assets.logo ? `url('${escapeHtml(assets.logo)}')` : 'none';
+  const titleEl = panel.querySelector('header .poi-panel-title');
+  if (titleEl) titleEl.textContent = brand;
+  const subEl = panel.querySelector('header .poi-panel-subtitle');
+  if (subEl) subEl.textContent = subtitle;
+
+  const websiteEl = panel.querySelector('.poi-panel-website');
+  if (websiteEl) {
+    const showWebsite = content.websiteUrl && poi.brand !== 'Mazars';
+    websiteEl.href = content.websiteUrl || '#';
+    websiteEl.style.display = showWebsite ? '' : 'none';
+  }
+
+  const featuredEl = panel.querySelector('.poi-panel-featured-label');
+  if (featuredEl) featuredEl.textContent = content.featuredLabel || 'Featured Project';
+
+  const heroTitleEl = panel.querySelector('.poi-panel-hero-title-text');
+  if (heroTitleEl) heroTitleEl.textContent = brand;
+
+  const tagsEl = panel.querySelector('.poi-panel-tags');
+  if (tagsEl) {
+    const tags = content.tags && content.tags.length ? content.tags : [type, poi.location ? poi.location.split(',')[0] : null].filter(Boolean);
+    tagsEl.innerHTML = tags.map((t) => `
+      <div class="glass-card px-4 py-2 rounded flex items-center gap-2 hover:bg-white/5 transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-primary text-sm">tag</span>
+        <span class="text-sm font-medium text-slate-300">${escapeHtml(t)}</span>
+      </div>`).join('');
+  }
+
+  const heroMediaEl = panel.querySelector('.poi-panel-hero-media');
+  const heroCaptionEl = panel.querySelector('.poi-panel-hero-caption');
+  const heroSubcaptionEl = panel.querySelector('.poi-panel-hero-subcaption');
+  const firstVideo = content.videos && content.videos[0];
+  const heroMedia = content.hero || (content.images && content.images[0]);
+  const useVideoHero = !!firstVideo;
+  if (heroMediaEl) {
+    if (useVideoHero) {
+      heroMediaEl.style.backgroundImage = '';
+      heroMediaEl.innerHTML = `<video src="${escapeHtml(firstVideo)}" autoplay muted loop playsinline class="w-full h-full object-cover"></video>`;
+    } else if (heroMedia) {
+      heroMediaEl.style.backgroundImage = `url('${escapeHtml(heroMedia)}')`;
+      heroMediaEl.innerHTML = '';
+    } else {
+      heroMediaEl.style.backgroundImage = '';
+      heroMediaEl.innerHTML = '';
+    }
+  }
+  if (heroCaptionEl) heroCaptionEl.textContent = content.heroCaption || 'Headquarters View';
+  if (heroSubcaptionEl) heroSubcaptionEl.textContent = content.heroSubcaption || (poi.location ? poi.location.split(',')[0] : '');
+
+  const insp = getRandomInspirationalQuote();
+  const quoteEl = panel.querySelector('.poi-panel-quote');
+  if (quoteEl) quoteEl.textContent = insp.q;
+  const quoteAuthorEl = panel.querySelector('.poi-panel-quote-author');
+  if (quoteAuthorEl) quoteAuthorEl.textContent = 'Guillaume Lassiat';
+  const quoteRoleEl = panel.querySelector('.poi-panel-quote-role');
+  if (quoteRoleEl) quoteRoleEl.textContent = 'Inspirational';
+  const quoteAvatarEl = panel.querySelector('.poi-panel-quote-avatar');
+  if (quoteAvatarEl) quoteAvatarEl.style.backgroundImage = `url('Guillaume_Lassiat.png')`;
+
+  const missionEl = panel.querySelector('.poi-panel-mission');
+  if (missionEl) {
+    const missionParas = content.mission && Array.isArray(content.mission) ? content.mission : (content.intro ? content.intro.split(/\n\n+/) : ['Discover the story behind this location and the collaborative work that shaped it.']);
+    missionEl.innerHTML = missionParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
+  }
+
+  const keyFiguresEl = panel.querySelector('.poi-panel-key-figures');
+  if (keyFiguresEl) {
+    const defaults = [
+      { label: 'Countries & Territories', value: '90+', icon: 'public' },
+      { label: 'Professionals', value: '47,000', icon: 'groups' },
+      { label: 'Global Revenue', value: '€2.8bn', icon: 'trending_up' }
+    ];
+    const figures = content.keyFigures && content.keyFigures.length ? content.keyFigures : defaults;
+    keyFiguresEl.innerHTML = figures.map((f) => `
+      <div class="glass-card p-5 rounded flex items-center justify-between group poi-key-figure hover:bg-white/5 transition-all">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">${escapeHtml(f.label || '')}</p>
+          <p class="text-3xl font-bold text-white">${escapeHtml(f.value || '')}</p>
+        </div>
+        <span class="material-symbols-outlined text-primary/50 text-4xl group-hover:text-primary transition-colors">${escapeHtml(f.icon || 'info')}</span>
+      </div>`).join('');
+  }
+
+  const galleryEl = panel.querySelector('.poi-panel-gallery');
+  galleryEl.innerHTML = '';
+  const allImages = content.images || [];
+  const allVideos = content.videos || [];
+  const heroImg = useVideoHero ? null : heroMedia;
+  const includeHeroInGallery = poi.brand === 'Renault';
+  const galleryImages = includeHeroInGallery ? allImages : (heroImg ? allImages.filter((u) => u !== heroImg) : allImages);
+  const getItemLabel = (url) => {
+    const name = (url || '').split('/').pop().replace(/\.[^.]+$/, '').replace(/[-@]\d*x?$/i, '');
+    return name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Visual';
+  };
+  const viewerImageItems = [];
+  if (content.quote && content.quote.trim()) {
+    const q = content.quote.length > 120 ? content.quote.slice(0, 117) + '...' : content.quote;
+    const div = document.createElement('div');
+    div.className = 'poi-gallery-item poi-gallery-quote break-inside-avoid';
+    div.innerHTML = `
+      <div class="w-full bg-primary p-8 flex flex-col justify-between min-h-[12rem] rounded">
+        <span class="material-symbols-outlined text-white text-4xl">format_quote</span>
+        <p class="text-white text-xl font-bold leading-tight">"${escapeHtml(q)}"</p>
+        <div class="h-1 w-12 bg-white/30 rounded"></div>
+      </div>`;
+    galleryEl.appendChild(div);
+  }
+  const galleryLimit = poi.brand === 'Renault' ? 12 : 6;
+  galleryImages.slice(0, galleryLimit).forEach((url, idx) => {
+    const caption = `${getItemLabel(url)} - ${type}`;
+    viewerImageItems.push({ url, caption });
+    const div = document.createElement('div');
+    div.className = 'poi-gallery-item';
+    div.innerHTML = `
+      <img src="${escapeHtml(url)}" alt="" loading="lazy"/>
+      <div class="glass-card-overlay">
+        <span class="text-primary text-xs font-bold uppercase mb-1">${escapeHtml(type)}</span>
+        <p class="text-white font-bold text-lg">${escapeHtml(getItemLabel(url))}</p>
+      </div>`;
+    div.addEventListener('click', () => openPOIImageViewer(url, caption, viewerImageItems, idx));
+    galleryEl.appendChild(div);
+  });
+  allVideos.slice(0, 2).forEach((url) => {
+    const div = document.createElement('div');
+    div.className = 'poi-gallery-item poi-gallery-video relative';
+    div.innerHTML = `
+      <video src="${escapeHtml(url)}" preload="metadata" muted playsinline class="w-full min-h-[12rem] object-cover" crossorigin="anonymous"></video>
+      <span class="poi-play-icon material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="font-variation-settings:'FILL' 1">play_circle</span>`;
+    const vid = div.querySelector('video');
+    vid.addEventListener('loadeddata', () => { vid.currentTime = 0.1; });
+    div.addEventListener('click', () => openPOIVideoPlayer(url));
+    galleryEl.appendChild(div);
+  });
+
+  panel.classList.add('poi-panel-open', 'animate-fade-in-right');
+  panel.setAttribute('aria-hidden', 'false');
+  document.getElementById('map-app-root')?.classList.add('poi-panel-open');
+  if (window.innerWidth < 768) document.getElementById('bottom-panel-wrapper')?.classList.add('poi-panel-blocking');
+  panel.querySelector('.poi-panel-close')?.focus();
+  updatePOINavButtons();
+}
+
+function openPOIVideoPlayer(src) {
+  const overlay = document.getElementById('poi-video-overlay');
+  const video = document.getElementById('poi-video-player');
+  if (!overlay || !video) return;
+  video.src = src;
+  overlay.classList.remove('hidden');
+  video.play().catch(() => {});
+}
+
+function initPOIContentPanel() {
+  const panel = document.getElementById('poi-content-panel');
+  const handle = panel?.querySelector('.poi-panel-drag-handle');
+  const videoOverlay = document.getElementById('poi-video-overlay');
+  const videoPlayer = document.getElementById('poi-video-player');
+  const imageOverlay = document.getElementById('poi-image-overlay');
+  const imageViewerImg = document.getElementById('poi-image-viewer-img');
+  if (!panel) return;
+  panel.querySelector('.poi-panel-close')?.addEventListener('click', closePOIContentPanel);
+  panel.querySelector('.poi-panel-prev')?.addEventListener('click', goToPrevPOI);
+  panel.querySelector('.poi-panel-next')?.addEventListener('click', goToNextPOI);
+  panel.querySelector('.poi-panel-cta')?.addEventListener('click', goToNextPOI);
+  document.querySelector('.poi-viewer-prev')?.addEventListener('click', (e) => { e.stopPropagation(); poiViewerGoPrev(); });
+  document.querySelector('.poi-viewer-next')?.addEventListener('click', (e) => { e.stopPropagation(); poiViewerGoNext(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (imageOverlay && !imageOverlay.classList.contains('hidden')) {
+        imageOverlay.classList.add('hidden');
+      } else if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
+        if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
+        videoOverlay.classList.add('hidden');
+      } else if (panel.classList.contains('poi-panel-open')) closePOIContentPanel();
+    }
+  });
+  document.getElementById('map-container-wrap')?.addEventListener('click', (e) => {
+    if (panel.classList.contains('poi-panel-open') && !panel.contains(e.target)) closePOIContentPanel();
+  });
+  const closeVideoOverlay = () => {
+    if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
+    videoOverlay?.classList.add('hidden');
+  };
+  const closeImageOverlay = () => imageOverlay?.classList.add('hidden');
+  videoOverlay?.querySelector('.poi-video-overlay-close')?.addEventListener('click', closeVideoOverlay);
+  videoOverlay?.addEventListener('click', (e) => { if (e.target === videoOverlay) closeVideoOverlay(); });
+  imageOverlay?.querySelector('.poi-media-overlay-close')?.addEventListener('click', closeImageOverlay);
+  imageOverlay?.addEventListener('click', (e) => { if (e.target === imageOverlay) closeImageOverlay(); });
+  if (handle) {
+    let startY = 0;
+    let startTime = 0;
+    handle.addEventListener('touchstart', (e) => {
+      if (!panel.classList.contains('poi-panel-open')) return;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+    }, { passive: true });
+    handle.addEventListener('touchmove', (e) => {
+      if (!panel.classList.contains('poi-panel-open')) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 0) {
+        e.preventDefault();
+        panel.style.transition = 'none';
+        panel.style.transform = `translateY(${dy}px)`;
+      }
+    }, { passive: false });
+    handle.addEventListener('touchend', (e) => {
+      if (!panel.classList.contains('poi-panel-open')) return;
+      const endY = e.changedTouches[0].clientY;
+      const dy = endY - startY;
+      const velocity = (Date.now() - startTime) > 0 ? dy / (Date.now() - startTime) : 0;
+      panel.style.transition = '';
+      panel.style.transform = '';
+      if (dy > 80 || velocity > 0.5) closePOIContentPanel();
+    }, { passive: true });
+  }
+}
+
 function initBottomPanel() {
   const wrapper = document.getElementById('bottom-panel-wrapper');
   const panel = document.getElementById('bottom-panel');
@@ -2146,7 +2518,7 @@ function initWeatherWidgetConfig() {
         cityResults.innerHTML = results.slice(0, 5).map((r) => {
           const cc = (r.country_code || r.countryCode || '').toString().toUpperCase().slice(0, 2);
           return `
-          <button type="button" class="weather-city-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-lat="${r.latitude}" data-lng="${r.longitude}" data-city="${r.name}" data-country="${(r.country || '').toString().replace(/"/g, '&quot;')}" data-country-code="${cc}">
+          <button type="button" class="weather-city-result w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-lat="${r.latitude}" data-lng="${r.longitude}" data-city="${r.name}" data-country="${(r.country || '').toString().replace(/"/g, '&quot;')}" data-country-code="${cc}">
             ${r.name}${r.admin1 ? ', ' + r.admin1 : ''} (${cc})
           </button>
         `;
@@ -2245,7 +2617,7 @@ function initWeatherWidgetConfig() {
       await refreshNearby();
       const tabWidgets = document.getElementById('tab-widgets');
       const tilesWidgets = document.getElementById('widget-tiles');
-      if (tabWidgets?.classList.contains('bg-primary/20') && tilesWidgets) {
+      if (tabWidgets?.classList.contains('text-primary') && tilesWidgets) {
         await renderWidgetTilesInTab();
       }
     } catch (e) {
@@ -2372,7 +2744,7 @@ function initStockWidgetConfig() {
         resultsEl.innerHTML = results.map((r) => {
           const symbol = (r.symbol || r['1. symbol'] || '').replace(/"/g, '&quot;');
           const desc = (r.description || r.name || r['2. name'] || r.type || r['3. type'] || symbol).toString().replace(/</g, '&lt;');
-          return `<button type="button" class="stock-search-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-symbol="${symbol}" data-description="${desc.replace(/"/g, '&quot;')}">${symbol} — ${desc}</button>`;
+          return `<button type="button" class="stock-search-result w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-800 dark:text-white" data-symbol="${symbol}" data-description="${desc.replace(/"/g, '&quot;')}">${symbol} — ${desc}</button>`;
         }).join('');
         resultsEl.querySelectorAll('.stock-search-result').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -2459,7 +2831,7 @@ async function addStockWidget(symbol, description, showLoading, closePanel) {
     closePanel?.();
     await refreshNearby();
     const tabWidgets = document.getElementById('tab-widgets');
-    if (tabWidgets?.classList.contains('bg-primary/20')) {
+    if (tabWidgets?.classList.contains('text-primary')) {
       await renderWidgetTilesInTab();
     }
   } catch (e) {
@@ -2481,8 +2853,8 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const durationLabel = w.duration ?? '1 month';
   const deleteId = w.id || ('w-' + (w.symbol || ''));
   const deleteBtnClass = variant === 'panel'
-    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
-    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
+    ? 'absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded bg-black/50 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer'
+    : 'absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-black/30 hover:bg-red-500/80 text-white transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer';
   const deleteBtn = showDelete
     ? `<button type="button" data-delete-widget-id="${String(deleteId).replace(/"/g, '&quot;')}" class="${deleteBtnClass}" aria-label="Delete widget">
          <span class="material-symbols-outlined text-[18px]">delete</span>
@@ -2493,7 +2865,7 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
   const padClass = isPanel ? 'p-2' : 'p-3';
   const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-lg';
   return `
-    <div class="group relative ${sizeClass} rounded-xl overflow-hidden border-2 ${colorClass}">
+    <div class="group relative ${sizeClass} rounded overflow-hidden border-2 ${colorClass}">
       <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40 pointer-events-none"></div>
       ${deleteBtn}
       <div class="relative ${padClass} flex flex-col justify-between h-full z-[1]">

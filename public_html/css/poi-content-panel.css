@@ -1,0 +1,341 @@
+/**
+ * POI Editorial Panel - Desktop left 50% / Mobile bottom sheet
+ * Uses .glass-panel, .editorial-scroll, .glass-card from variables.css
+ */
+.poi-content-panel {
+  position: fixed;
+  z-index: 25;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.poi-content-panel:not(.poi-panel-open) {
+  visibility: hidden;
+}
+
+.poi-content-panel.poi-panel-open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 767px) {
+  .poi-content-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 66.67vh;
+    max-height: 85vh;
+    transform: translateY(100%);
+    border-radius: 4px 4px 0 0;
+  }
+
+  .poi-content-panel.poi-panel-open {
+    transform: translateY(0);
+  }
+
+  .poi-content-panel.glass-panel {
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Desktop: left panel */
+@media (min-width: 768px) {
+  .poi-content-panel {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 50vw;
+    transform: translateX(-100%);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .poi-content-panel.poi-panel-open {
+    transform: translateX(0);
+  }
+}
+
+/* Editorial panel - logo wrap: contain at 99% to avoid cropping */
+.poi-panel-logo-wrap {
+  min-width: 40px;
+  min-height: 40px;
+  background-size: 99% 99% !important;
+}
+
+.poi-panel-hero-media {
+  min-height: 200px;
+}
+
+.poi-panel-hero-media[style*="background-image"]:empty {
+  min-height: 100%;
+}
+
+/* Masonry gallery for editorial layout */
+.poi-panel-gallery {
+  column-count: 1;
+}
+
+@media (min-width: 768px) {
+  .poi-panel-gallery {
+    column-count: 2;
+  }
+}
+
+.poi-gallery-item {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.poi-gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 0.5s ease;
+}
+
+.poi-gallery-item:hover img {
+  transform: scale(1.08);
+}
+
+.poi-gallery-item .glass-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+}
+
+.poi-gallery-item:hover .glass-card-overlay {
+  opacity: 1;
+}
+
+.poi-gallery-item.poi-gallery-video .poi-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* Key figures cards */
+.poi-key-figure {
+  transition: all 0.2s;
+}
+
+.poi-key-figure:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Image/Video overlays - 70% viewport width, close above viewer */
+.poi-media-overlay.hidden {
+  display: none !important;
+}
+
+.poi-media-overlay:not(.hidden) {
+  display: flex !important;
+}
+
+.poi-media-viewer {
+  width: 70vw;
+  max-width: 70vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  position: relative;
+}
+
+.poi-media-viewer-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0f172a;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.poi-media-viewer-visual {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  object-fit: contain;
+  object-position: center;
+  background: #0f172a;
+}
+
+.poi-media-viewer video.poi-media-viewer-visual {
+  display: block;
+}
+
+.poi-media-viewer-caption {
+  flex: 0 0 auto;
+  min-height: 10%;
+  padding: 14px 20px;
+  background: rgba(15, 23, 42, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+}
+
+.poi-media-viewer-caption-text {
+  font-size: 0.875rem;
+  color: rgba(248, 250, 252, 0.7);
+  margin: 0;
+}
+
+.poi-media-overlay-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 20;
+}
+
+.poi-media-overlay-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Light mode: POI panel - consistent dark text (like dark mode readability) */
+html:not(.dark) .poi-content-panel .poi-panel-title,
+html:not(.dark) .poi-content-panel .poi-panel-hero-title-text,
+html:not(.dark) .poi-content-panel .poi-panel-quote-author,
+html:not(.dark) .poi-content-panel h3,
+html:not(.dark) .poi-content-panel .poi-gallery-item-title {
+  color: #0f172a !important;
+}
+
+/* Hero overlay (absolute bottom-6 left-6): same as dark mode - white/slate on dark gradient */
+html:not(.dark) .poi-content-panel .poi-panel-hero-wrap .poi-panel-hero-caption {
+  color: #fff !important;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-hero-wrap .poi-panel-hero-subcaption {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-subtitle,
+html:not(.dark) .poi-content-panel .text-slate-400,
+html:not(.dark) .poi-content-panel .poi-panel-quote,
+html:not(.dark) .poi-content-panel .poi-panel-mission,
+html:not(.dark) .poi-content-panel .text-sm.font-medium {
+  color: #334155 !important;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-tags .text-slate-300 {
+  color: #475569 !important;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-close:hover,
+html:not(.dark) .poi-content-panel .poi-panel-prev:hover,
+html:not(.dark) .poi-content-panel .poi-panel-next:hover {
+  color: #1e293b;
+}
+
+html:not(.dark) .poi-content-panel .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+html:not(.dark) .poi-content-panel .hover\:bg-white\/5:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-cta {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-cta:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Discover more button - fully clickable, pointer-events */
+.poi-panel-cta {
+  pointer-events: auto;
+  position: relative;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-quote {
+  color: #475569;
+}
+
+/* Key figures: labels and values must be dark in light mode */
+html:not(.dark) .poi-content-panel .poi-panel-key-figures .text-slate-400 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .poi-content-panel .poi-panel-key-figures .text-white {
+  color: #1e293b !important;
+}
+
+/* Perfect circle for POI panel icon buttons */
+.poi-btn-circle {
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+
+.poi-panel-close-btn {
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+
+/* Glass card overlay: same text colors as dark mode (white/primary on dark overlay) */
+html:not(.dark) .poi-content-panel .glass-card-overlay .text-primary {
+  color: #1392ec !important;
+}
+
+html:not(.dark) .poi-content-panel .glass-card-overlay p.text-white,
+html:not(.dark) .poi-content-panel .glass-card-overlay .text-white {
+  color: #fff !important;
+}
+
+/* Top bar behind panel when POI open */
+#map-app-root.poi-panel-open #top-bar-overlay {
+  z-index: 5;
+}
+
+/* Block bottom arrow when POI panel open on mobile */
+@media (max-width: 767px) {
+  #bottom-panel-wrapper.poi-panel-blocking {
+    pointer-events: none;
+  }
+
+  #bottom-panel-wrapper.poi-panel-blocking #bottom-panel-toggle {
+    opacity: 0.3;
+  }
+}
