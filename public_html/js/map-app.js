@@ -272,7 +272,7 @@ function renderNearbyTiles(tiles) {
   const showOthers = getShowOtherUsersOnMap();
   const toggleId = 'nearby-show-others-toggle';
   let html = `
-    <div id="nearby-show-others-tile" class="w-48 flex-shrink-0 p-3 rounded border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 bg-gradient-to-br from-primary/15 via-primary/8 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
+    <div id="nearby-show-others-tile" class="bottom-section-tile w-48 flex-shrink-0 p-3 rounded border border-slate-200/50 dark:border-white/5 flex flex-col gap-3 bg-gradient-to-br from-primary/15 via-primary/8 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-primary text-xl">people</span>
         <span class="text-slate-800 dark:text-white font-bold text-sm">Show others on map</span>
@@ -288,7 +288,7 @@ function renderNearbyTiles(tiles) {
 
   if (isAdmin) {
     html += `
-    <button id="nearby-clear-all" type="button" class="w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
+    <button id="nearby-clear-all" type="button" class="bottom-section-tile w-48 flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 items-center justify-center transition-colors cursor-pointer" title="Clear all visitor tiles">
       <span class="material-symbols-outlined text-3xl text-text-secondary">delete</span>
       <span class="text-text-secondary text-sm font-medium">Clear all</span>
     </button>`;
@@ -311,7 +311,7 @@ function renderNearbyTiles(tiles) {
     const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
     const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
     html += `
-      <div ${dataAttr} ${dataId} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
+      <div ${dataAttr} ${dataId} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
           ${deleteBtn}
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
@@ -628,7 +628,7 @@ function renderPOITiles(pois) {
     const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
     const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
     html += `
-      <div ${dataAttr} class="w-48 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
+      <div ${dataAttr} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
         <div class="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
           <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${poi.icon || 'brand/placeholder.png'}"/>
         </div>
@@ -678,6 +678,7 @@ function wirePOITabs() {
     if (active === 'map-data') {
       discoverMapLayers();
       applyMapDataState(mapDataState);
+      requestAnimationFrame(() => adaptVolumetricSliderHeight(tilesMapData));
     }
   }
 
@@ -785,7 +786,7 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
          <span class="material-symbols-outlined ${deleteIconSize}">delete</span>
        </button>`
     : '';
-  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'w-[130px] h-[130px] flex-shrink-0';
+  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
   const layoutClass = variant === 'panel' ? 'flex items-start gap-3' : 'flex flex-col justify-end min-h-0';
   const textClass = 'text-white';
   const textMutedClass = 'text-white/80';
@@ -1222,7 +1223,7 @@ function renderMapDataTiles(state) {
     const thumbFallback = isDark ? thumbDark.buildings : thumbLight.buildings;
     const toggleId = `map-data-toggle-${t.key}-${i}`;
     html += `
-      <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
+      <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="bottom-section-tile map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
         <div class="h-20 overflow-hidden relative">
           <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" onerror="this.src=this.dataset.fallback||''" data-fallback="${thumbFallback}"/>
         </div>
@@ -1243,13 +1244,24 @@ function renderMapDataTiles(state) {
   });
   if (state.volumetricWeather) {
     html += `
-      <div id="volumetric-weather-slider-wrap" class="flex flex-col items-center justify-center gap-2 w-16 min-w-[64px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-4">
+      <div id="volumetric-weather-slider-wrap" class="flex flex-col items-center justify-center gap-2 w-16 min-w-[64px] shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-4">
         <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">30,000 ft</span>
-        <input type="range" id="volumetric-altitude-slider" data-altitude-slider min="0" max="9144" step="500" value="${altM}" orient="vertical" class="volumetric-altitude-range w-2 h-32 accent-primary cursor-pointer" title="Altitude (meters)"/>
+        <input type="range" id="volumetric-altitude-slider" data-altitude-slider min="0" max="9144" step="500" value="${altM}" orient="vertical" class="volumetric-altitude-range w-2 flex-1 min-h-16 accent-primary cursor-pointer" title="Altitude (meters)"/>
         <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sea level</span>
       </div>`;
   }
   container.innerHTML = html;
+  if (state.volumetricWeather) {
+    adaptVolumetricSliderHeight(container);
+  }
+}
+
+function adaptVolumetricSliderHeight(container) {
+  const sliderWrap = container?.querySelector('#volumetric-weather-slider-wrap');
+  const tile = container?.querySelector('.map-data-tile-draggable');
+  if (!sliderWrap || !tile) return;
+  const tileHeight = tile.offsetHeight;
+  if (tileHeight > 0) sliderWrap.style.height = tileHeight + 'px';
 }
 
 function wireMapDataTiles() {
@@ -2145,26 +2157,41 @@ function goToNextPOI() {
 
 function closePOIContentPanel() {
   const panel = document.getElementById('poi-content-panel');
-  if (!panel) return;
-  currentOpenPOI = null;
-  panel.classList.remove('poi-panel-open', 'animate-fade-in-right');
-  panel.setAttribute('aria-hidden', 'true');
-  document.getElementById('map-app-root')?.classList.remove('poi-panel-open');
-  document.getElementById('bottom-panel-wrapper')?.classList.remove('poi-panel-blocking');
-  if (appMap) {
-    const center = appMap.getCenter();
-    if (center) {
-      appMap.flyTo({ center: [center.lng, center.lat], zoom: Math.max(2, appMap.getZoom() - 1.5), pitch: 0, duration: 800 });
+  if (!panel || !panel.classList.contains('poi-panel-open')) return;
+
+  let done = false;
+  const finishClose = () => {
+    if (done) return;
+    done = true;
+    panel.classList.remove('poi-panel-closing', 'animate-fade-in-right');
+    panel.setAttribute('aria-hidden', 'true');
+    currentOpenPOI = null;
+    document.getElementById('map-app-root')?.classList.remove('poi-panel-open');
+    document.getElementById('bottom-panel-wrapper')?.classList.remove('poi-panel-blocking');
+    if (appMap) {
+      const center = appMap.getCenter();
+      if (center) {
+        appMap.flyTo({ center: [center.lng, center.lat], zoom: Math.max(2, appMap.getZoom() - 1.5), pitch: 0, duration: 800 });
+      }
     }
-  }
-  const videoOverlay = document.getElementById('poi-video-overlay');
-  if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
-    const v = document.getElementById('poi-video-player');
-    if (v) { v.pause(); v.src = ''; }
-    videoOverlay.classList.add('hidden');
-  }
-  const imageOverlay = document.getElementById('poi-image-overlay');
-  if (imageOverlay) imageOverlay.classList.add('hidden');
+    const videoOverlay = document.getElementById('poi-video-overlay');
+    if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
+      const v = document.getElementById('poi-video-player');
+      if (v) { v.pause(); v.src = ''; }
+      videoOverlay.classList.add('hidden');
+    }
+    const imageOverlay = document.getElementById('poi-image-overlay');
+    if (imageOverlay) imageOverlay.classList.add('hidden');
+  };
+
+  panel.classList.add('poi-panel-closing');
+  panel.classList.remove('poi-panel-open');
+  const handler = (e) => {
+    if (e.target !== panel || e.propertyName !== 'transform') return;
+    finishClose();
+  };
+  panel.addEventListener('transitionend', handler, { once: true });
+  setTimeout(() => { if (panel.classList.contains('poi-panel-closing')) finishClose(); }, 400);
 }
 
 function openPOIImageViewer(src, caption, items, index) {
@@ -2482,6 +2509,7 @@ function initBottomPanel() {
   }
 
   function openPanel() {
+    closePOIContentPanel();
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
     toggle.setAttribute('aria-expanded', 'true');
@@ -3025,7 +3053,7 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
        </button>`
     : '';
   const isPanel = variant === 'panel';
-  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'w-[130px] h-[134px] flex-shrink-0';
+  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
   const padClass = isPanel ? 'p-2' : 'p-2';
   const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-sm';
   return `

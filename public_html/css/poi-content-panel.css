@@ -9,8 +9,13 @@
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.poi-content-panel:not(.poi-panel-open) {
+.poi-content-panel:not(.poi-panel-open):not(.poi-panel-closing) {
   visibility: hidden;
+}
+
+.poi-content-panel.poi-panel-closing {
+  visibility: visible;
+  pointer-events: none;
 }
 
 .poi-content-panel.poi-panel-open {
