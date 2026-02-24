@@ -135,6 +135,19 @@
     .animate-fade-in-right {
       animation: fade-in-right 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
+    @keyframes widget-skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .widget-skeleton {
+      background: linear-gradient(90deg, rgba(148,163,184,0.2) 25%, rgba(148,163,184,0.4) 50%, rgba(148,163,184,0.2) 75%);
+      background-size: 200% 100%;
+      animation: widget-skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+    html.dark .widget-skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+    }
   </style>
   <script src="js/theme-service.js"></script>
   <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>

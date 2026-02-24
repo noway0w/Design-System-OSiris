@@ -691,11 +691,30 @@ function wirePOITabs() {
   });
 }
 
+function getWidgetSkeletonHtml(count = 2, variant = 'tile') {
+  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    html += `<div class="widget-skeleton ${sizeClass} rounded overflow-hidden border border-slate-200 dark:border-white/10 flex flex-col justify-end p-3" aria-hidden="true"><div class="h-4 w-16 rounded bg-slate-300/30 dark:bg-white/10 mb-2"></div><div class="h-3 w-12 rounded bg-slate-300/20 dark:bg-white/5"></div></div>`;
+  }
+  return html;
+}
+
 async function renderWidgetTilesInTab() {
   const container = document.getElementById('widget-tiles');
   const addWeatherBtn = document.getElementById('add-weather-widget');
   const addStockBtn = document.getElementById('add-stock-widget');
   if (!container) return;
+  const addHtml = (addWeatherBtn ? addWeatherBtn.outerHTML : '') + (addStockBtn ? addStockBtn.outerHTML : '');
+  container.innerHTML = addHtml + getWidgetSkeletonHtml(2, 'tile');
+  container.querySelector('#add-weather-widget')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof window.openWeatherWidgetPanel === 'function') window.openWeatherWidgetPanel();
+  });
+  container.querySelector('#add-stock-widget')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof window.openStockWidgetPanel === 'function') window.openStockWidgetPanel();
+  });
   const name = sessionStorage.getItem('osiris_user_name')?.trim();
   let widgets = [];
   if (name) {
@@ -751,7 +770,6 @@ async function renderWidgetTilesInTab() {
       cardsHtml += buildStockWidgetCardHtml(w, {}, [], isDark, true, 'tile');
     }
   }
-  const addHtml = (addWeatherBtn ? addWeatherBtn.outerHTML : '') + (addStockBtn ? addStockBtn.outerHTML : '');
   container.innerHTML = addHtml + cardsHtml;
   container.querySelector('#add-weather-widget')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1708,8 +1726,9 @@ async function openUserProfilePanel(tile) {
   const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
   const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
   const count = userProfilePanels.size;
-  const baseX = window.innerWidth / 2 - 144;
-  const baseY = window.innerHeight / 2 - 120;
+  const topBarMargin = 24;
+  const baseX = window.innerWidth * (0.5 + 0.07);
+  const baseY = topBarMargin;
   const left = baseX + count * PANEL_CASCADE_OFFSET;
   const top = baseY + count * PANEL_CASCADE_OFFSET;
 
@@ -1769,6 +1788,7 @@ async function openUserProfilePanel(tile) {
 
   if (allWidgets.length > 0) {
     widgetsEl.classList.remove('hidden');
+    widgetsEl.innerHTML = getWidgetSkeletonHtml(allWidgets.length, 'panel');
     const isDark = document.documentElement.classList.contains('dark');
     let html = '';
     for (const w of weatherWidgets) {
