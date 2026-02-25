@@ -1,0 +1,64 @@
+{
+  "featuredLabel": "Global Data Marketplace",
+  "heroStatement": "Implementing a Worldwide Contextual Data Marketplace",
+  "quote": "Worked closely with Guillaume to build an end-to-end solution for loading geodata worldwide. He brought not only solid web design knowledge, but all kinds of creative skills... always able to see a problem from new angles.",
+  "quoteAuthor": "Håkon Fure",
+  "quoteRole": "Data Engineer @ Autodesk Forma",
+  "tags": ["Data Marketplace", "Monetization", "Geospatial Data", "E-commerce UX", "Pre-visualization"],
+  "heroCaption": "Contextual Data & Monetization",
+  "heroSubcaption": "Norway",
+  "intro": "I led the UX/UI implementation of a global contextual data marketplace within Autodesk Forma. By partnering with various data providers and engineering teams, we built an end-to-end solution for users to preview, order, and load high-fidelity geodata worldwide.",
+  "mission": [
+    "Design a scalable marketplace accommodating multiple contextual data providers.",
+    "Create intuitive pre-visualization tools so users can assess data quality before purchasing.",
+    "Develop a seamless monetization and payment flow for complex geospatial datasets.",
+    "Integrate high LOD (Level of Detail) building data, starting with the Norway market."
+  ],
+  "process": [
+    "Mapped out end-to-end user journeys for selecting geographic boundaries, previewing data, and executing payments.",
+    "Iterated in Figma to push the boundaries of how complex data is previewed in-browser before purchase.",
+    "Collaborated tightly with data engineers to ensure the UI matched the technical realities of querying and loading worldwide datasets."
+  ],
+  "kpi": [
+    "Successfully launched an end-to-end global geodata pipeline and marketplace.",
+    "Established a secure, intuitive payment flow for contextual data monetization.",
+    "Delivered a frictionless pre-visualization experience reducing user hesitation before purchase.",
+    "Successfully integrated high LOD2 building data."
+  ],
+  "keyFigures": [
+    { "label": "Feature", "value": "Data Monetization", "icon": "payments" },
+    { "label": "Scale", "value": "Worldwide", "icon": "public" },
+    { "label": "Data Type", "value": "LOD2 Buildings", "icon": "domain" }
+  ],
+  "facts": [
+    "Presented on the main stage at Autodesk University by Autodesk leadership.",
+    "Built a scalable UI capable of handling infinite global data providers."
+  ],
+  "heroImage": "AU-Main-Stage-Data-Ordering.jpeg",
+  "galleryMetadata": [
+    {
+      "filename": "AU-Main-Stage-Data-Ordering.jpeg",
+      "description": "The contextual data ordering and monetization flow being presented on the main stage at Autodesk University."
+    },
+    {
+      "filename": "Global-Location-Setup.png",
+      "description": "The global project setup view, enabling users to locate and initiate site models anywhere in the world."
+    },
+    {
+      "filename": "Project-Boundary-Selection.png",
+      "description": "The intuitive map interface for defining a precise area of interest before querying available geospatial datasets."
+    },
+    {
+      "filename": "Data-Marketplace-Grid.png",
+      "description": "The contextual data marketplace interface, allowing users to browse and select datasets from various global providers."
+    },
+    {
+      "filename": "Data-Purchase-Preview-UI.png",
+      "description": "The pre-visualization and purchasing flow, showing users a detailed preview and clear pricing for LOD2 buildings before finalizing an order."
+    },
+    {
+      "filename": "LOD2-Building-Data-Canvas.png",
+      "description": "High-fidelity LOD2 building data successfully purchased, seamlessly integrated, and visualized within the Autodesk Forma 3D canvas."
+    }
+  ]
+}

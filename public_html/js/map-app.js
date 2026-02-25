@@ -62,6 +62,8 @@ function getShowOtherUsersOnMap() { return localStorage.getItem(SHOW_OTHER_USERS
 function setShowOtherUsersOnMap(on) { localStorage.setItem(SHOW_OTHER_USERS_KEY, on ? 'true' : ''); }
 let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights'];
 const userProfilePanels = new Map();
+const recProfilePanels = new Map();
+const widgetProfilePanels = new Map();
 let mapLayerInfo = { buildingLayerIds: [], labelLayerIds: [], propertyBoundaryLayerIds: [], terrainConfig: null, volumetricWeatherLayerId: null, volumetricWeatherSourceId: null, liveCloudCoverageLayerId: null, liveCloudCoverageSourceId: null, auroraLayerId: null, auroraSourceId: null };
 
 const MAP_DATA_ORDER_KEY = 'osiris_map_data_tile_order';
@@ -665,24 +667,26 @@ function wirePOITabs() {
   const tabPOI = document.getElementById('tab-poi');
   const tabMapData = document.getElementById('tab-map-data');
   const tabWidgets = document.getElementById('tab-widgets');
+  const tabRecommendations = document.getElementById('tab-recommendations');
   const tilesNearby = document.getElementById('nearby-friends-tiles');
   const tilesPOI = document.getElementById('poi-tiles');
   const tilesMapData = document.getElementById('map-data-tiles');
   const tilesWidgets = document.getElementById('widget-tiles');
+  const tilesRecommendations = document.getElementById('recommendations-tiles');
   if (!tabNearby || !tabPOI || !tilesNearby || !tilesPOI) return;
 
   function setActiveTab(active) {
-    [tabNearby, tabPOI, tabMapData, tabWidgets].forEach((t) => {
+    [tabNearby, tabPOI, tabMapData, tabWidgets, tabRecommendations].forEach((t) => {
       if (t) {
         t.classList.remove('text-primary', 'border-primary/30');
         t.classList.add('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
       }
     });
-    [tilesNearby, tilesPOI, tilesMapData, tilesWidgets].forEach((c) => {
+    [tilesNearby, tilesPOI, tilesMapData, tilesWidgets, tilesRecommendations].forEach((c) => {
       if (c) c.classList.add('hidden');
     });
-    const tabMap = { nearby: tabNearby, poi: tabPOI, 'map-data': tabMapData, widgets: tabWidgets };
-    const tilesMap = { nearby: tilesNearby, poi: tilesPOI, 'map-data': tilesMapData, widgets: tilesWidgets };
+    const tabMap = { nearby: tabNearby, poi: tabPOI, 'map-data': tabMapData, widgets: tabWidgets, recommendations: tabRecommendations };
+    const tilesMap = { nearby: tilesNearby, poi: tilesPOI, 'map-data': tilesMapData, widgets: tilesWidgets, recommendations: tilesRecommendations };
     const activeTab = tabMap[active];
     const activeTiles = tilesMap[active];
     if (activeTab) {
@@ -695,6 +699,9 @@ function wirePOITabs() {
       applyMapDataState(mapDataState);
       requestAnimationFrame(() => adaptVolumetricSliderHeight(tilesMapData));
     }
+    if (active === 'recommendations') {
+      renderRecommendationsTiles();
+    }
   }
 
   tabNearby.addEventListener('click', () => setActiveTab('nearby'));
@@ -704,6 +711,314 @@ function wirePOITabs() {
     setActiveTab('widgets');
     renderWidgetTilesInTab();
   });
+  tabRecommendations?.addEventListener('click', () => setActiveTab('recommendations'));
+}
+
+function getInitials(name) {
+  if (!name || typeof name !== 'string') return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+async function renderRecommendationsTiles() {
+  const container = document.getElementById('recommendations-tiles');
+  if (!container) return;
+  const url = (typeof window.getRecommendationsUrl === 'function' ? window.getRecommendationsUrl() : 'recommendations.json') + '?_=' + Date.now();
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    container.innerHTML = '';
+    data.forEach((rec) => {
+      const tile = document.createElement('div');
+      tile.className = 'rec-tile';
+      tile.setAttribute('data-rec-id', rec.id);
+      const roleTruncated = (rec.role || '').length > 50 ? (rec.role || '').slice(0, 47) + '...' : (rec.role || '');
+      const avatarHtml = rec.avatar
+        ? `<img src="${escapeHtml(rec.avatar)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+           <span class="rec-tile-avatar" style="display:none">${escapeHtml(getInitials(rec.name))}</span>`
+        : `<span class="rec-tile-avatar">${escapeHtml(getInitials(rec.name))}</span>`;
+      tile.innerHTML = `
+        <div class="rec-tile-avatar-wrap" style="display:flex;justify-content:center;align-items:center;">${avatarHtml}</div>
+        <span class="rec-tile-name">${escapeHtml(rec.name)}</span>
+        <span class="rec-tile-role">${escapeHtml(roleTruncated)}</span>
+        <span class="rec-tile-read"><span class="material-symbols-outlined text-sm">format_quote</span> Read</span>
+      `;
+      tile.addEventListener('click', () => openRecommendationFloatingPanel(rec));
+      container.appendChild(tile);
+    });
+  } catch (_) {
+    container.innerHTML = '<p class="text-text-secondary text-sm p-4">Unable to load recommendations.</p>';
+  }
+}
+
+function openRecommendationFloatingPanel(rec) {
+  const container = document.getElementById('user-profile-panels-container');
+  if (!container) return;
+  const recId = rec.id || 'rec_' + Date.now();
+  if (recProfilePanels.has(recId)) {
+    const { el } = recProfilePanels.get(recId);
+    el.style.zIndex = String(PANEL_BASE_Z + recProfilePanels.size + userProfilePanels.size);
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    return;
+  }
+
+  const displayText = (rec.textEn != null && rec.textEn !== '') ? rec.textEn : (rec.text || '');
+  const isTranslated = !!rec.textEn;
+  const paras = displayText.split(/\n\n+/).filter(Boolean);
+  const bodyHtml = paras.map((p) => `<p class="rec-panel-body-p">${escapeHtml(p)}</p>`).join('');
+
+  const initials = getInitials(rec.name);
+  const avatarHtml = rec.avatar
+    ? `<img src="${escapeHtml(rec.avatar)}" alt="" class="w-12 h-12 rounded-lg object-cover border-2 border-primary/30" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+       <span style="display:none" class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-lg border-2 border-primary/30">${escapeHtml(initials)}</span>`
+    : `<span class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-lg border-2 border-primary/30">${escapeHtml(initials)}</span>`;
+
+  const translatedTagHtml = isTranslated
+    ? '<p class="rec-panel-translated text-[11px] text-slate-500 dark:text-slate-400 italic mb-2">Translated from original</p>'
+    : '';
+
+  const count = recProfilePanels.size + userProfilePanels.size;
+  const isMobile = isMobileViewport();
+  const topBarMargin = 24;
+  const baseX = window.innerWidth * (0.5 + 0.07);
+  const baseY = topBarMargin;
+  const left = baseX + count * PANEL_CASCADE_OFFSET;
+  const top = baseY + count * PANEL_CASCADE_OFFSET;
+
+  const panel = document.createElement('div');
+  const mobileSheetClasses = isMobile ? ' user-profile-panel-mobile mobile-bottom-sheet mobile-sheet-open' : '';
+  /* Recommendation panel 60% larger than user panel (18rem → 28.8rem) */
+  panel.className = 'user-profile-panel rec-floating-panel fixed w-[28.8rem] rounded-lg overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col max-h-[calc(100vh-24px)]' + mobileSheetClasses;
+  panel.setAttribute('aria-hidden', 'false');
+  panel.setAttribute('data-rec-id', recId);
+  if (!isMobile) {
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+  }
+  panel.style.zIndex = String(PANEL_BASE_Z + count);
+
+  const mobileHandleHtml = isMobile ? '<div class="user-profile-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0" data-swipe-close></div>' : '';
+  panel.innerHTML = mobileHandleHtml + `
+    <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <div class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center">${avatarHtml}</div>
+        <div class="min-w-0">
+          <h3 class="user-profile-name font-bold text-slate-800 dark:text-white truncate">${escapeHtml(rec.name || '—')}</h3>
+          <div class="text-text-secondary text-xs truncate">${escapeHtml(rec.role || '')}</div>
+          <div class="text-slate-500 dark:text-slate-400 text-xs italic truncate mt-0.5">${escapeHtml(rec.context || '')}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <a href="https://www.linkedin.com/in/guillaume-l-2b431636/?isSelfProfile=true" target="_blank" rel="noopener noreferrer" class="rec-panel-linkedin-link w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 hover:text-[#0a66c2] transition-colors" aria-label="Open LinkedIn profile"><span class="material-symbols-outlined text-[20px]">open_in_new</span></a>
+        <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors" aria-label="Close"><span class="material-symbols-outlined text-[20px]">close</span></button>
+      </div>
+    </div>
+    <div class="rec-panel-body p-4 overflow-y-auto min-h-0 flex-1 max-h-[calc(100vh-180px)]">
+      ${translatedTagHtml}
+      <div class="rec-panel-text space-y-3">${bodyHtml}</div>
+    </div>
+  `;
+
+  container.appendChild(panel);
+  recProfilePanels.set(recId, { el: panel, rec });
+
+  if (isMobile) {
+    const swipeHandle = panel.querySelector('.user-profile-mobile-handle');
+    if (swipeHandle) {
+      let startY = 0;
+      let startTime = 0;
+      swipeHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+      }, { passive: true });
+      swipeHandle.addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0) {
+          e.preventDefault();
+          panel.style.transition = 'none';
+          panel.style.transform = `translateY(${dy}px)`;
+        }
+      }, { passive: false });
+      swipeHandle.addEventListener('touchend', (e) => {
+        const endY = e.changedTouches?.[0]?.clientY ?? startY;
+        const dy = endY - startY;
+        const elapsed = Date.now() - startTime;
+        const velocity = elapsed > 0 ? dy / elapsed : 0;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (dy > 80 || velocity > 0.5) closeUserProfilePanel(panel);
+      }, { passive: true });
+    }
+  } else {
+    const handle = panel.querySelector('.user-profile-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.user-profile-panel-close') || e.target.closest('.rec-panel-linkedin-link')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.clientX, startY: e.clientY, startLeft: pos.left, startTop: pos.top };
+      });
+      handle.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.user-profile-panel-close') || e.target.closest('.rec-panel-linkedin-link')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startLeft: pos.left, startTop: pos.top };
+      }, { passive: true });
+    }
+  }
+}
+
+function closeTopRecommendationPanel() {
+  const panels = Array.from(document.querySelectorAll('.user-profile-panel[data-rec-id]'));
+  if (panels.length === 0) return false;
+  const top = panels.sort((a, b) => (parseInt(b.style.zIndex || 0, 10) - parseInt(a.style.zIndex || 0, 10)))[0];
+  closeUserProfilePanel(top);
+  return true;
+}
+
+async function openWidgetFloatingPanel(w) {
+  const container = document.getElementById('user-profile-panels-container');
+  if (!container) return;
+  const widgetId = w.id || (w.type === 'stock' ? 'w-' + (w.symbol || '') : 'w-' + (w.city || '') + '-' + (w.lat ?? '') + '-' + (w.lng ?? ''));
+  if (widgetProfilePanels.has(widgetId)) {
+    const { el } = widgetProfilePanels.get(widgetId);
+    el.style.zIndex = String(PANEL_BASE_Z + widgetProfilePanels.size + recProfilePanels.size + userProfilePanels.size);
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    return;
+  }
+
+  let bodyHtml = '';
+  const isDark = document.documentElement.classList.contains('dark');
+  const iconName = w.type === 'weather' ? 'cloud' : 'candlestick_chart';
+  const title = w.type === 'weather' ? (w.city || 'Weather') : (w.symbol || w.name || 'Stock');
+
+  if (w.type === 'weather') {
+    let imgPath = w.image || w.imageClear || w.imageDark || '';
+    if (!imgPath && w.lat != null && w.lng != null) {
+      try {
+        const url = typeof getCityImageUrl === 'function' ? getCityImageUrl() : 'city-image.php';
+        const imgRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city: w.city || 'Unknown',
+            countryCode: ((w.countryCode || 'XX') + '').slice(0, 2).toUpperCase(),
+            lat: w.lat,
+            lng: w.lng,
+            weatherCode: 0
+          })
+        });
+        const imgData = await imgRes.json();
+        imgPath = imgData.image || imgData.imageClear || imgData.imageDark || '';
+      } catch (_) {}
+    }
+    let weather = {};
+    try {
+      const forecastUrl = (typeof getWeatherUrl === 'function' ? getWeatherUrl() : 'weather.php') + '?action=forecast&lat=' + w.lat + '&lng=' + w.lng;
+      const res = await fetch(forecastUrl);
+      weather = res.ok ? await res.json() : {};
+    } catch (_) {}
+    bodyHtml = buildWidgetCardHtml(w, weather, imgPath, isDark, false, 'floating');
+  } else {
+    let quote = {};
+    try {
+      const stockUrl = typeof getStockUrl === 'function' ? getStockUrl() : 'stock.php';
+      const quoteRes = await fetch(stockUrl + '?action=quote&symbol=' + encodeURIComponent(w.symbol || ''));
+      quote = quoteRes.ok ? await quoteRes.json() : {};
+    } catch (_) {}
+    bodyHtml = buildStockWidgetCardHtml(w, quote, [], isDark, false, 'floating');
+  }
+
+  const count = widgetProfilePanels.size + recProfilePanels.size + userProfilePanels.size;
+  const isMobile = isMobileViewport();
+  const topBarMargin = 24;
+  const baseX = window.innerWidth * (0.5 + 0.07);
+  const baseY = topBarMargin;
+  const left = baseX + count * PANEL_CASCADE_OFFSET;
+  const top = baseY + count * PANEL_CASCADE_OFFSET;
+
+  const panel = document.createElement('div');
+  const mobileSheetClasses = isMobile ? ' user-profile-panel-mobile mobile-bottom-sheet mobile-sheet-open' : '';
+  panel.className = 'user-profile-panel widget-floating-panel fixed w-[28.8rem] rounded-lg overflow-hidden bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col max-h-[calc(100vh-24px)]' + mobileSheetClasses;
+  panel.setAttribute('aria-hidden', 'false');
+  panel.setAttribute('data-widget-id', widgetId);
+  if (!isMobile) {
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+  }
+  panel.style.zIndex = String(PANEL_BASE_Z + count);
+
+  const mobileHandleHtml = isMobile ? '<div class="user-profile-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0" data-swipe-close></div>' : '';
+  panel.innerHTML = mobileHandleHtml + `
+    <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <span class="material-symbols-outlined text-2xl text-primary flex-shrink-0">${iconName}</span>
+        <h3 class="user-profile-name font-bold text-slate-800 dark:text-white truncate">${title}</h3>
+      </div>
+      <button type="button" class="user-profile-panel-close w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors flex-shrink-0" aria-label="Close"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <div class="widget-panel-body p-4 overflow-y-auto min-h-0 flex-1 max-h-[calc(100vh-180px)]">
+      ${bodyHtml}
+    </div>
+  `;
+
+  container.appendChild(panel);
+  widgetProfilePanels.set(widgetId, { el: panel, widget: w });
+
+  if (isMobile) {
+    const swipeHandle = panel.querySelector('.user-profile-mobile-handle');
+    if (swipeHandle) {
+      let startY = 0;
+      let startTime = 0;
+      swipeHandle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+      }, { passive: true });
+      swipeHandle.addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0) {
+          e.preventDefault();
+          panel.style.transition = 'none';
+          panel.style.transform = `translateY(${dy}px)`;
+        }
+      }, { passive: false });
+      swipeHandle.addEventListener('touchend', (e) => {
+        const endY = e.changedTouches?.[0]?.clientY ?? startY;
+        const dy = endY - startY;
+        const elapsed = Date.now() - startTime;
+        const velocity = elapsed > 0 ? dy / elapsed : 0;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (dy > 80 || velocity > 0.5) closeUserProfilePanel(panel);
+      }, { passive: true });
+    }
+  } else {
+    const handle = panel.querySelector('.user-profile-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.user-profile-panel-close')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.clientX, startY: e.clientY, startLeft: pos.left, startTop: pos.top };
+      });
+      handle.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.user-profile-panel-close')) return;
+        const pos = getPanelPosition(panel);
+        window._userPanelDrag = { panel, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startLeft: pos.left, startTop: pos.top };
+      }, { passive: true });
+    }
+  }
+}
+
+function closeTopWidgetPanel() {
+  const panels = Array.from(document.querySelectorAll('.user-profile-panel[data-widget-id]'));
+  if (panels.length === 0) return false;
+  const top = panels.sort((a, b) => (parseInt(b.style.zIndex || 0, 10) - parseInt(a.style.zIndex || 0, 10)))[0];
+  closeUserProfilePanel(top);
+  return true;
+}
+
+function wireRecommendationsOverlay() {
+  /* Recommendations now use floating panels (openRecommendationFloatingPanel) */
 }
 
 function getWidgetSkeletonHtml(count = 2, variant = 'tile') {
@@ -803,6 +1118,18 @@ async function renderWidgetTilesInTab() {
       renderWidgetTilesInTab();
     });
   });
+
+  const allWidgets = [...weatherWidgets, ...stockWidgets];
+  container.querySelectorAll('.widget-tile-card').forEach((el, idx) => {
+    const w = allWidgets[idx];
+    if (w) {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-delete-widget-id]')) return;
+        e.stopPropagation();
+        openWidgetFloatingPanel(w);
+      });
+    }
+  });
 }
 
 function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
@@ -819,8 +1146,8 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
          <span class="material-symbols-outlined ${deleteIconSize}">delete</span>
        </button>`
     : '';
-  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
-  const layoutClass = variant === 'panel' ? 'flex items-start gap-3' : 'flex flex-col justify-end min-h-0';
+  const sizeClass = variant === 'panel' ? 'w-[260px] h-[260px] flex-shrink-0' : variant === 'floating' ? 'w-full aspect-square flex-shrink-0 rounded-lg overflow-hidden' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
+  const layoutClass = variant === 'panel' ? 'flex items-start gap-3' : variant === 'floating' ? 'flex flex-col justify-end min-h-0 p-6' : 'flex flex-col justify-end min-h-0';
   const textClass = 'text-white';
   const textMutedClass = 'text-white/80';
   const innerLayout = variant === 'panel'
@@ -829,6 +1156,13 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
          <div class="text-xs ${textMutedClass} font-medium">Current local weather</div>
          <div class="${textClass} font-bold text-sm">${(w.city || '—').replace(/</g, '&lt;')}</div>
          <div class="${textClass} text-sm mt-0.5">${temp} · ${humidity}</div>
+       </div>`
+    : variant === 'floating'
+    ? `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="absolute top-4 left-4 w-12 h-12" style="filter:brightness(0) invert(1);"/>
+       <div class="mt-auto">
+         <div class="text-sm ${textMutedClass} font-medium">Current local weather</div>
+         <div class="${textClass} font-bold text-xl">${(w.city || '—').replace(/</g, '&lt;')}</div>
+         <div class="${textClass} text-lg mt-1">${temp} · ${humidity}</div>
        </div>`
     : `<img src="${getWeatherIcon(weather.weatherCode || 0)}" alt="" class="absolute top-2 left-2 w-6 h-6" style="filter:brightness(0) invert(1);"/>
        <div class="mt-auto">
@@ -843,12 +1177,15 @@ function buildWidgetCardHtml(w, weather, imgPath, isDark, showDelete, variant) {
   const bgImg = bgSrc
     ? `<img src="${String(bgSrc).replace(/"/g, '&quot;')}" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none" style="transform:scale(1.11)" onerror="this.onerror=null;this.src='${fallbackSvg}'" />`
     : '';
+  const padClass = variant === 'panel' ? 'p-3' : variant === 'floating' ? 'p-6' : 'p-2';
+  const tileClass = (variant !== 'panel' && variant !== 'floating') ? ' widget-tile-card cursor-pointer hover:border-primary/40 transition-colors' : '';
+  const tileDataAttr = (variant !== 'panel' && variant !== 'floating') ? ` data-widget-id="${String(deleteId).replace(/"/g, '&quot;')}"` : '';
   return `
-    <div class="group relative ${sizeClass} rounded overflow-hidden border border-slate-200 dark:border-white/10">
+    <div class="group relative ${sizeClass} rounded overflow-hidden border border-slate-200 dark:border-white/10${tileClass}"${tileDataAttr}>
       ${bgImg}
       <div class="absolute inset-0 ${overlayClass} pointer-events-none"></div>
       ${deleteBtn}
-      <div class="relative ${variant === 'panel' ? 'p-3' : 'p-2'} ${layoutClass} h-full z-[1]">
+      <div class="relative ${padClass} ${layoutClass} h-full z-[1]">
         ${innerLayout}
       </div>
     </div>
@@ -1312,7 +1649,7 @@ function wireMapDataTiles() {
         mapDataState.volumetricWeather = checked;
         mapLayerInfo.volumetricWeatherAltitude = mapLayerInfo.volumetricWeatherAltitude ?? 0;
         if (checked) {
-          addVolumetricWeather(VOLUMETRIC_WEATHER_LAYER_ID, mapLayerInfo.volumetricWeatherAltitude);
+          addVolumetricWeather(VOLUMETRIC_WEATHER_LAYER_ID, mapLayerInfo.volumetricWeatherAltitude ?? 0);
           flyToGlobeView();
         } else {
           removeVolumetricWeather();
@@ -1552,7 +1889,11 @@ function setPanelPosition(panelEl, left, top) {
 function closeUserProfilePanel(panelEl) {
   if (!panelEl) return;
   const name = panelEl.getAttribute('data-user-name');
+  const recId = panelEl.getAttribute('data-rec-id');
+  const widgetId = panelEl.getAttribute('data-widget-id');
   if (name) userProfilePanels.delete(name);
+  if (recId) recProfilePanels.delete(recId);
+  if (widgetId) widgetProfilePanels.delete(widgetId);
   panelEl.remove();
 }
 
@@ -2409,10 +2750,10 @@ async function openPOIContentPanel(poi) {
   if (!panel || !poi) return;
   currentOpenPOI = poi;
   const assets = getPOIAssets(poi);
-  const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '');
-  let content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null };
+  const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '') + '&_=' + Date.now();
+  let content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null, process: null, kpi: null };
   try {
-    const res = await fetch(contentUrl);
+    const res = await fetch(contentUrl, { cache: 'no-store' });
     if (res.ok) content = await res.json();
   } catch (_) {}
   const brand = poi.brand || 'Partner';
@@ -2486,6 +2827,20 @@ async function openPOIContentPanel(poi) {
     missionEl.innerHTML = missionParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
   }
 
+  const processEl = panel.querySelector('.poi-panel-process');
+  if (processEl) {
+    const processParas = content.process && Array.isArray(content.process) ? content.process : [];
+    processEl.innerHTML = processParas.length ? processParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('') : '';
+    processEl.closest('.mb-16')?.classList.toggle('hidden', processParas.length === 0);
+  }
+
+  const kpiEl = panel.querySelector('.poi-panel-kpi');
+  if (kpiEl) {
+    const kpiParas = content.kpi && Array.isArray(content.kpi) ? content.kpi : [];
+    kpiEl.innerHTML = kpiParas.length ? kpiParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('') : '';
+    kpiEl.closest('.mb-16')?.classList.toggle('hidden', kpiParas.length === 0);
+  }
+
   const keyFiguresEl = panel.querySelector('.poi-panel-key-figures');
   if (keyFiguresEl) {
     const defaults = [
@@ -2515,6 +2870,12 @@ async function openPOIContentPanel(poi) {
     const name = (url || '').split('/').pop().replace(/\.[^.]+$/, '').replace(/[-@]\d*x?$/i, '');
     return name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Visual';
   };
+  const galleryMetaMap = {};
+  (content.galleryMetadata || []).forEach((m) => { if (m?.filename && m?.description) galleryMetaMap[m.filename] = m.description; });
+  const getCaptionForUrl = (url) => {
+    const filename = (url || '').split('/').pop();
+    return galleryMetaMap[filename] || `${getItemLabel(url)} - ${type}`;
+  };
   const viewerImageItems = [];
   if (content.quote && content.quote.trim()) {
     const q = content.quote.length > 120 ? content.quote.slice(0, 117) + '...' : content.quote;
@@ -2530,7 +2891,7 @@ async function openPOIContentPanel(poi) {
   }
   const galleryLimit = poi.brand === 'Renault' ? 12 : 6;
   galleryImages.slice(0, galleryLimit).forEach((url, idx) => {
-    const caption = `${getItemLabel(url)} - ${type}`;
+    const caption = getCaptionForUrl(url);
     viewerImageItems.push({ url, caption });
     const div = document.createElement('div');
     div.className = 'poi-gallery-item';
@@ -2589,7 +2950,11 @@ function initPOIContentPanel() {
   document.querySelector('.poi-viewer-next')?.addEventListener('click', (e) => { e.stopPropagation(); poiViewerGoNext(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (imageOverlay && !imageOverlay.classList.contains('hidden')) {
+      if (closeTopWidgetPanel()) {
+        /* handled */
+      } else if (closeTopRecommendationPanel()) {
+        /* handled */
+      } else if (imageOverlay && !imageOverlay.classList.contains('hidden')) {
         imageOverlay.classList.add('hidden');
       } else if (videoOverlay && !videoOverlay.classList.contains('hidden')) {
         if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
@@ -3232,19 +3597,22 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
        </button>`
     : '';
   const isPanel = variant === 'panel';
-  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
-  const padClass = isPanel ? 'p-2' : 'p-2';
-  const symbolClass = isPanel ? 'font-bold text-sm' : 'font-bold text-sm';
+  const isFloating = variant === 'floating';
+  const sizeClass = isPanel ? 'w-[260px] h-[95px] flex-shrink-0' : isFloating ? 'w-full min-h-[160px] flex-shrink-0 rounded-lg overflow-hidden' : 'bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0';
+  const padClass = isFloating ? 'p-6' : 'p-2';
+  const symbolClass = isPanel ? 'font-bold text-sm' : isFloating ? 'font-bold text-xl' : 'font-bold text-sm';
+  const tileClass = !isPanel && !isFloating ? ' widget-tile-card cursor-pointer hover:border-primary/40 transition-colors' : '';
+  const tileDataAttr = !isPanel && !isFloating ? ` data-widget-id="${String(deleteId).replace(/"/g, '&quot;')}"` : '';
   return `
-    <div class="group relative ${sizeClass} rounded overflow-hidden border-2 ${colorClass}">
+    <div class="group relative ${sizeClass} rounded overflow-hidden border-2 ${colorClass}${tileClass}"${tileDataAttr}>
       <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 dark:from-black/20 dark:to-black/40 pointer-events-none"></div>
       ${deleteBtn}
       <div class="relative ${padClass} flex flex-col justify-between h-full z-[1]">
         <div class="relative z-10">
-          <div class="${isPanel ? 'text-xs' : 'text-[10px]'} text-slate-600 dark:text-slate-400 font-medium">Stock</div>
+          <div class="${isPanel ? 'text-xs' : isFloating ? 'text-sm' : 'text-[10px]'} text-slate-600 dark:text-slate-400 font-medium">Stock</div>
           <div class="${symbolClass} text-slate-800 dark:text-white">${(w.symbol || w.name || '—').toString().replace(/</g, '&lt;')}</div>
-          <div class="${isPanel ? 'text-sm' : 'text-xs'} ${textColorClass} font-semibold mt-0.5">${priceStr} · ${changeStr}</div>
-          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">${durationLabel}</div>
+          <div class="${isPanel ? 'text-sm' : isFloating ? 'text-lg' : 'text-xs'} ${textColorClass} font-semibold mt-0.5">${priceStr} · ${changeStr}</div>
+          <div class="${isFloating ? 'text-sm' : 'text-[10px]'} text-slate-500 dark:text-slate-400 mt-0.5">${durationLabel}</div>
         </div>
       </div>
     </div>
@@ -3277,7 +3645,88 @@ function initResumeEmbed() {
   wireConfigOverlaySwipeToClose(overlay, closeResume);
 }
 
+const TOOLTIP_BOTTOM_DISMISSED_KEY = 'osiris_tooltip_bottom_dismissed';
+
+function initTooltipBottom() {
+  const tooltip = document.getElementById('tooltip-bottom');
+  const closeBtn = document.getElementById('tooltip-bottom-close');
+  const target = document.getElementById('bottom-panel-toggle');
+  const video = document.getElementById('tooltip-bottom-video');
+  if (!tooltip || !target) return;
+
+  if (video) {
+    const wrap = video.parentElement;
+    const skeleton = wrap?.querySelector('.tooltip-video-skeleton');
+    const fallback = wrap?.querySelector('.tooltip-video-fallback');
+    const rawPath = video.getAttribute('data-src') || 'assets/Tooltip_content/Tooltip_content_bottom.mp4';
+    const src = rawPath + (rawPath.includes('?') ? '&' : '?') + '_=' + Date.now();
+    video.src = src;
+
+    video.addEventListener('error', () => {
+      skeleton?.classList.add('hidden');
+      video.classList.add('hidden');
+      fallback?.classList.remove('hidden');
+    });
+
+    video.addEventListener('loadedmetadata', () => {
+      if (wrap && video.videoWidth > 0 && video.videoHeight > 0) {
+        wrap.style.aspectRatio = video.videoWidth + ' / ' + video.videoHeight;
+      }
+    });
+
+    video.addEventListener('canplay', () => {
+      skeleton?.classList.add('hidden');
+      video.classList.remove('hidden');
+      fallback?.classList.add('hidden');
+    });
+  }
+
+  function isDesktop() {
+    return typeof window !== 'undefined' && window.innerWidth >= 768;
+  }
+
+  function positionTooltip() {
+    if (!isDesktop()) return;
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const spacing = 16;
+    const left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    const top = rect.top - tooltipRect.height - spacing;
+    tooltip.style.left = Math.max(8, Math.min(left, window.innerWidth - tooltipRect.width - 8)) + 'px';
+    tooltip.style.top = top + 'px';
+  }
+
+  function showTooltip() {
+    if (!isDesktop()) return;
+    tooltip.classList.add('tooltip-bottom-visible');
+    tooltip.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+      positionTooltip();
+      if (video) video.play().catch(() => {});
+    });
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('tooltip-bottom-visible');
+    tooltip.setAttribute('aria-hidden', 'true');
+    if (video) video.pause();
+  }
+
+  closeBtn?.addEventListener('click', hideTooltip);
+
+  target.addEventListener('click', () => {
+    if (tooltip.classList.contains('tooltip-bottom-visible')) hideTooltip();
+  });
+
+  window.addEventListener('resize', () => {
+    if (tooltip.classList.contains('tooltip-bottom-visible')) positionTooltip();
+  });
+
+  setTimeout(showTooltip, 600);
+}
+
 window.initMapApp = initMapApp;
 window.initBottomPanel = initBottomPanel;
+window.initTooltipBottom = initTooltipBottom;
 window.initResumeEmbed = initResumeEmbed;
 window.initWeatherWidgetConfig = initWeatherWidgetConfig;

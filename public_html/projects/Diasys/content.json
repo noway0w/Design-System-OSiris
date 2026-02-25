@@ -1,0 +1,75 @@
+{
+  "featuredLabel": "Innovation Case Study",
+  "heroStatement": "Experience your products like never before with an immersive 3D App",
+  "quote": "Innovation to reduce shipping cost with a 3D App.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "UI/UX Designer",
+  "tags": [
+    "UI / UX Design",
+    "3D Application",
+    "International Fair"
+  ],
+  "heroImage": "Diasys Application Concept.jpg",
+  "heroCaption": "Medical Product Presentation",
+  "heroSubcaption": "France",
+  "mission": [
+    "Create a 3D app that not only showcases Diasys' complex and technical products effectively but also provides a seamless and enjoyable user experience for customers and sales teams alike."
+  ],
+  "process": [
+    "As a designer, I needed to understand the complex and technical nature of the products to create a user interface that effectively showcases their features and benefits.",
+    "Then I had to consider the user experience of the app, making sure it is intuitive and easy to navigate for both existing and potential customers. Overall, the challenge for the UI/UX designer was to create a 3D app that not only showcases Diasys' products effectively, but also provides a seamless and enjoyable user experience for customers and sales teams alike."
+  ],
+  "kpi": [
+    "The KPIs for the Diasys 3D app project were focused on measuring the success of the app in achieving its goals of improving the presentation of highly precise medical products at international fairs while reducing the cost of shipping.",
+    "The KPIs included metrics such as the number of visitors attracted to the Diasys booth, the number of inquiries received about the medical products, and the cost savings achieved through reduced shipping expenses. Additionally, user engagement metrics such as time spent on the app and interaction with the 3D models were monitored to ensure the app was meeting the expectations of users."
+  ],
+  "keyFigures": [
+    {
+      "label": "Shipping Costs",
+      "value": "Reduced",
+      "icon": "local_shipping"
+    },
+    {
+      "label": "User Engagement",
+      "value": "Increased",
+      "icon": "touch_app"
+    },
+    {
+      "label": "Product Clarity",
+      "value": "Enhanced",
+      "icon": "visibility"
+    }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    "Traditionally, presenting highly precise medical products at international fairs required physically transporting delicate medical equipment, which is highly costly.",
+    "In addition to the benefits of cost savings and enhanced product understanding, the development of a 3D app for industrial presentations also highlights the importance of User Interface (UI) and User Experience (UX) design. A well-designed UI/UX can greatly enhance the usability and effectiveness of the app."
+  ],
+  "intro": "Diasys is a company that produces highly precise medical products, and as such, they need to present their products in a way that accurately conveys their features and capabilities to potential customers. Traditionally, this has been done by physically bringing the products to international fairs and exhibitions. However, this approach can be costly due to the shipping, handling, and insurance costs associated with transporting delicate medical equipment. Additionally, there are logistical challenges, such as limited exhibition space, that make it difficult to showcase all of Diasys' products at once.",
+  "galleryMetadata": [
+    {
+      "filename": "Desktop 3D Application.jpg",
+      "description": "A high-fidelity 3D digital twin of Diasys medical equipment presented on a desktop interface, enabling remote and detailed product demonstrations."
+    },
+    {
+      "filename": "Tablet UI Experience.png",
+      "description": "Responsive tablet view of the 3D application, allowing users to interactively explore the machine's complex components via floating UI nodes."
+    },
+    {
+      "filename": "Respons 920 3D Model.jpg",
+      "description": "Detailed 3D rendering of the Respons 920 equipment integrated into the digital platform, highlighting specific functional zones and modules."
+    },
+    {
+      "filename": "UI and UX Design Boards.jpg",
+      "description": "Comprehensive UI/UX design system and flowcharts, detailing the user journey, color palette, and interactive element states."
+    },
+    {
+      "filename": "Diasys Application Concept.jpg",
+      "description": "The final desktop application displayed in a professional setting, showcasing how digital twins can replace physical shipping needs at international fairs."
+    },
+    {
+      "filename": "Interactive Touchscreen Display.jpg",
+      "description": "Users interacting with the large-scale touchscreen version of the 3D app, designed for maximum engagement at international fair booths."
+    }
+  ]
+}

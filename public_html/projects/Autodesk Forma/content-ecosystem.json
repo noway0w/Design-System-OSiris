@@ -1,0 +1,56 @@
+{
+  "featuredLabel": "Ecosystem & Developer Experience",
+  "heroStatement": "Building the Autodesk Forma Ecosystem & ESRI Partnership",
+  "quote": "His command of contextual data and real-time data integration — particularly within the ESRI ecosystem — is exceptional. He consistently translated complex geospatial concepts into intuitive, user-centered experiences that delivered genuine business value.",
+  "quoteAuthor": "Samar Vir Singh",
+  "quoteRole": "Product Lead @ Autodesk Forma",
+  "tags": ["API & SDK", "Developer Experience", "Strategic Partnerships", "Ecosystem Design", "UI/UX"],
+  "heroCaption": "Ecosystem & ESRI Partnership",
+  "heroSubcaption": "United States",
+  "intro": "As Principal UI/UX Designer, I spearheaded the design architecture for the Autodesk Forma Ecosystem. This involved bridging deep technical constraints with user-centric design to create a seamless developer experience, culminating in a major partnership with ESRI.",
+  "mission": [
+    "Design and integrate the Autodesk Appstore directly into the Forma product.",
+    "Collaborate with engineering to build and structure the Extension API and SDK.",
+    "Author and release comprehensive Design Guidelines for third-party developers.",
+    "Guide the ESRI partnership to successfully develop and launch their extension within Forma."
+  ],
+  "process": [
+    "Identified real friction points in the Developer Experience by building internal add-ons and testing the Extension API/SDK.",
+    "Translated complex technical requirements into clear, usage-oriented demonstrations for strategic clients and public events.",
+    "Collaborated cross-functionally with product, engineering, and content strategy to ensure a cohesive ecosystem narrative."
+  ],
+  "kpi": [
+    "Successfully launched the Autodesk Forma Extension API/SDK and Design Guidelines.",
+    "Delivered the ESRI ArcGIS extension integration, creating a new standard for geographic data in Forma.",
+    "Presented the ecosystem vision and ESRI partnership on the main stage at Autodesk University.",
+    "Improved developer onboarding by identifying and resolving critical UX friction points."
+  ],
+  "keyFigures": [
+    { "label": "Partnership", "value": "ESRI", "icon": "handshake" },
+    { "label": "Key Event", "value": "AU Main Stage", "icon": "campaign" },
+    { "label": "Role", "value": "Principal UX", "icon": "person" }
+  ],
+  "facts": [
+    "Showcased on the main stage at Autodesk University with Amy Bunzel.",
+    "Presented technical demos at major industry events like BIM World Paris."
+  ],
+  "heroImage": "AU-Main-Stage-Amy-Bunzel.jpeg",
+  "galleryMetadata": [
+    {
+      "filename": "AU-Main-Stage-Demo.jpeg",
+      "description": "Live demonstration of the Autodesk Forma and ESRI ArcGIS integration on the main stage at Autodesk University."
+    },
+    {
+      "filename": "Autodesk-App-Store-Integration.png",
+      "description": "In-product integration of the Autodesk App Store, allowing users to seamlessly discover and install third-party Forma extensions."
+    },
+    {
+      "filename": "ESRI-ArcGIS-Extension-UI.png",
+      "description": "The ESRI ArcGIS extension active within the Autodesk Forma canvas, providing rich, real-time geographic context to site models."
+    },
+    {
+      "filename": "Extension-Developer-Portal.png",
+      "description": "The configuration interface and developer portal designed to streamline the creation and management of third-party ecosystem extensions."
+    }
+  ]
+}

@@ -1,26 +1,78 @@
 {
-  "heroStatement": "Global Audit & Tax",
-  "quote": "Operating as a united partnership, we work as one integrated team, leveraging expertise, scale and cultural understanding.",
-  "quoteAuthor": "Hervé Hélias",
-  "quoteRole": "Group CEO",
-  "intro": "At Mazars Group Communication, I oversaw the brand image globally, managed communication campaigns such as #CreatingSharedValue, developed the Mazars Live app, and coordinated workshops for events involving all communication players worldwide.",
   "featuredLabel": "Featured Project",
-  "tags": ["Audit", "Consulting", "Global"],
-  "heroCaption": "Headquarters View",
-  "heroSubcaption": "La Défense, Paris",
+  "heroStatement": "Communication Campaign Digital & Print Worldwide",
+  "quote": "Be the kind of person who isn't afraid of challenges.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "Visual Identity & Design Manager",
+  "tags": [
+    "Design",
+    "Digital & Print",
+    "Worldwide"
+  ],
+  "heroCaption": "Leading Global Design Projects",
+  "heroSubcaption": "France",
   "mission": [
-    "Mazars is a leading international audit, tax and advisory firm. We deliver exceptional and tailored services in audit and accounting, as well as tax, financial advisory, consulting and legal services.",
-    "We empower our people to help clients navigate complex challenges and seize opportunities."
+    "Create a cross-media communication campaign that integrates the brand's evolving image, rallies communication teams worldwide around the newly approved design, produces it with both internal and external stakeholders on multiple channels, and delivers it on time."
+  ],
+  "process": [
+    "Over a period of 9 months, the internal assets of the group communication team collaborated with the agency to develop multiple design drafts. After careful consideration, we selected and implemented the latest technology and the most effective channels to promote Mazars globally, while taking into account the limitations of our users. We conducted internal testing and presented our work to top-level partners and the CEO. Our project was successfully delivered on time to all offices worldwide."
+  ],
+  "kpi": [
+    "'Creating Shared Value by Mazars' is a cross-media, long-term editorial programme to reinvent the previous classic Annual Reports. It is meant as a complete ecosystem featuring a keyword-based website as the cornerstone of the programme, curation via Twitter, targeted campaigns via Facebook and LinkedIn, and a printed assets kit including Financial Statements and the Yearbook.",
+    "The campaign was awarded by: Awwwards / Strat\u00e9gies / Digital Award Berlin. The year book (print version) was delivered in more than 80 countries."
   ],
   "keyFigures": [
-    { "label": "Countries & Territories", "value": "90+", "icon": "public" },
-    { "label": "Professionals", "value": "47,000", "icon": "groups" },
-    { "label": "Global Revenue", "value": "€2.8bn", "icon": "trending_up" }
+    {
+      "label": "Countries Reached",
+      "value": "80+",
+      "icon": "public"
+    },
+    {
+      "label": "Awards Won",
+      "value": "3",
+      "icon": "emoji_events"
+    },
+    {
+      "label": "Project Duration",
+      "value": "9 Months",
+      "icon": "schedule"
+    }
   ],
   "websiteUrl": "",
   "facts": [
-    { "title": "Mission", "text": "Create cross-media communication that integrates the brand's evolving image, rallies communication teams worldwide, and delivers on time." },
-    { "title": "Process", "text": "Collaboration with stakeholders, design iterations, internal testing, and delivery to offices in 80+ countries." },
-    { "title": "KPI", "text": "Cross-media, long-term programme delivered in multiple countries. Awards: Awwwards, Stratégies, Digital Award Berlin." }
+    "To cover this campaign, which is of key importance to us at a global organisation [#CreatingSharedValue Campaign], we interviewed internal and external stakeholders in South America, Europe, the Middle East and South-East Asia.",
+    "Worked closely with a communication agency like Aristophane and produced a website and several documents delivered globally."
+  ],
+  "intro": "In 2017, I was appointed as the Visual Identity & Design Manager at Mazars Group Communication. My responsibilities included overseeing the brand image of the company globally, managing global communication projects such as the annual communication campaign [#CreatingSharedValue] with the communication director, developing a news app for employees [MazarsLive], organizing and coordinating workshops for events involving all communication players [Mazars UCom2], designing publications for different regions (Asia, North America, South America), and creating print advertisements.",
+  "heroImage": "Annual Report Web Platform.jpg",
+  "galleryMetadata": [
+    {
+      "filename": "Digital Ecosystem Mockups.jpg",
+      "description": "A comprehensive digital ecosystem mockup featuring the Mazars Live application and responsive web platforms."
+    },
+    {
+      "filename": "Annual Report Web Platform.jpg",
+      "description": "The cornerstone of the #CreatingSharedValue programme: a fully responsive, keyword-based digital annual report website."
+    },
+    {
+      "filename": "Urbanity Graphic Charter.jpg",
+      "description": "Detailed graphic charter for 'Urbanity by Mazars', establishing a strict, modern typographic and color system."
+    },
+    {
+      "filename": "Printed Yearbook Editorial.jpg",
+      "description": "The multi-awarded 2017 Yearbook, featuring premium print finishes and an editorial-first layout delivered to over 80 countries worldwide."
+    },
+    {
+      "filename": "Campaign UI Showcase.jpg",
+      "description": "An isometric showcase of the digital campaign's user interface, highlighting the responsive grid and engaging storytelling flow."
+    },
+    {
+      "filename": "Strategies Award Presentation.jpg",
+      "description": "The #CreatingSharedValue campaign winning the Silver Prize for best cross-media corporate communication campaign at the Strat\u00e9gies Awards in Paris."
+    },
+    {
+      "filename": "Mazars Live Mobile App.jpg",
+      "description": "UI design for Mazars Live, a dedicated news application developed to connect internal employees and share insights globally."
+    }
   ]
 }

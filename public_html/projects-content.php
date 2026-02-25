@@ -28,7 +28,7 @@ if (!$slug && isset($_GET['brand'])) {
 $subfolder = null;
 if ($slug === 'Autodesk Forma' && $location) {
     $loc = strtolower($location);
-    if (strpos($loc, 'san francisco') !== false || strpos($loc, 'pier 9') !== false) {
+    if (strpos($loc, 'autodesk university') !== false || strpos($loc, 'san francisco') !== false || strpos($loc, 'pier 9') !== false) {
         $subfolder = 'Ecosystem Autodesk Appstore in product ESRI';
     } elseif (strpos($loc, 'oslo') !== false || strpos($loc, 'tjuvholmen') !== false) {
         $subfolder = 'Contextual Data and Monetization';
@@ -91,6 +91,11 @@ $result['hero'] = !empty($scanned['heroCandidates']) ? $scanned['heroCandidates'
    heroCaption, heroSubcaption, quoteAuthor, quoteRole, quoteAvatar, keyFigures, websiteUrl, mission */
 $projectRoot = $projectsBase . '/' . $slug;
 $contentJsonPath = $projectRoot . '/content.json';
+if ($slug === 'Autodesk Forma' && $subfolder) {
+    $contentKey = ($subfolder === 'Ecosystem Autodesk Appstore in product ESRI') ? 'ecosystem' : 'monetization';
+    $contentJsonPath = $projectRoot . '/content-' . $contentKey . '.json';
+    if (!file_exists($contentJsonPath)) $contentJsonPath = $projectRoot . '/content.json';
+}
 if (file_exists($contentJsonPath)) {
     $raw = @file_get_contents($contentJsonPath);
     if ($raw) {
@@ -98,9 +103,18 @@ if (file_exists($contentJsonPath)) {
         if (is_array($parsed)) {
             $keys = ['heroStatement', 'quote', 'intro', 'facts', 'featuredLabel', 'tags',
                 'heroCaption', 'heroSubcaption', 'quoteAuthor', 'quoteRole', 'quoteAvatar',
-                'keyFigures', 'websiteUrl', 'mission'];
+                'keyFigures', 'websiteUrl', 'mission', 'process', 'kpi', 'galleryMetadata', 'heroImage'];
             foreach ($keys as $k) {
                 if (isset($parsed[$k])) $result[$k] = $parsed[$k];
+            }
+            if (!empty($parsed['heroImage']) && !empty($result['images'])) {
+                $heroFile = $parsed['heroImage'];
+                foreach ($result['images'] as $img) {
+                    if (substr($img, -strlen($heroFile)) === $heroFile) {
+                        $result['hero'] = $img;
+                        break;
+                    }
+                }
             }
         }
     }

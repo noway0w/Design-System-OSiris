@@ -1,0 +1,78 @@
+{
+  "featuredLabel": "Luxury Branding",
+  "heroStatement": "Excellence of branding makes the difference",
+  "quote": "Foster loyalty, and establish a sense of value.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "Design Manager",
+  "tags": [
+    "Branding",
+    "Design",
+    "Luxury"
+  ],
+  "heroImage": "Digital Booking Experience.jpg",
+  "heroCaption": "Premium Sailboat Rentals",
+  "heroSubcaption": "Martinique",
+  "mission": [
+    "Establish a strong and consistent identity that embodies the premium quality and exclusivity of the company's services, using high-end visuals and messaging to differentiate it from competitors and build trust and loyalty with clients."
+  ],
+  "process": [
+    "To develop a branding strategy, I first researched the target audience and competitors to identify unique selling points and areas for differentiation.",
+    "From there, I developed a visual identity that reflected the company's values and personality, including a color palette, typography, and imagery that aligned with the luxury and sophistication of Blue Ocean Sailing's services. I also crafted messaging that emphasized the exclusivity and premium quality of the company's sailboats and services, using language that resonated with the target audience. Finally, I ensured consistency in all marketing materials, including the website, social media, and other communications."
+  ],
+  "kpi": [
+    "The campaign was successful in achieving its goals. Increased brand awareness, website traffic, social media reach and engagement, sales and revenue growth, customer retention, and customer satisfaction all indicate that the branding campaign resonated with the target audience and effectively communicated the luxury and exclusivity of Blue Ocean Sailing's services."
+  ],
+  "keyFigures": [
+    {
+      "label": "Brand Awareness",
+      "value": "Increased",
+      "icon": "visibility"
+    },
+    {
+      "label": "Revenue Growth",
+      "value": "Positive",
+      "icon": "payments"
+    },
+    {
+      "label": "Client Loyalty",
+      "value": "Higher",
+      "icon": "loyalty"
+    }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    "Branding is a critical aspect of any company's success, as it encompasses everything from visual identity to messaging and personality.",
+    "A strong brand identity helps to differentiate a company from competitors, making it easier for customers to recognize and remember it."
+  ],
+  "intro": "Blue Ocean Sailing is a luxury sailing company in Martinique [France] that rents out upscale sailboats for unique and sophisticated sailing experiences. By consistently using the same visual elements and messaging across all marketing materials, companies create a sense of familiarity that builds trust and helps customers feel more connected to the brand.",
+  "galleryMetadata": [
+    {
+      "filename": "Catamaran Fleet Open Water.jpg",
+      "description": "A wide view of the luxury catamaran sailing in open waters, showcasing the premium travel experience."
+    },
+    {
+      "filename": "Luxury Sailboat Profile.jpg",
+      "description": "Front-angled profile of the Blue Ocean Sailing catamaran, highlighting the bespoke branded sail design."
+    },
+    {
+      "filename": "Brand Identity and Typography.jpg",
+      "description": "Detailed graphic charter including the fluid logotype, elegant color palette, and Cormorant Garamond typography."
+    },
+    {
+      "filename": "Digital Booking Experience.jpg",
+      "description": "Responsive web and mobile application interfaces designed for seamless, high-end luxury cruise bookings."
+    },
+    {
+      "filename": "Branded Towel Embroidery.jpg",
+      "description": "High-end physical touchpoints, including custom embroidered towels for guests onboard."
+    },
+    {
+      "filename": "Branded Sail Close Up.jpg",
+      "description": "Detailed view of the custom sail featuring the elegant, wave-inspired line-art logo."
+    },
+    {
+      "filename": "Corporate Stationery Mockup.jpg",
+      "description": "Complete premium stationery set featuring sophisticated dark-mode branding and debossed logo details."
+    }
+  ]
+}

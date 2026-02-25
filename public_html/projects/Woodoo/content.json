@@ -1,0 +1,80 @@
+{
+  "featuredLabel": "Brand Redesign",
+  "heroStatement": "Maximize Your Impact at CES",
+  "quote": "Revamp Your CES Presence: Why a Redesign of Woodoo is Crucial for Success.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "UI / UX Designer",
+  "tags": [
+    "CES",
+    "Redesign",
+    "UI / UX Design"
+  ],
+  "heroImage": "Physical and Digital Showcase.jpg",
+  "heroCaption": "Digital Transformation",
+  "heroSubcaption": "France",
+  "mission": [
+    "Improve the website's overall user experience by making it easier to navigate, highlighting key products and features, and ensuring that the website is accessible and engaging to all visitors.",
+    "Additionally, a refreshed and modern design can create a positive impression of Woodoo and help to differentiate it from competitors."
+  ],
+  "process": [
+    "The process for Woodoo's website redesign involved research, analysis, strategy, wireframing, visual design, prototyping, collaboration, testing, and launch.",
+    "I began by researching the target audience, industry trends, and competitors, and then analyzed the findings to identify user needs and opportunities for improvement. I then created a design strategy, wireframes, and visual designs that incorporated the company's brand and visual identity. I worked closely with developers and stakeholders to ensure that the design was implemented correctly and tested the website's usability before launch."
+  ],
+  "kpi": [
+    "The redesign had a highly positive impact on both the company's market positioning and its appeal to investors. Because CES 2021 was an all-digital event, the new website served as Woodoo's primary storefront and successfully handled a massive influx of global press and investor traffic.",
+    "Following the launch and the virtual event, Woodoo observed a significant, sustained increase in both overall website traffic and the average time visitors spent engaging with their core products and technologies."
+  ],
+  "keyFigures": [
+    {
+      "label": "Website Traffic",
+      "value": "Increased",
+      "icon": "trending_up"
+    },
+    {
+      "label": "Visitor Engagement",
+      "value": "Higher",
+      "icon": "timer"
+    },
+    {
+      "label": "Launch Target",
+      "value": "CES 2021",
+      "icon": "event"
+    }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    "I focus on crafting web experiences and designs that work.",
+    "In early 2021, Woodoo underwent a website redesign with the goal of improving the user experience and better showcasing the company's products and services."
+  ],
+  "intro": "The redesign of the www.woodoo.com website for CES was especially important as it is a high-profile event where companies showcase their latest products and technologies. The website needs to effectively communicate Woodoo's brand and offerings to potential customers and partners. Overall, a successful redesign of the www.woodoo.com website for CES can help to drive traffic, generate leads, and ultimately contribute to the company's success at the event and beyond.",
+  "galleryMetadata": [
+    {
+      "filename": "Physical and Digital Showcase.jpg",
+      "description": "A seamless blend of physical Woodoo materials and the digital interface, highlighting the tactile nature of augmented wood."
+    },
+    {
+      "filename": "Responsive Web Experience.jpg",
+      "description": "Responsive design showcasing Woodoo's different natural species and material characteristics across tablet and mobile touchpoints."
+    },
+    {
+      "filename": "Editorial Mobile Interface.jpg",
+      "description": "A clean, editorial-style mobile interface emphasizing readability, modern typography, and immersive storytelling."
+    },
+    {
+      "filename": "Smart Mobility Application.jpg",
+      "description": "UI concept for smart mobility and automotive surfaces, showcasing revolutionary touch-sensitive augmented wood integration."
+    },
+    {
+      "filename": "Desktop Homepage Setup.jpg",
+      "description": "The fully responsive desktop homepage design displayed in a clean workspace environment, focusing on large, impactful imagery."
+    },
+    {
+      "filename": "Material Swatches Integration.jpg",
+      "description": "A closer look at the digital application interacting with physical Woodoo samples, bridging industrial manufacturing with digital showcases."
+    },
+    {
+      "filename": "Mobile App Navigation Flow.jpg",
+      "description": "A dynamic 3D showcase of the Woodoo mobile app's user journey, emphasizing clean components, carbon-negative commitments, and intuitive navigation."
+    }
+  ]
+}

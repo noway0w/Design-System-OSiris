@@ -1,0 +1,56 @@
+{
+  "featuredLabel": "TV Commercial Special Effects",
+  "heroStatement": "Freelance VFX & Rotopainting Artist",
+  "quote": "Integrating dynamic HUD elements and technical UI overlays with live-action road footage to highlight Renault's advanced safety and performance.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "Freelance VFX & Rotopainting Artist",
+  "tags": ["VFX", "Rotopainting", "TV Commercial"],
+  "heroCaption": "Renault TV Advertisement (2016)",
+  "heroSubcaption": "France",
+  "mission": [
+    "Deliver high-precision rotopainting and special effects for the 2016 Renault TV commercial campaign.",
+    "Integrate dynamic HUD (Heads-Up Display) elements, track vehicle features, and seamlessly blend technical UI overlays with live-action road footage to highlight Renault's advanced safety and performance features."
+  ],
+  "process": [
+    "The work involved precise frame-by-frame rotopainting, 3D tracking of vehicle components (wheels, body panels), and compositing HUD graphics onto live-action highway footage.",
+    "Key deliverables included safety distance indicators ('Distance de sécurité', 'Vitesse adaptée'), speed detection overlays ('Détection de la vitesse'), and trajectory control ('Maîtrise de la Trajectoire') UI elements—all tracked and animated in After Effects."
+  ],
+  "kpi": [
+    "Delivered broadcast-ready VFX shots integrating safety and performance overlays with live-action Renault footage.",
+    "Successfully tracked dynamic vehicle movement to ensure UI elements stayed perfectly aligned with moving cars across varying lighting and road conditions."
+  ],
+  "keyFigures": [
+    { "label": "Project Year", "value": "2016", "icon": "calendar_today" },
+    { "label": "Scope", "value": "TV Commercial", "icon": "tv" },
+    { "label": "Role", "value": "VFX & Rotopainting", "icon": "movie_edit" }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    "Rotopainting requires frame-by-frame precision to isolate moving subjects and composite new elements convincingly.",
+    "HUD overlays for automotive advertising must feel integrated with the footage—tracking and timing are critical for believability."
+  ],
+  "intro": "For the 2016 Renault TV commercial campaign, I was responsible for delivering high-precision rotopainting and special effects. My work involved integrating dynamic HUD (Heads-Up Display) elements, tracking vehicle features, and seamlessly blending technical UI overlays with live-action road footage to highlight Renault's advanced safety and performance features.",
+  "heroImage": "Final Composition - Safety Distance.jpeg",
+  "galleryMetadata": [
+    {
+      "filename": "After Effects HUD Tracking.jpeg",
+      "description": "The After Effects workspace where a dotted target and HUD graphic are animated and tracked onto a transparent grid for precise overlay placement."
+    },
+    {
+      "filename": "Final Composition - Safety Distance.jpeg",
+      "description": "A rendered frame featuring a blue Renault on the highway with 'Distance de sécurité' and 'Vitesse adaptée' UI overlays highlighting adaptive safety features."
+    },
+    {
+      "filename": "After Effects Wheel Tracking.jpeg",
+      "description": "The After Effects interface showing precise 3D wheel tracking (indicated by red boxes) and text overlay for the blue Renault Megane."
+    },
+    {
+      "filename": "Final Composition - Speed Detection.jpeg",
+      "description": "A rendered frame of a white Renault showing the 'Détection de la vitesse' UI graphic and speed limit sign tracking."
+    },
+    {
+      "filename": "Workspace Mockup.jpg",
+      "description": "Professional presentation mockup showing the 'Maîtrise de la Trajectoire' final render on a desktop monitor and the corresponding After Effects project on a laptop."
+    }
+  ]
+}

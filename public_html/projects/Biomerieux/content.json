@@ -1,0 +1,80 @@
+{
+  "featuredLabel": "Immersive Learning Experience",
+  "heroStatement": "Design Manager 3D App Industry Training",
+  "quote": "Innovation to create the training of tomorrow in 3D.",
+  "quoteAuthor": "Guillaume Lassiat",
+  "quoteRole": "UI / UX Designer",
+  "tags": [
+    "3D App",
+    "Industry Training",
+    "WebGL"
+  ],
+  "heroCaption": "Immersive Training Journey",
+  "heroSubcaption": "France",
+  "mission": [
+    "Produce an initial Proof of Concept (POC) to establish a new standard for training teams and customers remotely, utilizing a fully certifying 3D App integrated with a Learning Management System (LMS).",
+    "The first step of this project was to audit Biomerieux's existing training journeys and project how interactive 3D technologies could scale globally to meet future production and educational demands."
+  ],
+  "process": [
+    "The process began with organizing several interviews with internal and external stakeholders, auditing the digital environment, and testing different scalable technologies. We designed the complete UX/UI of the App and the website hosting the WebGL environment.",
+    "Initial drafts were produced using Three.js to validate the user flow. These results projected a clear path forward, allowing us to select Unreal Engine for the final, high-fidelity production. The final app design was completed alongside rigorous testing and security pentesting to ensure it was ready for enterprise deployment."
+  ],
+  "kpi": [
+    "The immersive 3D application was fully adopted by teams and customers. Looking ahead to 2024 and beyond, after the global deployment of several training modules, Biomerieux expects to reduce their overall training expenses by 30% while significantly cutting their trainers' travel footprint.",
+    "The projection is highly promising: leadership has agreed to eventually transform this immersive training infrastructure into a lucrative financial asset by offering it as a premium service to their customers on a brand-new platform."
+  ],
+  "keyFigures": [
+    {
+      "label": "Projected Savings",
+      "value": "30%",
+      "icon": "trending_down"
+    },
+    {
+      "label": "Carbon Footprint",
+      "value": "Reduced",
+      "icon": "eco"
+    },
+    {
+      "label": "Core Tech",
+      "value": "Unreal Engine",
+      "icon": "terminal"
+    }
+  ],
+  "websiteUrl": "",
+  "facts": [
+    "How to train people effectively in a post-Covid world? How will we build the future of learning in the industry? How can we be more sustainable? These questions drive the future of Design and technology.",
+    "By recreating a highly accurate laboratory environment within a 3D app and applying the latest gamification workflows, we drastically increased learning efficiency and user retention."
+  ],
+  "intro": "In 2021, I joined Biomerieux to develop a visionary immersive learning environment. My objective was to create a highly scalable, engaging new way to train teams and customers remotely. This technology, and the 3D assets developed during this project, are projected to be used across multiple future applications\u2014from training purposes to global marketing communications. Thanks to this 3D architecture, the international pharmaceutical laboratory is actively reducing its carbon footprint, while users prefer the gamified, interactive aspect over traditional learning workflows.",
+  "heroImage": "Desktop Immersive Application.jpg",
+  "galleryMetadata": [
+    {
+      "filename": "Interactive 3D Laboratory.jpg",
+      "description": "A high-fidelity 3D laboratory environment allowing users to interact dynamically with virtual equipment like the SMASHER and DILUMAT."
+    },
+    {
+      "filename": "Tablet Training Workflows.jpg",
+      "description": "Responsive tablet interfaces displaying step-by-step workflow overviews and interactive 3D navigation for remote learners."
+    },
+    {
+      "filename": "UI Design and Component System.jpg",
+      "description": "Detailed UI/UX design boards outlining the interactive settings, pop-ups, and graphical component states for the 3D application."
+    },
+    {
+      "filename": "User Testing and Navigation.jpg",
+      "description": "A user navigating the immersive training journey on a desktop, utilizing native keyboard and mouse controls to explore the lab."
+    },
+    {
+      "filename": "GENE-UP Molecular Platform.jpg",
+      "description": "Highlighting the GENE-UP game-changing molecular solutions platform within the immersive 3D environment."
+    },
+    {
+      "filename": "Application Navigation Menus.jpg",
+      "description": "Detailed views of the application's settings menu, interactive map, and user guidance overlays designed for optimal accessibility."
+    },
+    {
+      "filename": "Desktop Immersive Application.jpg",
+      "description": "The complete 3D immersive training application running seamlessly on a desktop, successfully reducing the need for physical travel and training."
+    }
+  ]
+}

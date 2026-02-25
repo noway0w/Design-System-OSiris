@@ -40,10 +40,12 @@
   <link href="css/neumorphic-menu.css" rel="stylesheet"/>
   <link href="css/variables.css" rel="stylesheet"/>
   <link href="css/poi-content-panel.css" rel="stylesheet"/>
+  <link href="css/recommendations.css" rel="stylesheet"/>
   <link href="css/mobile-bottom-sheet.css" rel="stylesheet"/>
+  <link href="css/tooltip-bottom.css" rel="stylesheet"/>
   <link href="css/components/core-actions.css" rel="stylesheet"/>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css" rel="stylesheet"/>
-  <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet"/>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   <style>
     .map-marker-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
     @keyframes pulse-ring {
@@ -243,6 +245,22 @@
             <div class="poi-panel-key-figures space-y-4"></div>
           </div>
         </div>
+        <!-- Process -->
+        <div class="mb-16 space-y-6">
+          <h3 class="text-xl font-bold text-white flex items-center gap-3">
+            <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">account_tree</span></span>
+            Process
+          </h3>
+          <div class="poi-panel-process text-slate-400 leading-relaxed text-lg space-y-4"></div>
+        </div>
+        <!-- KPI -->
+        <div class="mb-16 space-y-6">
+          <h3 class="text-xl font-bold text-white flex items-center gap-3">
+            <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">insights</span></span>
+            KPI
+          </h3>
+          <div class="poi-panel-kpi text-slate-400 leading-relaxed text-lg space-y-4"></div>
+        </div>
         <!-- Masonry Gallery -->
         <div class="mb-8">
           <div class="flex items-center justify-between mb-8">
@@ -282,6 +300,22 @@
           <div class="poi-media-viewer-caption poi-media-viewer-caption-video">
             <p class="poi-media-viewer-caption-text">Descriptive content placeholder</p>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- LinkedIn Recommendations detail overlay -->
+    <div id="recommendations-overlay" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
+      <div class="recommendations-overlay-panel cursor-default" onclick="event.stopPropagation()">
+        <button type="button" class="recommendations-overlay-close" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+        <div class="recommendations-overlay-content">
+          <div class="recommendations-overlay-header">
+            <div class="recommendations-overlay-avatar" id="rec-overlay-avatar"></div>
+            <h3 class="recommendations-overlay-name" id="rec-overlay-name"></h3>
+            <p class="recommendations-overlay-role" id="rec-overlay-role"></p>
+            <p class="recommendations-overlay-context" id="rec-overlay-context"></p>
+          </div>
+          <div id="rec-overlay-translated-tag" class="recommendations-overlay-translated hidden"></div>
+          <div class="recommendations-overlay-body" id="rec-overlay-body"></div>
         </div>
       </div>
     </div>
@@ -362,6 +396,7 @@
         <button id="tab-map-data" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="map-data">Map Data</button>
         <button id="tab-widgets" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="widgets">Widgets</button>
         <button id="tab-nearby" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="nearby">Tech enthusiast</button>
+        <button id="tab-recommendations" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="recommendations">LinkedIn Recommendations</button>
       </div>
       <div class="relative w-full flex-1 min-h-0 overflow-hidden">
         <div id="bottom-panel-tiles-scroll" class="w-full h-full overflow-x-auto no-scrollbar pb-6 pl-6 scroll-smooth cursor-grab active:cursor-grabbing" tabindex="0">
@@ -373,6 +408,9 @@
         </div>
         <div id="map-data-tiles" class="hidden flex items-stretch gap-4 pr-16 w-max">
           <!-- Map Data toggle tiles rendered by map-app.js -->
+        </div>
+        <div id="recommendations-tiles" class="hidden flex items-stretch gap-4 pr-16 w-max">
+          <!-- Recommendation tiles rendered by map-app.js -->
         </div>
         <div id="widget-tiles" class="hidden flex items-stretch gap-4 pr-16 w-max">
           <button id="add-weather-widget" type="button" class="bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-2 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-1 items-center justify-center transition-colors cursor-pointer">
@@ -393,6 +431,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Tooltip above bottom arrow - desktop only, shows on load -->
+    <div id="tooltip-bottom" class="tooltip-bottom" role="tooltip" aria-label="Scroll hint" aria-hidden="true">
+      <div class="tooltip-bottom-header">
+        <h3 class="tooltip-bottom-title">Discover More</h3>
+        <button type="button" class="tooltip-bottom-close" id="tooltip-bottom-close" aria-label="Close tooltip"><span class="material-symbols-outlined text-[20px]">close</span></button>
+      </div>
+      <p class="tooltip-bottom-text">Click the arrow below to open your toolkit. This section holds all your essential features, including different map tiles, interactive widgets, and user management tools.</p>
+      <div class="tooltip-bottom-video-wrap" id="tooltip-video-wrap">
+        <div class="tooltip-video-skeleton" id="tooltip-video-skeleton" aria-hidden="false"></div>
+        <video id="tooltip-bottom-video" class="tooltip-video-el hidden" loop muted playsinline autoplay preload="auto" data-src="assets/Tooltip_content/Tooltip_content_bottom.mp4"></video>
+        <p class="tooltip-video-fallback hidden text-white/80 text-sm p-4 text-center">Video not found. Add <code>Tooltip_content_bottom.mp4</code> to <code>assets/Tooltip_content/</code></p>
+      </div>
+      <div class="tooltip-bottom-arrow" aria-hidden="true"></div>
     </div>
 
     <!-- Floating User Profile Panels Container (multiple panels can be open) -->
@@ -506,10 +559,12 @@
         initMapApp();
         initBottomPanel();
         initPOIContentPanel();
+        wireRecommendationsOverlay();
         initUserProfilePanel();
         initResumeEmbed();
         initWeatherWidgetConfig();
         initStockWidgetConfig();
+        initTooltipBottom();
       });
     }
   </script>
