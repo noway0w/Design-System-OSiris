@@ -2749,6 +2749,8 @@ async function openPOIContentPanel(poi) {
   const panel = document.getElementById('poi-content-panel');
   if (!panel || !poi) return;
   currentOpenPOI = poi;
+  const scrollEl = panel.querySelector('.editorial-scroll');
+  if (scrollEl) scrollEl.scrollTop = 0;
   const assets = getPOIAssets(poi);
   const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '') + '&_=' + Date.now();
   let content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null, process: null, kpi: null };
