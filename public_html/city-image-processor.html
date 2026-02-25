@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>City Image Processor - Admin</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1392ec",
+            "background-light": "#f6f7f8",
+            "background-dark": "#101a22",
+            "card-light": "#E4EBF1",
+            "card-dark": "#1c262d",
+            "text-secondary": "#9db0b9",
+          },
+        },
+      },
+    }
+  </script>
+  <link href="css/neumorphic-menu.css" rel="stylesheet"/>
+  <link href="css/variables.css" rel="stylesheet"/>
+  <link href="css/city-image-processor.css" rel="stylesheet"/>
+  <script src="js/api-config.js"></script>
+  <script src="js/theme-service.js"></script>
+</head>
+<body class="min-h-screen bg-background-light dark:bg-background-dark text-slate-800 dark:text-white font-sans">
+  <div id="app-loading" class="min-h-screen flex items-center justify-center">
+    <p class="text-text-secondary">Checking access…</p>
+  </div>
+
+  <div id="app-content" class="hidden min-h-screen py-8 px-4 md:px-8">
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center gap-3 mb-6">
+        <a href="map-app.html" class="flex items-center justify-center w-10 h-10 rounded-lg bg-card-light/60 dark:bg-card-dark/60 hover:bg-card-light dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 transition-colors">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <h1 class="text-xl font-bold">City Image Processor (Admin)</h1>
+      </div>
+
+      <p class="text-sm text-text-secondary mb-6">Upload 1–100 PNG files named <code class="bg-slate-200 dark:bg-slate-700 px-1 rounded">city,country.png</code>. They will be center-cropped, renamed to <code class="bg-slate-200 dark:bg-slate-700 px-1 rounded">City-CountryCode.png</code>, and saved to the cities folder. Files are sent in small batches to avoid upload limits.</p>
+
+      <div class="neumorphic-processor-card p-6 mb-6">
+        <div class="neumorphic-menu-section mb-6">
+          <label>Crop dimensions</label>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label for="crop-width" class="block text-xs text-text-secondary mb-1">Width</label>
+              <input type="number" id="crop-width" min="1" max="4096" value="800" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-white/20 bg-background-light dark:bg-background-dark text-slate-800 dark:text-white">
+            </div>
+            <div class="flex-1">
+              <label for="crop-height" class="block text-xs text-text-secondary mb-1">Height</label>
+              <input type="number" id="crop-height" min="1" max="4096" value="600" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-white/20 bg-background-light dark:bg-background-dark text-slate-800 dark:text-white">
+            </div>
+          </div>
+        </div>
+
+        <div id="dropzone" class="neumorphic-dropzone border-2 border-dashed border-slate-300 dark:border-white/20 rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+          <input type="file" id="file-input" accept=".png" multiple class="hidden">
+          <span class="material-symbols-outlined text-4xl text-text-secondary mb-2">cloud_upload</span>
+          <p class="text-text-secondary text-sm">Drop PNG files here or click to select (1–100 files)</p>
+          <p id="file-count" class="text-xs text-text-secondary mt-1 hidden"></p>
+        </div>
+
+        <button type="button" id="btn-process" disabled class="mt-6 w-full py-3 px-4 rounded-lg font-semibold bg-primary/60 text-white cursor-not-allowed transition-colors">
+          Process images
+        </button>
+      </div>
+
+      <div id="progress-section" class="neumorphic-processor-card p-6 hidden">
+        <div id="progress-error" class="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm hidden"></div>
+        <div id="progress-summary" class="text-sm mb-3 hidden"></div>
+        <h2 class="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Results</h2>
+        <div id="progress-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const MIN_FILES = 1;
+      const MAX_FILES = 100;
+      const BATCH_SIZE = 2;
+      let selectedFiles = [];
+
+      function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      function getUsersMeUrl() {
+        return typeof window.getUsersMeUrl === 'function' ? window.getUsersMeUrl() : 'api/users-me.php';
+      }
+
+      function getCityImageBatchUrl() {
+        return typeof window.getCityImageBatchUrl === 'function' ? window.getCityImageBatchUrl() : 'city-image-batch.php';
+      }
+
+      async function checkAdmin() {
+        try {
+          const res = await fetch(getUsersMeUrl() + '?_=' + Date.now(), { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            return !!data?.isAdmin;
+          }
+        } catch (_) {}
+        return false;
+      }
+
+      function initTheme() {
+        if (typeof ThemeService !== 'undefined') ThemeService.init();
+      }
+
+      async function init() {
+        initTheme();
+        if (!sessionStorage.getItem('osiris_authenticated')) {
+          window.location.href = 'access-gate.html';
+          return;
+        }
+        const admin = await checkAdmin();
+        document.getElementById('app-loading').classList.add('hidden');
+        if (!admin) {
+          window.location.href = 'map-app.html';
+          return;
+        }
+        document.getElementById('app-content').classList.remove('hidden');
+        wireDropzone();
+        wireProcess();
+      }
+
+      function wireDropzone() {
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const fileCount = document.getElementById('file-count');
+        const btnProcess = document.getElementById('btn-process');
+
+        function updateState(files) {
+          selectedFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.png'));
+          const n = selectedFiles.length;
+          fileCount.classList.toggle('hidden', n === 0);
+          fileCount.textContent = n > 0 ? `${n} PNG file${n === 1 ? '' : 's'} selected` : '';
+          const valid = n >= MIN_FILES && n <= MAX_FILES;
+          btnProcess.disabled = !valid;
+          btnProcess.classList.toggle('cursor-not-allowed', !valid);
+          btnProcess.classList.toggle('bg-primary/60', !valid);
+          btnProcess.classList.toggle('bg-primary', valid);
+          btnProcess.classList.toggle('hover:bg-primary/90', valid);
+          btnProcess.classList.toggle('cursor-pointer', valid);
+        }
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('border-primary', 'bg-slate-100/50', 'dark:bg-slate-700/30');
+        });
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.classList.remove('border-primary', 'bg-slate-100/50', 'dark:bg-slate-700/30');
+        });
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('border-primary', 'bg-slate-100/50', 'dark:bg-slate-700/30');
+          if (e.dataTransfer?.files?.length) updateState(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files?.length) updateState(fileInput.files);
+        });
+      }
+
+      function wireProcess() {
+        document.getElementById('btn-process').addEventListener('click', async () => {
+          if (selectedFiles.length < MIN_FILES || selectedFiles.length > MAX_FILES) return;
+          const width = parseInt(document.getElementById('crop-width').value, 10);
+          const height = parseInt(document.getElementById('crop-height').value, 10);
+          if (isNaN(width) || isNaN(height) || width < 1 || width > 4096 || height < 1 || height > 4096) {
+            alert('Please enter valid crop dimensions (1–4096).');
+            return;
+          }
+
+          const btn = document.getElementById('btn-process');
+          const progressSection = document.getElementById('progress-section');
+          const progressList = document.getElementById('progress-list');
+          const progressSummary = document.getElementById('progress-summary');
+          const progressError = document.getElementById('progress-error');
+
+          function showError(msg) {
+            progressError.textContent = msg;
+            progressError.classList.remove('hidden');
+          }
+          function hideError() {
+            progressError.classList.add('hidden');
+            progressError.textContent = '';
+          }
+
+          btn.disabled = true;
+          btn.textContent = 'Processing…';
+          progressSection.classList.remove('hidden');
+          hideError();
+          progressSummary.classList.add('hidden');
+          progressList.innerHTML = selectedFiles.map(f => `
+            <div class="flex items-center gap-2 text-sm" data-file="${escapeHtml(f.name)}">
+              <span class="material-symbols-outlined text-slate-400 animate-spin">progress_activity</span>
+              <span class="flex-1 truncate" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+              <span class="status text-text-secondary">Queued…</span>
+            </div>
+          `).join('');
+
+          function updateRow(filename, status, outputName, error) {
+            const row = Array.from(progressList.querySelectorAll('[data-file]')).find(el => el.getAttribute('data-file') === filename);
+            if (!row) return;
+            const icon = row.querySelector('.material-symbols-outlined');
+            const statusEl = row.querySelector('.status');
+            icon.classList.remove('animate-spin');
+            if (status === 'success') {
+              icon.textContent = 'check_circle';
+              icon.classList.add('text-green-500');
+              statusEl.textContent = outputName || 'Saved';
+              statusEl.classList.add('text-green-600', 'dark:text-green-400');
+            } else {
+              icon.textContent = 'error';
+              icon.classList.add('text-red-500');
+              statusEl.textContent = error || 'Failed';
+              statusEl.classList.add('text-red-500');
+            }
+          }
+
+          let okCount = 0;
+          let failCount = 0;
+          const batches = [];
+          for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
+            batches.push(selectedFiles.slice(i, i + BATCH_SIZE));
+          }
+
+          try {
+            for (let b = 0; b < batches.length; b++) {
+              const batch = batches[b];
+              batch.forEach(f => {
+                const row = Array.from(progressList.querySelectorAll('[data-file]')).find(el => el.getAttribute('data-file') === f.name);
+                if (row) {
+                  row.querySelector('.status').textContent = 'Uploading…';
+                }
+              });
+              btn.textContent = `Processing batch ${b + 1}/${batches.length}…`;
+
+              const formData = new FormData();
+              formData.append('cropWidth', width);
+              formData.append('cropHeight', height);
+              batch.forEach(f => formData.append('files[]', f));
+
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 120000);
+              const res = await fetch(getCityImageBatchUrl(), {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+              });
+              clearTimeout(timeoutId);
+
+              const responseText = await res.text();
+              let data = {};
+              try {
+                data = responseText ? JSON.parse(responseText) : {};
+              } catch (_) {
+                let shortMsg;
+                if (res.status === 413 || (responseText && responseText.includes('413'))) {
+                  shortMsg = '413 Request too large. Add client_max_body_size 50m; to your nginx server block.';
+                } else if (responseText && responseText.trimStart().startsWith('<')) {
+                  shortMsg = 'HTTP ' + res.status + ' – Server returned HTML (PHP error?): ' + (responseText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150) || '(empty)');
+                } else {
+                  shortMsg = 'HTTP ' + res.status + ' – Invalid JSON. Response: ' + (responseText.slice(0, 300) || '(empty)');
+                }
+                showError(shortMsg);
+                batch.forEach(f => updateRow(f.name, 'error', null, 'Request failed'));
+                failCount += batch.length;
+                continue;
+              }
+
+              if (!res.ok) {
+                const err = res.status === 413 ? '413 Request too large. Add client_max_body_size 50m; to your nginx server block.' : (data.error || `HTTP ${res.status}`);
+                showError(err);
+                batch.forEach(f => updateRow(f.name, 'error', null, 'Failed'));
+                failCount += batch.length;
+                continue;
+              }
+
+              const results = data.results || [];
+              results.forEach(r => {
+                if (r.status === 'success') {
+                  okCount++;
+                  updateRow(r.file, 'success', r.outputName, null);
+                } else {
+                  failCount++;
+                  updateRow(r.file, 'error', null, r.error || 'Failed');
+                }
+              });
+            }
+
+            progressSummary.classList.remove('hidden');
+            progressSummary.innerHTML = `<span class="text-green-600 dark:text-green-400">${okCount} succeeded</span>${failCount > 0 ? ' <span class="text-red-500">' + failCount + ' failed</span>' : ''}`;
+
+            btn.disabled = false;
+            btn.textContent = 'Process images';
+          } catch (e) {
+            const errMsg = e.name === 'AbortError' ? 'Request timed out (2 min)' : (e?.message || 'Network error');
+            showError(errMsg);
+            progressList.querySelectorAll('[data-file]').forEach(row => {
+              const status = row.querySelector('.status');
+              status.textContent = 'Failed';
+              status.classList.add('text-red-500');
+              const icon = row.querySelector('.material-symbols-outlined');
+              if (icon) {
+                icon.textContent = 'error';
+                icon.classList.remove('animate-spin');
+              }
+            });
+            btn.disabled = false;
+            btn.textContent = 'Process images';
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>

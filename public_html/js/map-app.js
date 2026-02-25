@@ -114,12 +114,21 @@ function getUsersMeUrl() {
   return b ? `${b}/api/users/me` : 'api/users-me.php';
 }
 
+function updateAdminMenuVisibility() {
+  const link = document.getElementById('admin-city-processor-link');
+  if (link) {
+    link.style.display = isAdmin ? '' : 'none';
+    link.classList.toggle('hidden', !isAdmin);
+  }
+}
+
 async function fetchIsAdmin() {
   try {
     const res = await fetch(getUsersMeUrl() + '?_=' + Date.now(), { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       isAdmin = !!data?.isAdmin;
+      updateAdminMenuVisibility();
     }
   } catch (_) {}
 }
@@ -2035,6 +2044,7 @@ function initGeneralMenu() {
     panel?.classList.add('visible');
     panel?.setAttribute('aria-hidden', 'false');
     updateThemeButtonStates();
+    updateAdminMenuVisibility();
     setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 0);

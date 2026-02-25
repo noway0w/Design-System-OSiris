@@ -1,0 +1,28 @@
+/**
+ * City Image Processor - Neumorphic styles for dropzone and cards
+ */
+
+.neumorphic-processor-card {
+  background: var(--neumorphic-surface, rgba(228, 235, 241, 0.1));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 12px;
+  border: 1px solid var(--neumorphic-border, rgba(255, 255, 255, 0.5));
+  box-shadow: -6px -6px 12px var(--neumorphic-light-shadow, #FAFBFB),
+    6px 6px 12px var(--neumorphic-dark-shadow, rgba(22, 27, 29, 0.23));
+}
+
+html.dark .neumorphic-processor-card {
+  --neumorphic-surface: rgba(37, 43, 59, 0.1);
+  --neumorphic-border: rgba(255, 255, 255, 0.12);
+  --neumorphic-light-shadow: rgba(255, 255, 255, 0.05);
+  --neumorphic-dark-shadow: rgba(0, 0, 0, 0.4);
+}
+
+.neumorphic-dropzone {
+  background: var(--neumorphic-bg, rgba(239, 242, 249, 0.05));
+}
+
+html.dark .neumorphic-dropzone {
+  --neumorphic-bg: rgba(26, 31, 46, 0.05);
+}

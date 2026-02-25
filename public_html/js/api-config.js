@@ -8,6 +8,12 @@ window.getPointsOfInterestUrl = function () {
   return base ? `${base}/points-of-interest.php` : 'points-of-interest.php';
 };
 
+// Projects content API URL
+window.getProjectsContentUrl = function () {
+  const base = window.OSIRIS_API_URL || '';
+  return base ? `${base}/projects-content.php` : 'projects-content.php';
+};
+
 // Weather API URL
 window.getWeatherUrl = function () {
   const base = window.OSIRIS_API_URL || '';
@@ -62,4 +68,16 @@ window.getProfilePictureUploadUrl = function () {
 window.getProfilePictureUpdateUrl = function () {
   const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
   return base ? `${base.replace(/\/$/, '')}/api/users-profile-picture.php` : 'api/users-profile-picture.php';
+};
+
+// City image batch processor API URL
+window.getCityImageBatchUrl = function () {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/city-image-batch.php` : 'city-image-batch.php';
+};
+
+// Users me (admin check) API URL
+window.getUsersMeUrl = function () {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/api/users-me.php` : 'api/users-me.php';
 };
