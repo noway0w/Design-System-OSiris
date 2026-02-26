@@ -41,9 +41,14 @@
       opacity: 0;
       animation: gate-fade-in 0.5s ease-out forwards;
     }
-    #gate-name-input { border-radius: 8px !important; }
+    #gate-name-input {
+      border-radius: 8px !important;
+      min-height: 58px !important;
+      padding-top: 18px !important;
+      padding-bottom: 18px !important;
+    }
     @media (min-width: 768px) {
-      #gate-name-input { width: 25vw; }
+      #gate-name-input { width: 33vw; }
     }
     #gate-name-input:focus,
     #gate-name-input:focus-visible,
@@ -548,7 +553,7 @@
   <!-- Name Gate Overlay (centered on globe when no osiris_user_name) -->
   <div id="name-gate-overlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center p-6">
     <div class="relative flex flex-col items-center w-full">
-      <input type="text" id="gate-name-input" class="gate-input-map w-full md:w-[25vw] px-4 py-3 rounded-[8px] bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-white/30" placeholder="add your profile name here" autocomplete="name" maxlength="64">
+      <input type="text" id="gate-name-input" class="gate-input-map w-full md:w-[33vw] px-4 py-4 rounded-[8px] bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-white/30" placeholder="create your profile name here" autocomplete="name" maxlength="64">
       <input type="text" id="gate-honeypot" name="website" tabindex="-1" autocomplete="off" class="absolute opacity-0 h-0 w-0 overflow-hidden" aria-hidden="true">
       <p id="gate-error-map" class="mt-2 text-sm text-red-500 dark:text-red-400 min-h-[1.25em]" aria-live="polite"></p>
       <button type="button" id="gate-validate-map" class="mt-3 py-2 px-4 rounded-[8px] bg-primary hover:bg-primary/90 text-white font-semibold transition-colors" style="border-radius: 8px;">Continue</button>

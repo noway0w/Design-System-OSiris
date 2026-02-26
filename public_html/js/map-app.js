@@ -455,8 +455,12 @@ function initNameGateOverlay() {
   if (!overlay || !nameInput || !validateBtn) return;
 
   const gateLoadTime = Date.now();
-  overlay.classList.remove('hidden');
-  nameInput.focus();
+
+  document.addEventListener('osiris-show-name-gate', function onShow() {
+    document.removeEventListener('osiris-show-name-gate', onShow);
+    overlay.classList.remove('hidden');
+    nameInput.focus();
+  }, { once: true });
 
   async function validateAndSubmit() {
     const name = nameInput.value.trim();
@@ -494,7 +498,7 @@ async function runPostGateInit() {
   _postGateInitPromise = (async () => {
     const loc = await LocationService.getIPLocation();
     if (loc) {
-      await flyToLocationAsync(loc.lng, loc.lat, 14, { pitch: 50 });
+      await flyToLocationAsync(loc.lng, loc.lat, 16, { pitch: 50 });
       addCurrentLocationMarker(loc.lng, loc.lat);
     }
     await registerUser(loc || {});
@@ -528,8 +532,8 @@ function initMap(opts = {}) {
     container: 'map-app-container',
     style: 'mapbox://styles/glassiat/cmls0szp3002g01qofq7m5j2e',
     projection: 'globe',
-    zoom: 1,
-    center: [0, 20],
+    zoom: deferUserInit ? 2.5 : 1,
+    center: deferUserInit ? [15, 50] : [0, 20],
     pitch: 0,
     bearing: 0,
     antialias: true,
@@ -560,10 +564,14 @@ function initMap(opts = {}) {
       renderPOITiles(pois);
       await fetchIsAdmin();
       if (deferUserInit) {
-        flyToGlobeView();
+        flyToEarthFractionAsync(15, 50, 0.2, { duration: 2000 }).then(() => {
+          document.dispatchEvent(new CustomEvent('osiris-show-name-gate'));
+        });
       } else {
         if (loc) {
-          flyToLocation(loc.lng, loc.lat, 10);
+          flyToLocationAsync(loc.lng, loc.lat, 16, { pitch: 50 }).then(() => {
+            document.dispatchEvent(new CustomEvent('osiris-gate-zoom-complete'));
+          });
           addCurrentLocationMarker(loc.lng, loc.lat);
         }
         await registerUser(loc || {});
@@ -2661,7 +2669,7 @@ function flyToEarthFractionAsync(lng, lat, fraction, opts = {}) {
   const desiredMeters = fraction * EARTH_CIRCUMFERENCE_M;
   const metersPerPixel = desiredMeters / h;
   const zoom = Math.log2((M_PER_PX_AT_ZOOM0_EQ * cosLat) / metersPerPixel);
-  const clampedZoom = Math.max(6, Math.min(22, Math.round(zoom * 10) / 10));
+  const clampedZoom = Math.max(1, Math.min(22, Math.round(zoom * 10) / 10));
   return new Promise((resolve) => {
     const doFly = () => {
       if (!appMap) { resolve(); return; }
@@ -3883,12 +3891,7 @@ function initTooltipBottom() {
 
   document.addEventListener('osiris-gate-zoom-complete', () => {
     if (isDesktop()) showTooltip();
-  }, { once: true });
-
-  const gateOverlay = document.getElementById('name-gate-overlay');
-  if (gateOverlay?.classList.contains('hidden')) {
-    setTimeout(showTooltip, 600);
-  }
+  });
 }
 
 window.initMapApp = initMapApp;
