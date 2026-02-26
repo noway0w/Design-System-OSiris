@@ -40,6 +40,10 @@ $db->exec("UPDATE point_of_interest SET lat = 37.80006, lng = -122.39747 WHERE b
 $db->exec("UPDATE point_of_interest SET lat = 48.892050, lng = 2.243972 WHERE brand = 'Mazars'");
 // Migration: fix Biosens Numerique (Diasys) coordinates
 $db->exec("UPDATE point_of_interest SET lat = 48.859618012765964, lng = 2.2985537993605583 WHERE brand = 'Biosens Numerique'");
+// Migration: fix Biomerieux coordinates (Voie Romaine, Craponne)
+$db->exec("UPDATE point_of_interest SET lat = 45.761267, lng = 4.827994 WHERE brand = 'Biomerieux'");
+// Migration: fix Blue Ocean Sailing coordinates (Le Marin, Martinique)
+$db->exec("UPDATE point_of_interest SET lat = 14.469999, lng = -60.867442 WHERE brand = 'Blue Ocean Sailing'");
 
 // Migration: replace old POIs with new 8 POIs (detect old data by absence of Pier 9)
 $hasNewPOIs = $db->query("SELECT 1 FROM point_of_interest WHERE brand = 'Autodesk' AND (location LIKE '%Pier 9%' OR location LIKE '%Autodesk University%') LIMIT 1")->fetch();
@@ -49,8 +53,8 @@ if (!$hasNewPOIs) {
         ['Autodesk', 'Autodesk University', 'Autodesk', 37.80006, -122.39747, 'projects/Autodesk Forma/Autodesk.png'],
         ['Autodesk', 'Tjuvholmen allé 3, 0252 Oslo', 'Product Work', 59.908741, 10.722761, 'projects/Autodesk Forma/Autodesk.png'],
         ['Mazars', '61 Rue Henri Regnault, 92400 Courbevoie', 'Product Work', 48.892050, 2.243972, 'projects/Mazars/Mazars.png'],
-        ['Blue Ocean Sailing', 'Le Marin 97290, Martinique', 'Freelance Work', 14.4724, -60.8831, 'projects/Blue Ocean sailing/Freelance.png'],
-        ['Biomerieux', 'Voie Romaine, 69290 Craponne, France', 'Product Work', 45.7456, 4.7250, 'projects/Biomerieux/Second-Design-Studio.png'],
+        ['Blue Ocean Sailing', 'Le Marin 97290, Martinique', 'Freelance Work', 14.469999, -60.867442, 'projects/Blue Ocean sailing/Freelance.png'],
+        ['Biomerieux', 'Voie Romaine, 69290 Craponne, France', 'Product Work', 45.761267, 4.827994, 'projects/Biomerieux/Second-Design-Studio.png'],
         ['Biosens Numerique', '6 Rue de Nice, 75011 Paris', 'Diasys', 48.859618012765964, 2.2985537993605583, 'projects/Diasys/Biosens.png'],
         ['Renault', 'Place de l\'Étoile, Paris', 'Freelance Work', 48.8738, 2.2950, 'projects/Renault/Freelance.png'],
         ['Woodoo', 'Tour Montparnasse, Paris', 'Product Work', 48.8422, 2.3219, 'projects/Woodoo/Freelance.png'],

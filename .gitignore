@@ -28,6 +28,9 @@ public_html/.cache/
 tailwindcss
 tailwindcss-*
 
+# esbuild standalone
+.esbuild-bin/
+
 # Credentials and accidental files
 .git-credentials
 \[195.139.147.156,

@@ -2591,6 +2591,16 @@ function flyToGlobeView() {
   });
 }
 
+/** Custom camera options per POI (brand + location). Bearing: 0=N, 90=E, 180=S, 270=W. */
+function getPOICameraOverrides(poi) {
+  const key = (poi.brand || '') + '|' + (poi.location || '');
+  const overrides = {
+    'Autodesk|Autodesk University': { bearing: 210, zoom: 16, pitch: 68 },
+    'Biosens Numerique|6 Rue de Nice, 75011 Paris': { bearing: 270, zoom: 16, pitch: 38 }
+  };
+  return overrides[key] || null;
+}
+
 function flyToPOI(poi, opts = {}) {
   if (!appMap || !poi || poi.lat == null || poi.lng == null) return;
   closeBottomPanel();
@@ -2599,10 +2609,12 @@ function flyToPOI(poi, opts = {}) {
   const padding = isMobile
     ? { left: 0, right: 0, top: 0, bottom: Math.floor(window.innerHeight * (2 / 3)) }
     : { left: Math.floor(window.innerWidth * 0.5), right: 0, top: 0, bottom: 0 };
+  const cam = getPOICameraOverrides(poi);
   appMap.flyTo({
     center: [poi.lng, poi.lat],
-    zoom: opts.zoom ?? 17.5,
-    pitch: opts.pitch ?? 50,
+    zoom: opts.zoom ?? cam?.zoom ?? 17.5,
+    pitch: opts.pitch ?? cam?.pitch ?? 50,
+    bearing: opts.bearing ?? cam?.bearing ?? 0,
     padding,
     duration: opts.duration ?? 2500
   });
