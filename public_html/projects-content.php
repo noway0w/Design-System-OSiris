@@ -5,7 +5,7 @@
  */
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: public, max-age=300');
 
 $projectsBase = __DIR__ . '/projects';
 $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
@@ -38,6 +38,17 @@ if ($slug === 'Autodesk Forma' && $location) {
 if (!$slug) {
     echo json_encode(['error' => 'Missing slug or brand', 'hero' => null, 'videos' => [], 'images' => []]);
     exit;
+}
+
+$cacheKey = md5($slug . '|' . ($subfolder ?? ''));
+$cacheDir = __DIR__ . '/.cache';
+$cacheFile = $cacheDir . '/projects-' . $cacheKey . '.json';
+$cacheTtl = 300;
+if (is_dir($cacheDir) || @mkdir($cacheDir, 0755, true)) {
+    if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+        readfile($cacheFile);
+        exit;
+    }
 }
 
 $contentPath = $projectsBase . '/' . $slug . '/content';
@@ -120,4 +131,8 @@ if (file_exists($contentJsonPath)) {
     }
 }
 
-echo json_encode($result);
+$output = json_encode($result);
+if (isset($cacheFile) && isset($cacheDir) && is_dir($cacheDir)) {
+    @file_put_contents($cacheFile, $output);
+}
+echo $output;

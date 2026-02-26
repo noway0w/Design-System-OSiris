@@ -47,7 +47,7 @@ html.dark .neumorphic-menu-panel {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   opacity: 0;
   visibility: hidden;
   transform: translateX(-8px);

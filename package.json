@@ -1,0 +1,12 @@
+{
+  "name": "osiris-design-system",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./public_html/css/tailwind-input.css -o ./public_html/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.9",
+    "tailwindcss": "^3.4.17"
+  }
+}

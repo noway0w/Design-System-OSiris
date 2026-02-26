@@ -6,37 +6,11 @@
   <title>Live Tracking Map Dashboard</title>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin=""/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://api.mapbox.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#1392ec",
-            "background-light": "#f6f7f8",
-            "background-dark": "#101a22",
-            "card-light": "#E4EBF1",
-            "card-dark": "#1c262d",
-            "text-secondary": "#9db0b9",
-          },
-          fontFamily: {
-            "display": ["Manrope", "Plus Jakarta Sans", "sans-serif"],
-            "editorial": ["Manrope", "sans-serif"],
-          },
-          borderRadius: {
-            "DEFAULT": "1rem",
-            "lg": "2rem",
-            "xl": "3rem",
-            "2xl": "1rem",
-            "full": "9999px",
-          },
-        },
-      },
-    }
-  </script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet"/>
+  <link href="css/tailwind.css" rel="stylesheet"/>
   <link href="css/neumorphic-menu.css" rel="stylesheet"/>
   <link href="css/variables.css" rel="stylesheet"/>
   <link href="css/poi-content-panel.css" rel="stylesheet"/>
@@ -44,8 +18,6 @@
   <link href="css/mobile-bottom-sheet.css" rel="stylesheet"/>
   <link href="css/tooltip-bottom.css" rel="stylesheet"/>
   <link href="css/components/core-actions.css" rel="stylesheet"/>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet"/>
-  <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   <style>
     .map-marker-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
     @keyframes pulse-ring {
@@ -199,7 +171,13 @@
         </div>
       </header>
       <!-- Scrollable Editorial Content -->
-      <div class="editorial-scroll flex-1 overflow-y-auto overflow-x-hidden p-8 md:p-12 font-editorial">
+      <div class="editorial-scroll flex-1 overflow-y-auto overflow-x-hidden p-8 md:p-12 font-editorial relative">
+        <div id="poi-panel-loading" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-background-dark/80 backdrop-blur-sm">
+          <div class="flex flex-col items-center gap-3">
+            <span class="material-symbols-outlined text-4xl text-primary animate-pulse">hourglass_empty</span>
+            <p class="text-slate-400 text-sm">Loading project…</p>
+          </div>
+        </div>
         <!-- Hero Title & Tags -->
         <div class="mb-12">
           <div class="poi-panel-featured flex items-center gap-2 mb-6 text-primary text-sm font-bold tracking-widest uppercase">
@@ -544,6 +522,7 @@
     </div>
   </div>
 
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   <script src="js/mapbox-config.js"></script>
   <script src="js/api-config.js"></script>
   <script src="js/location-service.js"></script>

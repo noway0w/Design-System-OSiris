@@ -21,6 +21,13 @@ public_html/config.php
 # User uploads
 public_html/uploads/
 
+# API cache
+public_html/.cache/
+
+# Tailwind standalone binary (large)
+tailwindcss
+tailwindcss-*
+
 # Credentials and accidental files
 .git-credentials
 \[195.139.147.156,

@@ -5,7 +5,7 @@
  */
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: public, max-age=300');
 
 $dbPath = __DIR__ . '/api/points-of-interest.db';
 

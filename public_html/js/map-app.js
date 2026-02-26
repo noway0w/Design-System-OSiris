@@ -488,7 +488,9 @@ function initMap() {
       discoverMapLayers();
       applyMapDataState(mapDataState);
     });
-    LocationService.getIPLocation().then(async (loc) => {
+    Promise.all([LocationService.getIPLocation(), fetchPointsOfInterest()]).then(async ([loc, pois]) => {
+      addPOIMarkers(pois);
+      renderPOITiles(pois);
       await fetchIsAdmin();
       if (loc) {
         flyToLocation(loc.lng, loc.lat, 10);
@@ -496,9 +498,6 @@ function initMap() {
       }
       await registerUser(loc || {});
       await refreshNearby();
-      const pois = await fetchPointsOfInterest();
-      addPOIMarkers(pois);
-      renderPOITiles(pois);
       startHeartbeat();
       wireUserTileCards();
     });
@@ -2745,6 +2744,9 @@ function getRandomInspirationalQuote() {
   return INSPIRATIONAL_QUOTES[Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length)];
 }
 
+const POI_CONTENT_CACHE = new Map();
+const POI_CACHE_MAX = 20;
+
 async function openPOIContentPanel(poi) {
   const panel = document.getElementById('poi-content-panel');
   if (!panel || !poi) return;
@@ -2752,12 +2754,32 @@ async function openPOIContentPanel(poi) {
   const scrollEl = panel.querySelector('.editorial-scroll');
   if (scrollEl) scrollEl.scrollTop = 0;
   const assets = getPOIAssets(poi);
-  const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '') + '&_=' + Date.now();
-  let content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null, process: null, kpi: null };
-  try {
-    const res = await fetch(contentUrl, { cache: 'no-store' });
-    if (res.ok) content = await res.json();
-  } catch (_) {}
+  const cacheKey = (poi.brand || '') + '|' + (poi.location || '');
+  const loadingEl = panel.querySelector('#poi-panel-loading');
+  let content = POI_CONTENT_CACHE.get(cacheKey);
+  if (!content) {
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (!panel.classList.contains('poi-panel-open')) {
+      const isMob = window.innerWidth < 768;
+      panel.classList.add('poi-panel-open', isMob ? 'animate-fade-in-up' : 'animate-fade-in-right');
+      panel.setAttribute('aria-hidden', 'false');
+      document.getElementById('map-app-root')?.classList.add('poi-panel-open');
+      if (isMob) document.getElementById('bottom-panel-wrapper')?.classList.add('poi-panel-blocking');
+    }
+    const contentUrl = (typeof getProjectsContentUrl === 'function' ? getProjectsContentUrl() : 'projects-content.php') + '?brand=' + encodeURIComponent(poi.brand || '') + (poi.location ? '&location=' + encodeURIComponent(poi.location) : '') + '&_=' + Date.now();
+    content = { hero: null, videos: [], images: [], heroStatement: null, quote: null, intro: null, facts: null, featuredLabel: null, tags: null, heroCaption: null, heroSubcaption: null, quoteAuthor: null, quoteRole: null, quoteAvatar: null, keyFigures: null, websiteUrl: null, mission: null, process: null, kpi: null };
+    try {
+      const res = await fetch(contentUrl, { cache: 'no-store' });
+      if (res.ok) content = await res.json();
+      if (currentOpenPOI !== poi) { if (loadingEl) loadingEl.classList.add('hidden'); return; }
+      if (POI_CONTENT_CACHE.size >= POI_CACHE_MAX) {
+        const first = POI_CONTENT_CACHE.keys().next().value;
+        if (first !== undefined) POI_CONTENT_CACHE.delete(first);
+      }
+      POI_CONTENT_CACHE.set(cacheKey, content);
+    } catch (_) {}
+    if (loadingEl) loadingEl.classList.add('hidden');
+  }
   const brand = poi.brand || 'Partner';
   const type = poi.type || 'Project work';
   const subtitle = content.heroStatement || type;
