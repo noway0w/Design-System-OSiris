@@ -1,0 +1,11 @@
+# Map app routing and redirects
+RewriteEngine On
+RewriteBase /
+
+# app.guillaumelassiat.com: serve map at root
+RewriteCond %{HTTP_HOST} ^app\.guillaumelassiat\.com$ [NC]
+RewriteRule ^$ map-app.html [L]
+
+# guillaumelassiat.com/app: redirect to app subdomain
+RewriteCond %{HTTP_HOST} ^(www\.)?guillaumelassiat\.com$ [NC]
+RewriteRule ^app/?$ https://app.guillaumelassiat.com/ [R=302,L]

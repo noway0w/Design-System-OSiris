@@ -56,11 +56,11 @@ let apiMisconfigured = false;
 let isAdmin = false;
 let scrollDragJustEnded = false;
 
-let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false, auroraNorthernLights: false };
+let mapDataState = { buildings: true, topography: true, names: false, propertyBoundaries: true, volumetricWeather: false, liveCloudCoverage: false, auroraNorthernLights: false, airports: false };
 const SHOW_OTHER_USERS_KEY = 'osiris_show_other_users_on_map';
 function getShowOtherUsersOnMap() { return localStorage.getItem(SHOW_OTHER_USERS_KEY) === 'true'; }
 function setShowOtherUsersOnMap(on) { localStorage.setItem(SHOW_OTHER_USERS_KEY, on ? 'true' : ''); }
-let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights'];
+let mapDataTileOrder = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights', 'airports'];
 const userProfilePanels = new Map();
 const recProfilePanels = new Map();
 const widgetProfilePanels = new Map();
@@ -72,7 +72,7 @@ function loadMapDataTileOrder() {
     const stored = localStorage.getItem(MAP_DATA_ORDER_KEY);
     if (stored) {
       const order = JSON.parse(stored);
-      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights'];
+      const valid = ['buildings', 'topography', 'names', 'propertyBoundaries', 'volumetricWeather', 'liveCloudCoverage', 'auroraNorthernLights', 'airports'];
       if (Array.isArray(order) && order.length === valid.length && valid.every((k) => order.includes(k))) {
         mapDataTileOrder = order;
       }
@@ -1629,6 +1629,63 @@ function applyAuroraNorthernLightsState(state) {
   }
 }
 
+/* --- Airports Layer (floating OACI markers from CSV) --- */
+const AIRPORTS_CSV_URL = 'data/airports.csv';
+const AIRPORTS_ZOOM_MIN = 5;
+let airportMarkers = [];
+let airportsDataCache = null;
+
+async function fetchAirportsData() {
+  if (airportsDataCache) return airportsDataCache;
+  const res = await fetch(AIRPORTS_CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
+  const text = await res.text();
+  const parsed = typeof Papa !== 'undefined' ? Papa.parse(text, { header: true, skipEmptyLines: true }) : { data: [] };
+  const rows = parsed.data || [];
+  const out = rows
+    .filter((r) => r.ident && r.latitude_deg != null && r.longitude_deg != null)
+    .map((r) => ({ ident: String(r.ident).trim(), lat: parseFloat(r.latitude_deg), lng: parseFloat(r.longitude_deg) }))
+    .filter((a) => !isNaN(a.lat) && !isNaN(a.lng));
+  airportsDataCache = out;
+  return out;
+}
+
+function addAirportMarkers(airports) {
+  removeAirportMarkers();
+  if (!appMap || !airports?.length) return;
+  airports.forEach((a) => {
+    const el = document.createElement('span');
+    el.className = 'airport-oaci-marker';
+    el.innerHTML = '<span class="material-symbols-outlined airport-oaci-icon">flight</span><span class="airport-oaci-text">' + (a.ident || '') + '</span>';
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([a.lng, a.lat]).addTo(appMap);
+    airportMarkers.push(marker);
+  });
+}
+
+function removeAirportMarkers() {
+  airportMarkers.forEach((m) => { try { m.remove(); } catch (_) {} });
+  airportMarkers = [];
+}
+
+function updateAirportsVisibility() {
+  if (!appMap || !mapDataState.airports) return;
+  if (appMap.getZoom() <= AIRPORTS_ZOOM_MIN) {
+    removeAirportMarkers();
+    return;
+  }
+  fetchAirportsData().then((airports) => {
+    const bounds = appMap.getBounds();
+    const inView = airports.filter((a) => a.lat >= bounds.getSouth() && a.lat <= bounds.getNorth() && a.lng >= bounds.getWest() && a.lng <= bounds.getEast());
+    const toShow = inView.length > 0 ? inView.slice(0, 300) : airports.slice(0, 200);
+    addAirportMarkers(toShow);
+  }).catch(() => {});
+}
+
+function applyAirportsState(state) {
+  if (!appMap || !appMap.isStyleLoaded()) return;
+  if (state.airports) updateAirportsVisibility();
+  else removeAirportMarkers();
+}
+
 function applyMapDataState(state) {
   applyBuildingsState(state);
   applyNamesState(state);
@@ -1637,6 +1694,7 @@ function applyMapDataState(state) {
   applyVolumetricWeatherState(state);
   applyLiveCloudCoverageState(state);
   applyAuroraNorthernLightsState(state);
+  applyAirportsState(state);
 }
 
 function renderMapDataTiles(state) {
@@ -1649,7 +1707,8 @@ function renderMapDataTiles(state) {
     propertyBoundaries: 'assets/map-data/Road-Boundaries.png',
     volumetricWeather: 'assets/map-data/Live-wind-coverage.png',
     liveCloudCoverage: 'assets/map-data/Live-rain-coverage.png',
-    auroraNorthernLights: 'assets/map-data/Aurora.png'
+    auroraNorthernLights: 'assets/map-data/Aurora.png',
+    airports: 'assets/map-data/Airport.png'
   };
   const thumbDark = {
     buildings: 'assets/map-data/3D-Building-Dark-Mode.png',
@@ -1658,11 +1717,13 @@ function renderMapDataTiles(state) {
     propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png',
     volumetricWeather: 'assets/map-data/Live-wind-coverage-dark-mode.png',
     liveCloudCoverage: 'assets/map-data/Live-rain-coverage-dark-mode.png',
-    auroraNorthernLights: 'assets/map-data/Aurora-Dark-Mode.png'
+    auroraNorthernLights: 'assets/map-data/Aurora-Dark-Mode.png',
+    airports: 'assets/map-data/Airport-Dark-Mode.png'
   };
-  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue', auroraNorthernLights: 'nights_stay' };
-  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage', auroraNorthernLights: 'Live Aurora' };
+  const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue', auroraNorthernLights: 'nights_stay', airports: 'flight' };
+  const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage', auroraNorthernLights: 'Live Aurora', airports: 'Airports' };
   const tiles = mapDataTileOrder.map((key) => ({ key, label: labels[key], on: state[key] }));
+  const noThumbKeys = [];
   const isDark = document.documentElement.classList.contains('dark');
   const altM = mapLayerInfo.volumetricWeatherAltitude ?? 0;
   let html = '';
@@ -1670,10 +1731,13 @@ function renderMapDataTiles(state) {
     const thumbSrc = isDark ? thumbDark[t.key] : thumbLight[t.key];
     const thumbFallback = isDark ? thumbDark.buildings : thumbLight.buildings;
     const toggleId = `map-data-toggle-${t.key}-${i}`;
+    const thumbBlock = noThumbKeys.includes(t.key)
+      ? `<div class="h-20 overflow-hidden relative bg-slate-200 dark:bg-slate-800 flex items-center justify-center"><span class="material-symbols-outlined text-3xl text-slate-500 dark:text-slate-600">${icons[t.key]}</span></div>`
+      : `<img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" onerror="this.src=this.dataset.fallback||''" data-fallback="${thumbFallback}"/>`;
     html += `
       <div data-toggle="${t.key}" data-tile-key="${t.key}" draggable="true" class="bottom-section-tile map-data-tile-draggable group flex flex-col w-60 min-w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300 cursor-grab active:cursor-grabbing">
         <div class="h-20 overflow-hidden relative">
-          <img src="${thumbSrc}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" onerror="this.src=this.dataset.fallback||''" data-fallback="${thumbFallback}"/>
+          ${thumbBlock}
         </div>
         <div class="p-4 flex flex-col flex-1">
           <div class="flex items-center gap-2 mb-2">
@@ -1753,6 +1817,11 @@ function wireMapDataTiles() {
         } else {
           removeAuroraNorthernLights();
         }
+        break;
+      case 'airports':
+        mapDataState.airports = checked;
+        if (checked) updateAirportsVisibility();
+        else removeAirportMarkers();
         break;
       default: return;
     }
@@ -2585,6 +2654,9 @@ function wireControls() {
 
   appMap.on('moveend', () => {
     if (globeRotationState !== 'off') spinGlobe();
+  });
+  appMap.on('zoomend', () => {
+    if (mapDataState.airports) updateAirportsVisibility();
   });
 
   function stopGlobeRotation() {

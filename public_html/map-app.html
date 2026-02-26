@@ -164,6 +164,33 @@
       background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
       background-size: 200% 100%;
     }
+    /* Airport OACI floating markers (airports Map Data layer) */
+    .airport-oaci-marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      color: white;
+      padding: 4px 8px 4px 6px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+    .airport-oaci-marker .airport-oaci-icon {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .airport-oaci-marker .airport-oaci-text {
+      padding-left: 2px;
+    }
+    html.light .airport-oaci-marker {
+      background: rgba(255,255,255,0.95);
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
   </style>
   <script src="js/theme-service.js"></script>
   <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
@@ -570,11 +597,12 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   <script src="js/mapbox-config.js"></script>
   <script src="js/api-config.js"></script>
   <script src="js/location-service.js"></script>
-  <script src="js/map-app.min.js"></script>
+  <script src="js/map-app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderNearbyTiles([]);

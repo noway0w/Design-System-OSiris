@@ -123,7 +123,7 @@
       async function init() {
         initTheme();
         if (!sessionStorage.getItem('osiris_authenticated')) {
-          window.location.href = 'access-gate.html';
+          window.location.href = 'map-app.html';
           return;
         }
         const admin = await checkAdmin();
