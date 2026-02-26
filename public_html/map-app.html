@@ -33,6 +33,35 @@
     }
     .tile-fade-in { animation: tile-fade-in 0.5s ease-in forwards; }
     .bottom-section-tile { min-height: 12.5rem; }
+    @keyframes gate-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    #name-gate-overlay > div {
+      opacity: 0;
+      animation: gate-fade-in 0.5s ease-out forwards;
+    }
+    #gate-name-input { border-radius: 8px !important; }
+    @media (min-width: 768px) {
+      #gate-name-input { width: 25vw; }
+    }
+    #gate-name-input:focus,
+    #gate-name-input:focus-visible,
+    #gate-name-input:active {
+      outline: none !important;
+      outline-width: 0 !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+      -webkit-appearance: none;
+      appearance: none;
+      border-color: rgb(203 213 225);
+      -webkit-tap-highlight-color: transparent;
+    }
+    html.dark #gate-name-input:focus,
+    html.dark #gate-name-input:focus-visible,
+    html.dark #gate-name-input:active {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
     .toast-error {
       position: fixed;
       top: 50px;
@@ -317,6 +346,10 @@
               <span class="material-symbols-outlined">description</span>
               <span>Guillaume's Resume</span>
             </a>
+            <a href="https://app.guillaumelassiat.com/design-system.html" target="_blank" rel="noopener" class="neumorphic-menu-resume">
+              <span class="material-symbols-outlined">palette</span>
+              <span>Design System</span>
+            </a>
             <a id="admin-city-processor-link" href="city-image-processor.html" class="neumorphic-menu-resume admin-only hidden" style="display:none">
               <span class="material-symbols-outlined">image</span>
               <span>City Image Processor</span>
@@ -512,6 +545,16 @@
     </button>
   </div>
 
+  <!-- Name Gate Overlay (centered on globe when no osiris_user_name) -->
+  <div id="name-gate-overlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center p-6">
+    <div class="relative flex flex-col items-center w-full">
+      <input type="text" id="gate-name-input" class="gate-input-map w-full md:w-[25vw] px-4 py-3 rounded-[8px] bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-white/30" placeholder="add your profile name here" autocomplete="name" maxlength="64">
+      <input type="text" id="gate-honeypot" name="website" tabindex="-1" autocomplete="off" class="absolute opacity-0 h-0 w-0 overflow-hidden" aria-hidden="true">
+      <p id="gate-error-map" class="mt-2 text-sm text-red-500 dark:text-red-400 min-h-[1.25em]" aria-live="polite"></p>
+      <button type="button" id="gate-validate-map" class="mt-3 py-2 px-4 rounded-[8px] bg-primary hover:bg-primary/90 text-white font-semibold transition-colors" style="border-radius: 8px;">Continue</button>
+    </div>
+  </div>
+
   <!-- Token Prompt Overlay (shown when no Mapbox token) -->
   <div id="map-token-overlay" class="hidden fixed inset-0 z-50 bg-background-light/25 dark:bg-background-dark/25 flex items-center justify-center p-6">
     <div class="bg-card-light dark:bg-card-dark rounded-lg p-8 max-w-md w-full border border-slate-200 dark:border-white/5">
@@ -528,24 +571,20 @@
   <script src="js/location-service.js"></script>
   <script src="js/map-app.min.js"></script>
   <script>
-    if (!sessionStorage.getItem('osiris_authenticated')) {
-      window.location.href = 'access-gate.html';
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        renderNearbyTiles([]);
-        initNotImplementedToast();
-        initGeneralMenu();
-        initMapApp();
-        initBottomPanel();
-        initPOIContentPanel();
-        wireRecommendationsOverlay();
-        initUserProfilePanel();
-        initResumeEmbed();
-        initWeatherWidgetConfig();
-        initStockWidgetConfig();
-        initTooltipBottom();
-      });
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNearbyTiles([]);
+      initNotImplementedToast();
+      initGeneralMenu();
+      initMapApp({ showNameGate: !sessionStorage.getItem('osiris_user_name') });
+      initBottomPanel();
+      initPOIContentPanel();
+      wireRecommendationsOverlay();
+      initUserProfilePanel();
+      initResumeEmbed();
+      initWeatherWidgetConfig();
+      initStockWidgetConfig();
+      initTooltipBottom();
+    });
   </script>
 </body>
 </html>

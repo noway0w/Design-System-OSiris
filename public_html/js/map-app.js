@@ -411,9 +411,11 @@ function getMapboxToken() {
   return localStorage.getItem('mapbox_access_token') || (typeof window.MAPBOX_DEFAULT_TOKEN === 'string' ? window.MAPBOX_DEFAULT_TOKEN : '') || '';
 }
 
-function initMapApp() {
+function initMapApp(opts = {}) {
+  const { showNameGate = false } = opts;
   const token = getMapboxToken();
   const overlay = document.getElementById('map-token-overlay');
+  const nameGateOverlay = document.getElementById('name-gate-overlay');
   const root = document.getElementById('map-app-root');
 
   if (!token) {
@@ -425,7 +427,8 @@ function initMapApp() {
         localStorage.setItem('mapbox_access_token', t);
         overlay?.classList.add('hidden');
         root?.classList.remove('hidden');
-        initMap();
+        initMap({ deferUserInit: showNameGate });
+        if (showNameGate) initNameGateOverlay();
       }
     });
     return;
@@ -433,11 +436,74 @@ function initMapApp() {
 
   overlay?.classList.add('hidden');
   root?.classList.remove('hidden');
-  initMap();
+  initMap({ deferUserInit: showNameGate });
+  if (showNameGate) initNameGateOverlay();
   document.addEventListener('osiris-theme-change', () => {
     applyMapTheme();
     renderMapDataTiles(mapDataState);
   });
+}
+
+const GATE_MIN_TIME_MS = 2500;
+
+function initNameGateOverlay() {
+  const overlay = document.getElementById('name-gate-overlay');
+  const nameInput = document.getElementById('gate-name-input');
+  const honeypotInput = document.getElementById('gate-honeypot');
+  const validateBtn = document.getElementById('gate-validate-map');
+  const errorEl = document.getElementById('gate-error-map');
+  if (!overlay || !nameInput || !validateBtn) return;
+
+  const gateLoadTime = Date.now();
+  overlay.classList.remove('hidden');
+  nameInput.focus();
+
+  async function validateAndSubmit() {
+    const name = nameInput.value.trim();
+    const honeypot = honeypotInput?.value?.trim() || '';
+    errorEl.textContent = '';
+
+    if (!name) {
+      errorEl.textContent = 'Please enter your name.';
+      nameInput.focus();
+      return;
+    }
+    if (honeypot) {
+      errorEl.textContent = 'Something went wrong. Please try again.';
+      return;
+    }
+    if (Date.now() - gateLoadTime < GATE_MIN_TIME_MS) {
+      errorEl.textContent = 'Something went wrong. Please try again.';
+      return;
+    }
+
+    sessionStorage.setItem('osiris_authenticated', '1');
+    sessionStorage.setItem('osiris_user_name', name);
+    overlay.classList.add('hidden');
+    await runPostGateInit();
+  }
+
+  validateBtn.addEventListener('click', () => validateAndSubmit());
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validateAndSubmit(); });
+}
+
+let _postGateInitPromise = null;
+
+async function runPostGateInit() {
+  if (_postGateInitPromise) return _postGateInitPromise;
+  _postGateInitPromise = (async () => {
+    const loc = await LocationService.getIPLocation();
+    if (loc) {
+      await flyToLocationAsync(loc.lng, loc.lat, 14, { pitch: 50 });
+      addCurrentLocationMarker(loc.lng, loc.lat);
+    }
+    await registerUser(loc || {});
+    await refreshNearby();
+    startHeartbeat();
+    wireUserTileCards();
+    document.dispatchEvent(new CustomEvent('osiris-gate-zoom-complete'));
+  })();
+  return _postGateInitPromise;
 }
 
 function applyMapTheme() {
@@ -450,9 +516,10 @@ function applyMapTheme() {
   } catch (_) {}
 }
 
-function initMap() {
+function initMap(opts = {}) {
   if (appMap) return;
 
+  const { deferUserInit = false } = opts;
   const container = document.getElementById('map-app-container');
   if (!container) return;
 
@@ -492,14 +559,18 @@ function initMap() {
       addPOIMarkers(pois);
       renderPOITiles(pois);
       await fetchIsAdmin();
-      if (loc) {
-        flyToLocation(loc.lng, loc.lat, 10);
-        addCurrentLocationMarker(loc.lng, loc.lat);
+      if (deferUserInit) {
+        flyToGlobeView();
+      } else {
+        if (loc) {
+          flyToLocation(loc.lng, loc.lat, 10);
+          addCurrentLocationMarker(loc.lng, loc.lat);
+        }
+        await registerUser(loc || {});
+        await refreshNearby();
+        startHeartbeat();
+        wireUserTileCards();
       }
-      await registerUser(loc || {});
-      await refreshNearby();
-      startHeartbeat();
-      wireUserTileCards();
     });
     wireControls();
   });
@@ -2579,14 +2650,66 @@ function flyToLocation(lng, lat, zoom, opts = {}) {
   });
 }
 
+/** Fly to location with zoom so globe occupies ~80% of viewport height. Returns a Promise. */
+function flyToEarthFractionAsync(lng, lat, fraction, opts = {}) {
+  if (!appMap) return Promise.resolve();
+  const container = document.getElementById('map-app-container');
+  const h = Math.max(300, container?.clientHeight || window.innerHeight);
+  const EARTH_CIRCUMFERENCE_M = 40075000;
+  const M_PER_PX_AT_ZOOM0_EQ = 156543.03392;
+  const cosLat = Math.max(0.01, Math.cos((lat * Math.PI) / 180));
+  const desiredMeters = fraction * EARTH_CIRCUMFERENCE_M;
+  const metersPerPixel = desiredMeters / h;
+  const zoom = Math.log2((M_PER_PX_AT_ZOOM0_EQ * cosLat) / metersPerPixel);
+  const clampedZoom = Math.max(6, Math.min(22, Math.round(zoom * 10) / 10));
+  return new Promise((resolve) => {
+    const doFly = () => {
+      if (!appMap) { resolve(); return; }
+      appMap.resize();
+      const onMoveEnd = () => {
+        appMap.off('moveend', onMoveEnd);
+        resolve();
+      };
+      appMap.once('moveend', onMoveEnd);
+      appMap.flyTo({
+        center: [lng, lat],
+        zoom: clampedZoom,
+        pitch: 0,
+        bearing: 0,
+        duration: opts.duration ?? 4000
+      });
+    };
+    const runAfterLayout = () => { requestAnimationFrame(() => { requestAnimationFrame(doFly); }); };
+    if (typeof appMap.isStyleLoaded === 'function' && appMap.isStyleLoaded()) {
+      runAfterLayout();
+    } else {
+      appMap.once('load', runAfterLayout);
+    }
+  });
+}
+
+/** Returns a Promise that resolves when the fly animation completes. */
+function flyToLocationAsync(lng, lat, zoom, opts = {}) {
+  if (!appMap) return Promise.resolve();
+  return new Promise((resolve) => {
+    const onMoveEnd = () => {
+      appMap.off('moveend', onMoveEnd);
+      resolve();
+    };
+    appMap.once('moveend', onMoveEnd);
+    flyToLocation(lng, lat, zoom, opts);
+  });
+}
+
 function flyToGlobeView() {
   if (!appMap) return;
-  const pad = 80;
+  const padH = 80;
+  const padV = 100;
   appMap.flyTo({
     center: [0, 25],
     zoom: 1.5,
     pitch: 0,
-    padding: { top: pad, right: pad, bottom: pad, left: pad },
+    padding: { top: padV, right: padH, bottom: padV, left: padH },
     duration: 2000
   });
 }
@@ -3758,7 +3881,14 @@ function initTooltipBottom() {
     if (tooltip.classList.contains('tooltip-bottom-visible')) positionTooltip();
   });
 
-  setTimeout(showTooltip, 600);
+  document.addEventListener('osiris-gate-zoom-complete', () => {
+    if (isDesktop()) showTooltip();
+  }, { once: true });
+
+  const gateOverlay = document.getElementById('name-gate-overlay');
+  if (gateOverlay?.classList.contains('hidden')) {
+    setTimeout(showTooltip, 600);
+  }
 }
 
 window.initMapApp = initMapApp;
