@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
+  <meta name="google" content="notranslate">
   <script>
 (function(){if(/^app\.guillaumelassiat\.com$/i.test(location.hostname)&&(/^\/?$|^\/index\.html$/i.test(location.pathname))){location.replace('map-app.html');}}());
   </script>
@@ -15,6 +16,8 @@
   <link rel="stylesheet" href="css/tailwind.css">
   <script src="js/theme-service.js"></script>
   <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.0/i18next.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@2.6.0/i18nextHttpBackend.min.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
   <style>
@@ -89,6 +92,10 @@
       gap: var(--spacing-sm);
     }
 
+    .language-switcher {
+      display: none;
+    }
+
     .header-logo {
       height: 60px; /* Adjust based on logo aspect ratio */
       display: block;
@@ -153,11 +160,12 @@
   <header>
     <div>
       <img src="logo-OSiris/logo-OSiris-horizontal-text.svg" alt="OSiris Logo" class="header-logo">
-      <h1>Design System</h1>
-      <p>A modular design system for modern web interfaces.</p>
+      <h1 data-i18n="common:header.title">Design System</h1>
+      <p data-i18n="common:header.subtitle">A modular design system for modern web interfaces.</p>
     </div>
     <div class="theme-toggle-wrapper">
-      <span>Light</span>
+      <div class="language-switcher" data-component="language-switcher"></div>
+      <span data-i18n="common:header.theme.light">Light</span>
       <div class="checkbox-wrapper-44">
         <label class="toggleButton">
           <input type="checkbox" id="theme-toggle">
@@ -168,71 +176,71 @@
           </div>
         </label>
       </div>
-      <span>Dark</span>
+      <span data-i18n="common:header.theme.dark">Dark</span>
     </div>
   </header>
 
   <div class="osiris-map-app-section">
-    <h3>OSiris Map App</h3>
-    <p>Access the map with location by IP (default) and GPS. Enter your name to get started.</p>
-    <a href="https://app.guillaumelassiat.com/" class="btn-map-app">Open Map App</a>
+    <h3 data-i18n="common:mapApp.title">OSiris Map App</h3>
+    <p data-i18n="common:mapApp.description">Access the map with location by IP (default) and GPS. Enter your name to get started.</p>
+    <a href="https://app.guillaumelassiat.com/" class="btn-map-app" data-i18n="common:mapApp.openMap">Open Map App</a>
   </div>
 
   <div class="osiris-map-app-section" style="background: linear-gradient(135deg, #733E10, #023859);">
-    <h3>Resume</h3>
-    <p>Guillaume Lassiat – Senior UI/UX Designer. View online or download as PDF.</p>
-    <a href="resume.html" class="btn-map-app">View Resume</a>
+    <h3 data-i18n="common:resume.title">Resume</h3>
+    <p data-i18n="common:resume.description">Guillaume Lassiat – Senior UI/UX Designer. View online or download as PDF.</p>
+    <a href="resume.html" class="btn-map-app" data-i18n="common:resume.viewResume">View Resume</a>
   </div>
 
   <div class="usage-box">
-    <h3>Quick Start</h3>
-    <p>Include the CSS in your project:</p>
+    <h3 data-i18n="common:quickStart.title">Quick Start</h3>
+    <p data-i18n="common:quickStart.includeCss">Include the CSS in your project:</p>
     <pre>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/noway0w/Design-System-OSiris@main/osiris.css" /&gt;</pre>
-    <small>Note: For production, consider using a CDN like jsDelivr or GitHub Pages once deployed.</small>
+    <small data-i18n="common:quickStart.note">Note: For production, consider using a CDN like jsDelivr or GitHub Pages once deployed.</small>
   </div>
 
   <!-- Colour Palette -->
   <section id="colour-palette">
-    <h2>Colour Palette</h2>
+    <h2 data-i18n="common:colourPalette.title">Colour Palette</h2>
     <div class="component-demo">
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #011126; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Midnight Navy</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.midnightNavy">Midnight Navy</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#011126</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #5E778C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Slate Blue</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.slateBlue">Slate Blue</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#5E778C</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #03588C; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Ocean Blue</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.oceanBlue">Ocean Blue</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#03588C</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #023859; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Deep Teal</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.deepTeal">Deep Teal</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#023859</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #733E10; border-radius: var(--radius-md); margin: 0 auto 8px auto;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Bronze Earth</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.bronzeEarth">Bronze Earth</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#733E10</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #141414; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Grey BG</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.darkGreyBg">Dark Grey BG</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#141414</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #181818; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #333;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Dark Mode BG</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.darkModeBg">Dark Mode BG</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#181818</span>
       </div>
       <div style="text-align: center; width: 120px;">
         <div style="width: 100px; height: 100px; background: #F7F7F7; border-radius: var(--radius-md); margin: 0 auto 8px auto; border: 1px solid #ddd;"></div>
-        <span style="display:block; font-weight:bold; font-size: 14px;">Light Title</span>
+        <span style="display:block; font-weight:bold; font-size: 14px;" data-i18n="common:colourPalette.lightTitle">Light Title</span>
         <span style="font-size: 12px; color: var(--text-secondary);">#F7F7F7</span>
       </div>
     </div>
@@ -240,17 +248,17 @@
 
   <!-- Core Actions -->
   <section id="core-actions">
-    <h2>Core Actions</h2>
+    <h2 data-i18n="common:coreActions.title">Core Actions</h2>
     
-    <h3>Primary Button</h3>
+    <h3 data-i18n="common:coreActions.primaryButton">Primary Button</h3>
     <div class="component-demo">
-      <button class="btn-primary">Solid Button</button>
-      <button class="btn-primary gradient">Gradient Button</button>
+      <button class="btn-primary" data-i18n="common:coreActions.solidButton">Solid Button</button>
+      <button class="btn-primary gradient" data-i18n="common:coreActions.gradientButton">Gradient Button</button>
     </div>
     <pre>&lt;button class="btn-primary"&gt;Solid Button&lt;/button&gt;
 &lt;button class="btn-primary gradient"&gt;Gradient Button&lt;/button&gt;</pre>
 
-    <h3>Icon Button</h3>
+    <h3 data-i18n="common:coreActions.iconButton">Icon Button</h3>
     <div class="component-demo">
       <button class="btn-icon ghost" data-tooltip="Ghost">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -265,23 +273,23 @@
       </div>
     </div>
     
-    <h3>Toggle Switches</h3>
+    <h3 data-i18n="common:coreActions.toggleSwitches">Toggle Switches</h3>
     <div class="component-demo">
       <!-- Toggle 1: Standard Capsule -->
       <div style="text-align: center; margin-right: 20px;">
-        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 1</span>
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);" data-i18n="common:coreActions.toggle1">Toggle 1</span>
         <input type="checkbox" class="toggle-switch">
       </div>
 
       <!-- Toggle 2: Standard Capsule (Small) -->
       <div style="text-align: center; margin-right: 20px;">
-        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 2</span>
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);" data-i18n="common:coreActions.toggle2">Toggle 2</span>
         <input type="checkbox" class="toggle-switch sm" checked>
       </div>
 
       <!-- Toggle 3: Circular Animated (New) -->
       <div style="text-align: center;">
-        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">Toggle 3</span>
+        <span style="display:block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);" data-i18n="common:coreActions.toggle3">Toggle 3</span>
         <div class="checkbox-wrapper-44">
           <label class="toggleButton">
             <input type="checkbox">
@@ -296,8 +304,8 @@
     </div>
     
     <div class="usage-box">
-      <h3>Toggle 3 Usage</h3>
-      <p>The animated toggle requires specific HTML structure and dependency on <code>core-actions.css</code>.</p>
+      <h3 data-i18n="common:coreActions.toggle3Usage">Toggle 3 Usage</h3>
+      <p data-i18n="common:coreActions.toggle3Desc">The animated toggle requires specific HTML structure and dependency on <code>core-actions.css</code>.</p>
       <pre>
 &lt;div class="checkbox-wrapper-44"&gt;
   &lt;label class="toggleButton"&gt;
@@ -314,11 +322,11 @@
 
   <!-- Video Player -->
   <section id="video-player">
-    <h2>Video Player</h2>
+    <h2 data-i18n="common:videoPlayer.title">Video Player</h2>
     <div class="component-demo" style="display: block;">
       <div class="video-player-container">
         <!-- Placeholder Video Background -->
-        <div style="width:100%; height:100%; background: #222; display: flex; align-items: center; justify-content: center; color: #555;">Video Content</div>
+        <div style="width:100%; height:100%; background: #222; display: flex; align-items: center; justify-content: center; color: #555;" data-i18n="common:videoPlayer.videoContent">Video Content</div>
         
         <div class="play-overlay">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
@@ -345,12 +353,12 @@
 
   <!-- Dashboard -->
   <section id="dashboard">
-    <h2>Dashboard</h2>
+    <h2 data-i18n="common:dashboard.title">Dashboard</h2>
     
-    <h3>Metric Tile (KPI)</h3>
+    <h3 data-i18n="common:dashboard.metricTile">Metric Tile (KPI)</h3>
     <div class="component-demo">
       <div class="kpi-tile">
-        <span class="kpi-label">Total Revenue</span>
+        <span class="kpi-label" data-i18n="common:dashboard.totalRevenue">Total Revenue</span>
         <div class="kpi-value">
           $12,450
           <span class="kpi-trend up">+12%</span>
@@ -359,7 +367,7 @@
       </div>
       
       <div class="kpi-tile">
-        <span class="kpi-label">Active Users</span>
+        <span class="kpi-label" data-i18n="common:dashboard.activeUsers">Active Users</span>
         <div class="kpi-value">
           1,203
           <span class="kpi-trend down">-3%</span>
@@ -368,66 +376,66 @@
       </div>
     </div>
 
-    <h3>Filter Chips</h3>
+    <h3 data-i18n="common:dashboard.filterChips">Filter Chips</h3>
     <div class="component-demo">
       <div class="filter-chip-container">
         <div class="filter-chip active">
-          Status: Active <span class="filter-chip-remove">✕</span>
+          <span data-i18n="common:dashboard.statusActive">Status: Active</span> <span class="filter-chip-remove">✕</span>
         </div>
         <div class="filter-chip">
-          Role: Admin <span class="filter-chip-remove">✕</span>
+          <span data-i18n="common:dashboard.roleAdmin">Role: Admin</span> <span class="filter-chip-remove">✕</span>
         </div>
         <div class="filter-chip">
-          Date: Today <span class="filter-chip-remove">✕</span>
+          <span data-i18n="common:dashboard.dateToday">Date: Today</span> <span class="filter-chip-remove">✕</span>
         </div>
       </div>
     </div>
 
-    <h3>Tiles</h3>
+    <h3 data-i18n="common:dashboard.tiles">Tiles</h3>
     <div class="component-demo" style="align-items: stretch;">
       <!-- Component 1: Settings Tile -->
       <div class="settings-tile">
-        <h3>Current settings</h3>
+        <h3 data-i18n="common:dashboard.currentSettings">Current settings</h3>
         <div class="setting-row">
-          <span class="setting-label">Record new guest</span>
+          <span class="setting-label" data-i18n="common:dashboard.recordNewGuest">Record new guest</span>
           <!-- Control: Large Toggle Switch (Background: Green when active, Knob: White circle) -->
           <input type="checkbox" class="toggle-switch">
         </div>
         <div class="setting-row">
-          <span class="setting-label">Security mode</span>
+          <span class="setting-label" data-i18n="common:dashboard.securityMode">Security mode</span>
           <!-- Control: Large Toggle Switch (Active) -->
           <input type="checkbox" class="toggle-switch" checked>
         </div>
         <button class="add-user-btn">
           <div class="add-user-icon">+</div>
-          <span>Add new user</span>
+          <span data-i18n="common:dashboard.addNewUser">Add new user</span>
         </button>
       </div>
 
       <!-- Component 2: OSiris State Tile -->
       <div class="osiris-state-tile">
-        <h4>Current OSiris state</h4>
+        <h4 data-i18n="common:dashboard.currentOsirisState">Current OSiris state</h4>
         <div class="state-row">
-          <span class="state-label">IP detected</span>
+          <span class="state-label" data-i18n="common:dashboard.ipDetected">IP detected</span>
           <span class="state-value">195.139.147.156</span>
         </div>
         <div class="state-row">
-          <span class="state-label">FPS client</span>
+          <span class="state-label" data-i18n="common:dashboard.fpsClient">FPS client</span>
           <span class="state-value">4 frame/sec</span>
         </div>
         <div class="state-row">
-          <span class="state-label">RAM in usage</span>
+          <span class="state-label" data-i18n="common:dashboard.ramInUsage">RAM in usage</span>
           <span class="state-value">550 Mb</span>
         </div>
         <div class="state-row">
-          <span class="state-label">Server load</span>
+          <span class="state-label" data-i18n="common:dashboard.serverLoad">Server load</span>
           <span class="state-value">11,7%</span>
         </div>
       </div>
 
       <!-- Component 3: Weather Tile -->
       <div class="weather-tile">
-        <div class="weather-header">Current local weather</div>
+        <div class="weather-header" data-i18n="common:dashboard.currentLocalWeather">Current local weather</div>
         <div class="weather-main-visual">
           <div class="weather-icon-large">
              <!-- Partly Cloudy Icon from Design System -->
@@ -436,7 +444,7 @@
         </div>
         <div class="weather-metrics">
           <div class="weather-metric-item">
-            <span class="weather-metric-label">Temperature</span>
+            <span class="weather-metric-label" data-i18n="common:dashboard.temperature">Temperature</span>
             <div class="weather-metric-value-row">
               <!-- Thermostat Icon from Design System -->
               <img src="weather_icons/device_thermostat_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Temperature">
@@ -444,7 +452,7 @@
             </div>
           </div>
           <div class="weather-metric-item">
-            <span class="weather-metric-label">Humidity</span>
+            <span class="weather-metric-label" data-i18n="common:dashboard.humidity">Humidity</span>
             <div class="weather-metric-value-row">
               <!-- Humidity Mid Icon from Design System -->
               <img src="weather_icons/humidity_mid_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-metric-icon" alt="Humidity">
@@ -459,14 +467,14 @@
         <!-- Background Image Example -->
         <img src="visuals-for-tiles/Visual_tile_4.png" class="content-tile-img" alt="Background Visual">
         <div class="content-tile-overlay">
-          <div class="content-tile-title">Memory of the Day</div>
+          <div class="content-tile-title" data-i18n="common:dashboard.memoryOfTheDay">Memory of the Day</div>
         </div>
       </div>
 
       <!-- Component 5: User Profile Tile -->
       <div class="user-profile-tile" style="background-image: url('visuals-for-tiles/Oslo_tile_5.png'); background-size: cover; background-position: center;">
         <div class="user-status-header">
-          <span class="user-status-text">User detected</span>
+          <span class="user-status-text" data-i18n="common:dashboard.userDetected">User detected</span>
           <div class="user-status-dot"></div>
         </div>
         <div class="user-name">Edouard</div>
@@ -494,8 +502,8 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.63-.25 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/></svg>
         </div>
         <div>
-          <p class="utility-title">Settings</p>
-          <p class="utility-subtitle">System &amp; Prefs</p>
+          <p class="utility-title" data-i18n="common:dashboard.settings">Settings</p>
+          <p class="utility-subtitle" data-i18n="common:dashboard.systemPrefs">System &amp; Prefs</p>
         </div>
       </button>
 
@@ -503,18 +511,18 @@
       <div class="content-tile">
         <div class="gradient-card-bg"></div>
         <div class="content-tile-overlay">
-          <div class="content-tile-title">Gradient Card</div>
-          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 8px;">Adapts to theme</p>
+          <div class="content-tile-title" data-i18n="common:dashboard.gradientCard">Gradient Card</div>
+          <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 8px;" data-i18n="common:dashboard.adaptsToTheme">Adapts to theme</p>
         </div>
       </div>
     </div>
     
     <div class="usage-box">
-      <h3>Tiles Usage</h3>
-      <p>The dashboard tiles are modular components designed for various content types.</p>
+      <h3 data-i18n="common:dashboard.tilesUsage">Tiles Usage</h3>
+      <p data-i18n="common:dashboard.tilesUsageDesc">The dashboard tiles are modular components designed for various content types.</p>
       
-      <h4>Content Tile (Image Background)</h4>
-      <p>Use for immersive content like "Memory of the Day". The image acts as a full-bleed background.</p>
+      <h4 data-i18n="common:dashboard.contentTileTitle">Content Tile (Image Background)</h4>
+      <p data-i18n="common:dashboard.contentTileDesc">Use for immersive content like "Memory of the Day". The image acts as a full-bleed background.</p>
       <pre>
 &lt;div class="content-tile"&gt;
   &lt;img src="path/to/image.png" class="content-tile-img" alt="Description"&gt;
@@ -523,8 +531,8 @@
   &lt;/div&gt;
 &lt;/div&gt;</pre>
 
-      <h4>User Profile Tile</h4>
-      <p>Designed for user status. Set the background image via inline styles or a custom class.</p>
+      <h4 data-i18n="common:dashboard.userProfileTile">User Profile Tile</h4>
+      <p data-i18n="common:dashboard.userProfileDesc">Designed for user status. Set the background image via inline styles or a custom class.</p>
       <pre>
 &lt;div class="user-profile-tile" style="background-image: url('path/to/bg.png');"&gt;
   &lt;div class="user-status-header"&gt;
@@ -538,118 +546,118 @@
 
   <!-- Weather Icons -->
   <section id="weather-icons">
-    <h2>Weather Icons</h2>
-    <p>Usage: <code>&lt;img src="weather_icons/icon_name.svg" class="weather-icon-svg"&gt;</code></p>
+    <h2 data-i18n="common:weatherIcons.title">Weather Icons</h2>
+    <p><span data-i18n="common:weatherIcons.usage">Usage:</span> <code>&lt;img src="weather_icons/icon_name.svg" class="weather-icon-svg"&gt;</code></p>
     <div class="weather-grid">
       <div class="weather-icon-card">
         <img src="weather_icons/clear_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Clear Day">
-        <span class="weather-icon-name">Clear Day</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.clearDay">Clear Day</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/cloud_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cloudy">
-        <span class="weather-icon-name">Cloudy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.cloudy">Cloudy</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/cool_to_dry_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cool to Dry">
-        <span class="weather-icon-name">Cool to Dry</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.coolToDry">Cool to Dry</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/cyclone_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Cyclone">
-        <span class="weather-icon-name">Cyclone</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.cyclone">Cyclone</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/device_thermostat_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Thermostat">
-        <span class="weather-icon-name">Thermostat</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.thermostat">Thermostat</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/flood_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Flood">
-        <span class="weather-icon-name">Flood</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.flood">Flood</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/foggy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Foggy">
-        <span class="weather-icon-name">Foggy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.foggy">Foggy</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/humidity_low_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity Low">
-        <span class="weather-icon-name">Humidity Low</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.humidityLow">Humidity Low</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/humidity_mid_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity Mid">
-        <span class="weather-icon-name">Humidity Mid</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.humidityMid">Humidity Mid</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/humidity_percentage_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Humidity %">
-        <span class="weather-icon-name">Humidity %</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.humidityPct">Humidity %</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/mist_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Mist">
-        <span class="weather-icon-name">Mist</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.mist">Mist</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/moon_stars_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Moon Stars">
-        <span class="weather-icon-name">Moon Stars</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.moonStars">Moon Stars</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/partly_cloudy_day_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Partly Cloudy">
-        <span class="weather-icon-name">Partly Cloudy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.partlyCloudy">Partly Cloudy</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/rainy_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Heavy">
-        <span class="weather-icon-name">Rainy Heavy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.rainyHeavy">Rainy Heavy</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/rainy_light_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Light">
-        <span class="weather-icon-name">Rainy Light</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.rainyLight">Rainy Light</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/rainy_snow_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Rainy Snow">
-        <span class="weather-icon-name">Rainy Snow</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.rainySnow">Rainy Snow</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/snowing_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowing">
-        <span class="weather-icon-name">Snowing</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.snowing">Snowing</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/snowing_heavy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowing Heavy">
-        <span class="weather-icon-name">Snowing Heavy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.snowingHeavy">Snowing Heavy</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/sunny_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Sunny">
-        <span class="weather-icon-name">Sunny</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.sunny">Sunny</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Thunderstorm">
-        <span class="weather-icon-name">Thunderstorm</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.thunderstorm">Thunderstorm</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/weather_hail_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Hail">
-        <span class="weather-icon-name">Hail</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.hail">Hail</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/weather_mix_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Mix">
-        <span class="weather-icon-name">Mix</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.mix">Mix</span>
       </div>
       <div class="weather-icon-card">
         <img src="weather_icons/weather_snowy_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg" class="weather-icon-svg" alt="Snowy">
-        <span class="weather-icon-name">Snowy</span>
+        <span class="weather-icon-name" data-i18n="common:weatherIcons.snowy">Snowy</span>
       </div>
     </div>
   </section>
 
   <!-- 3D / Map -->
   <section id="map-3d">
-    <h2>3D / Map Components</h2>
+    <h2 data-i18n="common:map3d.title">3D / Map Components</h2>
     
     <div class="usage-box">
-      <h3>Mapbox Configuration</h3>
-      <p>Enter your Mapbox Access Token to render the map.</p>
+      <h3 data-i18n="common:map3d.mapboxConfig">Mapbox Configuration</h3>
+      <p data-i18n="common:map3d.mapboxDesc">Enter your Mapbox Access Token to render the map.</p>
       <div style="display: flex; gap: var(--spacing-md); align-items: center; flex-wrap: wrap;">
         <div class="search-container" style="flex: 1; min-width: 250px;">
-          <input type="text" id="mapbox-token-input" class="search-input" placeholder="Paste your Mapbox Access Token (pk....)">
+          <input type="text" id="mapbox-token-input" class="search-input" data-i18n="common:map3d.mapboxPlaceholder" data-i18n-attr="placeholder" placeholder="Paste your Mapbox Access Token (pk....)">
         </div>
-        <button id="update-map-btn" class="btn-primary">Load Map</button>
+        <button id="update-map-btn" class="btn-primary" data-i18n="common:map3d.loadMap">Load Map</button>
       </div>
-      <small style="display: block; margin-top: var(--spacing-sm); color: var(--text-secondary);">Token will be saved locally for this session.</small>
+      <small style="display: block; margin-top: var(--spacing-sm); color: var(--text-secondary);" data-i18n="common:map3d.tokenNote">Token will be saved locally for this session.</small>
     </div>
 
     <div class="component-demo" style="display: block;">
@@ -659,10 +667,10 @@
 
   <!-- Map App Components -->
   <section id="map-app-components">
-    <h2>Map App Components</h2>
-    <p>UI components from the OSiris Map App: POI panel, bottom tiles, recommendations, tooltips.</p>
+    <h2 data-i18n="common:mapAppComponents.title">Map App Components</h2>
+    <p data-i18n="common:mapAppComponents.desc">UI components from the OSiris Map App: POI panel, bottom tiles, recommendations, tooltips.</p>
 
-    <h3>Glass Panel / POI Content Panel</h3>
+    <h3 data-i18n="common:mapAppComponents.glassPanel">Glass Panel / POI Content Panel</h3>
     <div class="component-demo" style="display: block;">
       <div class="poi-content-panel poi-panel-open" style="position: relative !important; width: 100%; max-width: 480px; height: auto; min-height: 400px; transform: none !important; visibility: visible !important; pointer-events: auto;">
         <header style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 1rem;">
@@ -698,10 +706,10 @@
     <pre>&lt;aside class="poi-content-panel glass-panel"&gt;...&lt;/aside&gt;
 Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</pre>
 
-    <h3>Bottom Section Tiles</h3>
+    <h3 data-i18n="common:mapAppComponents.bottomSectionTiles">Bottom Section Tiles</h3>
     <div class="component-demo" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: stretch;">
       <div class="bottom-section-tile" style="min-width: 12rem; min-height: 12.5rem; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(226,232,240,0.5); background: #E4EBF1; display: flex; flex-direction: column; gap: 0.75rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 0.75rem; color: #64748b;">User detected</span><div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></div></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 0.75rem; color: #64748b;" data-i18n="common:dashboard.userDetected">User detected</span><div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></div></div>
         <div style="flex: 1; display: flex; align-items: flex-end;"><span style="font-weight: 700; font-size: 1rem;">Edouard</span></div>
       </div>
       <div class="bottom-section-tile" style="min-width: 12rem; min-height: 12.5rem; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(226,232,240,0.5); background: #E4EBF1; display: flex; flex-direction: column; gap: 0.75rem;">
@@ -709,17 +717,17 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
         <div><p style="font-weight: 600; font-size: 0.875rem;">Autodesk Forma</p><p style="font-size: 0.75rem; color: #64748b;">Product Work</p></div>
       </div>
       <div class="bottom-section-tile" style="min-width: 12rem; min-height: 12.5rem; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(226,232,240,0.5); background: linear-gradient(135deg, #e0f2fe, #bae6fd); display: flex; flex-direction: column; gap: 0.75rem;">
-        <div style="font-size: 0.75rem; color: #0369a1;">Current local weather</div>
-        <div style="flex: 1; display: flex; align-items: flex-end; justify-content: space-between;"><span style="font-weight: 700;">Partly Cloudy</span><span style="font-size: 1.25rem; font-weight: 700;">18°C</span></div>
+        <div style="font-size: 0.75rem; color: #0369a1;" data-i18n="common:dashboard.currentLocalWeather">Current local weather</div>
+        <div style="flex: 1; display: flex; align-items: flex-end; justify-content: space-between;"><span style="font-weight: 700;" data-i18n="common:weatherIcons.partlyCloudy">Partly Cloudy</span><span style="font-size: 1.25rem; font-weight: 700;">18°C</span></div>
       </div>
       <div class="bottom-section-tile" style="min-width: 12rem; min-height: 12.5rem; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(226,232,240,0.5); background: #E4EBF1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;">
         <span style="font-size: 2rem;">+</span>
-        <span style="font-size: 0.875rem; font-weight: 500;">Discover more</span>
+        <span style="font-size: 0.875rem; font-weight: 500;" data-i18n="common:mapAppComponents.discoverMore">Discover more</span>
       </div>
     </div>
     <pre>Classes: .bottom-section-tile (use with Tailwind: w-48 flex-shrink-0 p-3 rounded border)</pre>
 
-    <h3>LinkedIn Recommendations Tray</h3>
+    <h3 data-i18n="common:mapAppComponents.linkedInTray">LinkedIn Recommendations Tray</h3>
     <div class="component-demo" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
       <div class="rec-tile">
         <div class="rec-tile-avatar">AN</div>
@@ -739,7 +747,7 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
     </div>
     <pre>Classes: .rec-tile .rec-tile-avatar .rec-tile-name .rec-tile-role</pre>
 
-    <h3>Skeleton Loader</h3>
+    <h3 data-i18n="common:mapAppComponents.skeletonLoader">Skeleton Loader</h3>
     <div class="component-demo">
       <div class="widget-skeleton" style="width: 200px; height: 80px; border-radius: 8px;"></div>
       <div class="widget-skeleton" style="width: 120px; height: 24px; border-radius: 4px;"></div>
@@ -747,14 +755,14 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
     </div>
     <pre>Classes: .widget-skeleton (shimmer animation from map-app.html)</pre>
 
-    <h3>Discover More Tooltip</h3>
+    <h3 data-i18n="common:mapAppComponents.discoverMoreTooltip">Discover More Tooltip</h3>
     <div class="component-demo" style="display: block; position: relative;">
       <div class="tooltip-bottom tooltip-bottom-visible" style="position: relative !important; max-width: 28rem;">
         <div class="tooltip-bottom-header">
-          <span class="tooltip-bottom-title">Discover More</span>
+          <span class="tooltip-bottom-title" data-i18n="common:mapAppComponents.discoverMore">Discover More</span>
           <button class="tooltip-bottom-close" type="button" aria-label="Close">×</button>
         </div>
-        <div style="padding: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+        <div style="padding: 1rem; font-size: 0.875rem; color: var(--text-secondary);" data-i18n="common:mapAppComponents.discoverMoreDesc">
           Explore the toolkit and featured projects on the map.
         </div>
         <div style="padding: 0 1rem 1rem; aspect-ratio: 16/9; background: #1e293b; border-radius: 8px;"></div>
@@ -765,24 +773,24 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
 
   <!-- Feedback & Navigation -->
   <section id="feedback-nav">
-    <h2>Feedback & Navigation</h2>
+    <h2 data-i18n="common:feedbackNav.title">Feedback & Navigation</h2>
     
-    <h3>Toasts</h3>
+    <h3 data-i18n="common:feedbackNav.toasts">Toasts</h3>
     <div class="component-demo">
       <div class="toast success" style="position: static; transform: none; box-shadow: none;">
         <div class="toast-icon">✓</div>
-        <span>Operation successful!</span>
+        <span data-i18n="common:feedbackNav.operationSuccess">Operation successful!</span>
       </div>
       <div class="toast error" style="position: static; transform: none; box-shadow: none;">
         <div class="toast-icon">!</div>
-        <span>Something went wrong.</span>
+        <span data-i18n="common:feedbackNav.somethingWrong">Something went wrong.</span>
       </div>
     </div>
 
     <h3>Search Input</h3>
     <div class="component-demo">
       <div class="search-container">
-        <input type="text" class="search-input" placeholder="Search...">
+        <input type="text" class="search-input" data-i18n="common:feedbackNav.searchPlaceholder" data-i18n-attr="placeholder" placeholder="Search...">
         <span class="search-shortcut">Ctrl K</span>
       </div>
     </div>
@@ -805,5 +813,7 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
   </script>
   <script src="js/mapbox-config.js"></script>
   <script src="js/map-component.js?v=2"></script>
+  <script src="js/i18n-service.js"></script>
+  <script src="js/components/language-switcher.js"></script>
 </body>
 </html>

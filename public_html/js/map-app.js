@@ -2695,6 +2695,8 @@ function wireControls() {
       const loc = await LocationService.getAccurateLocation();
       flyToLocation(loc.lng, loc.lat, 16);
       addCurrentLocationMarker(loc.lng, loc.lat);
+      await registerUser({ ...LocationService.currentLocation, ip: LocationService.currentIP ?? '' });
+      await refreshNearby();
     } catch (e) {
       const code = e?.code;
       const msg = code === 1 ? 'Location access denied. Allow it in your browser to use GPS.'
@@ -2708,6 +2710,8 @@ function wireControls() {
       if (loc) {
         flyToLocation(loc.lng, loc.lat, 14);
         addCurrentLocationMarker(loc.lng, loc.lat);
+        await registerUser({ ...LocationService.currentLocation, ip: LocationService.currentIP ?? '' });
+        await refreshNearby();
       } else {
         showToastError('Unable to determine your location');
       }
