@@ -11,6 +11,13 @@ let globeRotationEnabled = false;
 let globeRotationState = 'off'; // 'off' | 'easing-in' | 'running' | 'easing-out'
 
 const HEARTBEAT_MS = 5000;
+const POI_ADMIN_ONLY_BRANDS = ['World is a village'];
+
+function getVisiblePOIs(pois) {
+  const arr = Array.isArray(pois) ? pois : currentPOIs;
+  return isAdmin ? arr : arr.filter((p) => !POI_ADMIN_ONLY_BRANDS.includes(p.brand || ''));
+}
+
 const USER_PICT_IMAGES = [
   'pict/random1.png',
   'pict/random2.png',
@@ -122,6 +129,8 @@ function updateAdminMenuVisibility() {
     link.style.display = isAdmin ? '' : 'none';
     link.classList.toggle('hidden', !isAdmin);
   }
+  addPOIMarkers(currentPOIs);
+  renderPOITiles(currentPOIs);
 }
 
 async function fetchIsAdmin() {
@@ -728,7 +737,8 @@ function addPOIMarkers(pois) {
   poiMarkers.forEach(m => m.remove());
   poiMarkers = [];
   if (!appMap) return;
-  const valid = (Array.isArray(pois) ? pois : currentPOIs).filter((p) => p.lat != null && p.lng != null);
+  const visible = getVisiblePOIs(Array.isArray(pois) ? pois : currentPOIs);
+  const valid = visible.filter((p) => p.lat != null && p.lng != null);
   valid.forEach((poi, idx) => {
     const el = document.createElement('div');
     el.style.cursor = 'pointer';
@@ -760,15 +770,16 @@ function renderPOITiles(pois) {
   const container = document.getElementById('poi-tiles');
   if (!container) return;
   currentPOIs = Array.isArray(pois) ? pois : currentPOIs;
+  const visible = getVisiblePOIs(currentPOIs);
   let html = '';
-  if (currentPOIs.length === 0) {
+  if (visible.length === 0) {
     html = `<div class="bottom-section-tile w-48 flex-shrink-0 p-4 rounded border border-slate-200/50 dark:border-white/5 flex flex-col items-center justify-center gap-2 text-center">
       <span class="material-symbols-outlined text-3xl text-text-secondary">folder_off</span>
       <span class="text-sm text-text-secondary">No featured projects yet</span>
       <span class="text-xs text-slate-400">Ensure points-of-interest.php is configured</span>
     </div>`;
   } else {
-    currentPOIs.forEach((poi) => {
+    visible.forEach((poi) => {
       const hasLocation = poi.lat != null && poi.lng != null;
       const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
       const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
