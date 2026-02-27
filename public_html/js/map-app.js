@@ -341,9 +341,9 @@ function renderNearbyTiles(tiles) {
     const dataId = tile.id != null ? `data-user-id="${tile.id}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
-    const isOwnTile = tile.name === currentUserName;
+    const canEditProfile = tile.name === currentUserName || isAdmin;
     const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
-    const avatarHtml = isOwnTile
+    const avatarHtml = canEditProfile
       ? `<button type="button" class="user-tile-avatar-edit relative w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass} flex-shrink-0 overflow-hidden cursor-pointer group/avatar transition-all" data-user-tile="${tile.name}" aria-label="Change profile picture">
           <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/>
           <span class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none rounded-lg"><span class="material-symbols-outlined text-white text-2xl">edit</span></span>
@@ -2156,9 +2156,9 @@ async function openProfilePicturePicker(tile, parentPanel) {
   panel.style.zIndex = String(PROFILE_PICKER_Z);
 
   const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
-  const isOwnProfile = tile.name === currentUserName;
+  const canEditNameAndPicture = tile.name === currentUserName || isAdmin;
   const mobileHandleHtml = isMobile ? '<div class="profile-picker-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>' : '';
-  const nameEditHtml = isOwnProfile ? `
+  const nameEditHtml = canEditNameAndPicture ? `
     <div class="px-4 pb-3 border-b border-slate-200 dark:border-white/10">
       <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display name</label>
       <input type="text" class="profile-pick-name w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Your name" maxlength="64"/>
@@ -2266,7 +2266,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
     const path = selectedPath || (selectedRandomIndex >= 0 ? USER_PICT_IMAGES[selectedRandomIndex] : null);
     if (!path) return;
     const newName = (nameInput?.value ?? '').trim();
-    const nameChanged = isOwnProfile && newName && newName !== tile.name;
+    const nameChanged = canEditNameAndPicture && newName && newName !== tile.name;
     const payload = { name: tile.name, profilePicture: path };
     if (nameChanged) payload.newName = newName;
     const url = typeof getProfilePictureUpdateUrl === 'function' ? getProfilePictureUpdateUrl() : 'api/users-profile-picture.php';
@@ -2291,7 +2291,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
       if (nameChanged && errBody.name) {
         tile.name = errBody.name;
         if (nt) nt.name = errBody.name;
-        sessionStorage.setItem('osiris_user_name', errBody.name);
+        if (oldName === currentUserName) sessionStorage.setItem('osiris_user_name', errBody.name);
         if (parentPanel) {
           parentPanel.setAttribute('data-user-name', errBody.name);
           const nameEl = parentPanel.querySelector('.user-profile-name');
@@ -2405,8 +2405,8 @@ async function openUserProfilePanel(tile) {
   const deleteBtnHtml = canDelete
     ? `<button type="button" class="user-profile-panel-delete w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors" data-user-id="${String(tile.id || '').replace(/"/g, '&quot;')}" aria-label="Delete user"><span class="material-symbols-outlined text-[20px]">delete</span></button>`
     : '';
-  const isOwnPanel = tile.name === currentUserName;
-  const avatarEditBtn = isOwnPanel
+  const canEditProfile = tile.name === currentUserName || isAdmin;
+  const avatarEditBtn = canEditProfile
     ? `<button type="button" class="user-profile-avatar-edit absolute inset-0 w-full h-full flex items-center justify-center rounded-lg bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer pointer-events-auto" aria-label="Change profile picture"><span class="material-symbols-outlined text-white text-2xl">edit</span></button>`
     : '';
 
@@ -2434,7 +2434,7 @@ async function openUserProfilePanel(tile) {
     <div class="user-profile-widgets p-3 space-y-2 hidden overflow-y-auto min-h-0 flex-1 max-h-[calc(100vh-180px)]"></div>
   `;
 
-  if (isOwnPanel) {
+  if (canEditProfile) {
     const editBtn = panel.querySelector('.user-profile-avatar-edit');
     editBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
