@@ -743,7 +743,14 @@ function addPOIMarkers(pois) {
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center', offset: [ox, oy] })
       .setLngLat([poi.lng, poi.lat])
       .addTo(appMap);
-    el.addEventListener('click', () => flyToPOI(poi));
+    const handleMarkerClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      flyToPOI(poi);
+    };
+    el.addEventListener('click', handleMarkerClick);
+    el.addEventListener('mousedown', (e) => e.stopPropagation());
+    el.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
     poiMarkers.push(marker);
   });
 }
@@ -789,41 +796,8 @@ function wirePOITabs() {
   const tabMapData = document.getElementById('tab-map-data');
   const tabWidgets = document.getElementById('tab-widgets');
   const tabRecommendations = document.getElementById('tab-recommendations');
-  const tilesNearby = document.getElementById('nearby-friends-tiles');
   const tilesPOI = document.getElementById('poi-tiles');
-  const tilesMapData = document.getElementById('map-data-tiles');
-  const tilesWidgets = document.getElementById('widget-tiles');
-  const tilesRecommendations = document.getElementById('recommendations-tiles');
-  if (!tabNearby || !tabPOI || !tilesNearby || !tilesPOI) return;
-
-  function setActiveTab(active) {
-    [tabNearby, tabPOI, tabMapData, tabWidgets, tabRecommendations].forEach((t) => {
-      if (t) {
-        t.classList.remove('text-primary', 'border-primary/30');
-        t.classList.add('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
-      }
-    });
-    [tilesNearby, tilesPOI, tilesMapData, tilesWidgets, tilesRecommendations].forEach((c) => {
-      if (c) c.classList.add('hidden');
-    });
-    const tabMap = { nearby: tabNearby, poi: tabPOI, 'map-data': tabMapData, widgets: tabWidgets, recommendations: tabRecommendations };
-    const tilesMap = { nearby: tilesNearby, poi: tilesPOI, 'map-data': tilesMapData, widgets: tilesWidgets, recommendations: tilesRecommendations };
-    const activeTab = tabMap[active];
-    const activeTiles = tilesMap[active];
-    if (activeTab) {
-      activeTab.classList.remove('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
-      activeTab.classList.add('text-primary', 'border-primary/30');
-    }
-    if (activeTiles) activeTiles.classList.remove('hidden');
-    if (active === 'map-data') {
-      discoverMapLayers();
-      applyMapDataState(mapDataState);
-      requestAnimationFrame(() => adaptVolumetricSliderHeight(tilesMapData));
-    }
-    if (active === 'recommendations') {
-      renderRecommendationsTiles();
-    }
-  }
+  if (!tabNearby || !tabPOI || !tilesPOI) return;
 
   tabNearby.addEventListener('click', () => setActiveTab('nearby'));
   tabPOI.addEventListener('click', () => {
@@ -2061,6 +2035,58 @@ function closeBottomPanel() {
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-label', 'Open Discover my world');
   toggle.querySelector('.material-symbols-outlined')?.classList.remove('rotate-180');
+}
+
+function openBottomPanel() {
+  const panel = document.getElementById('bottom-panel');
+  const toggle = document.getElementById('bottom-panel-toggle');
+  if (!panel || !toggle) return;
+  panel.classList.add('visible');
+  panel.setAttribute('aria-hidden', 'false');
+  toggle.setAttribute('aria-expanded', 'true');
+  toggle.setAttribute('aria-label', 'Close Discover my world');
+  toggle.querySelector('.material-symbols-outlined')?.classList.add('rotate-180');
+}
+
+function setActiveTab(active) {
+  const tabNearby = document.getElementById('tab-nearby');
+  const tabPOI = document.getElementById('tab-poi');
+  const tabMapData = document.getElementById('tab-map-data');
+  const tabWidgets = document.getElementById('tab-widgets');
+  const tabRecommendations = document.getElementById('tab-recommendations');
+  const tilesNearby = document.getElementById('nearby-friends-tiles');
+  const tilesPOI = document.getElementById('poi-tiles');
+  const tilesMapData = document.getElementById('map-data-tiles');
+  const tilesWidgets = document.getElementById('widget-tiles');
+  const tilesRecommendations = document.getElementById('recommendations-tiles');
+  const tabs = [tabNearby, tabPOI, tabMapData, tabWidgets, tabRecommendations];
+  const tileContainers = [tilesNearby, tilesPOI, tilesMapData, tilesWidgets, tilesRecommendations];
+  tabs.forEach((t) => {
+    if (t) {
+      t.classList.remove('text-primary', 'border-primary/30');
+      t.classList.add('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
+    }
+  });
+  tileContainers.forEach((c) => {
+    if (c) c.classList.add('hidden');
+  });
+  const tabMap = { nearby: tabNearby, poi: tabPOI, 'map-data': tabMapData, widgets: tabWidgets, recommendations: tabRecommendations };
+  const tilesMap = { nearby: tilesNearby, poi: tilesPOI, 'map-data': tilesMapData, widgets: tilesWidgets, recommendations: tilesRecommendations };
+  const activeTab = tabMap[active];
+  const activeTiles = tilesMap[active];
+  if (activeTab) {
+    activeTab.classList.remove('text-slate-600', 'dark:text-slate-400', 'border-slate-300', 'dark:border-white/10');
+    activeTab.classList.add('text-primary', 'border-primary/30');
+  }
+  if (activeTiles) activeTiles.classList.remove('hidden');
+  if (active === 'map-data') {
+    discoverMapLayers();
+    applyMapDataState(mapDataState);
+    requestAnimationFrame(() => adaptVolumetricSliderHeight(tilesMapData));
+  }
+  if (active === 'recommendations') {
+    renderRecommendationsTiles();
+  }
 }
 
 const PANEL_CASCADE_OFFSET = 28;
