@@ -116,6 +116,11 @@ html.dark .neumorphic-menu-panel {
 }
 
 /* Resume link as neumorphic button */
+button.neumorphic-menu-resume {
+  font: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
 .neumorphic-menu-resume {
   display: flex;
   align-items: center;

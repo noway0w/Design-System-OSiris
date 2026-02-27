@@ -327,10 +327,10 @@
                 <button type="button" class="neumorphic-btn" data-theme="system" data-i18n="map:system">System</button>
               </div>
             </div>
-            <a href="resume.html" class="neumorphic-menu-resume">
+            <button type="button" id="general-menu-resume" class="neumorphic-menu-resume w-full" aria-label="Guillaume's Resume">
               <span class="material-symbols-outlined">description</span>
               <span data-i18n="map:guillaumeResume">Guillaume's Resume</span>
-            </a>
+            </button>
             <a href="https://app.guillaumelassiat.com/design-system.html" target="_blank" rel="noopener" class="neumorphic-menu-resume">
               <span class="material-symbols-outlined">palette</span>
               <span data-i18n="map:designSystem">Design System</span>
@@ -360,6 +360,9 @@
         </button>
         <button id="map-gps" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-primary shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-wait" title="Center on my accurate location (GPS)">
           <span class="material-symbols-outlined transform rotate-45">navigation</span>
+        </button>
+        <button id="map-center-europe" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform" title="Center on Europe" aria-label="Center on Europe">
+          <span class="material-symbols-outlined">center_focus_strong</span>
         </button>
       </div>
     <!-- Bottom Panel (Discover my world) - trigger: mobile=top-left under menu, desktop=centered bottom -->

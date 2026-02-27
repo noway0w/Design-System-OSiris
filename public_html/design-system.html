@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OSiris Design System</title>
   <link rel="stylesheet" href="osiris.css">
+  <link rel="stylesheet" href="css/components/toast.css">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/poi-content-panel.css">
   <link rel="stylesheet" href="css/recommendations.css">
   <link rel="stylesheet" href="css/tooltip-bottom.css">
@@ -44,6 +46,8 @@
     h2 { font-size: var(--font-size-2xl); margin-bottom: var(--spacing-lg); color: var(--primary-color); border-bottom: 2px solid var(--primary-light); display: inline-block; }
     h3 { font-size: var(--font-size-xl); margin-bottom: var(--spacing-md); margin-top: var(--spacing-lg); }
     
+    #toast-container.toast-demo { position: static; max-width: 380px; }
+    #toast-container.toast-demo .toast { animation: none; }
     .component-demo {
       padding: var(--spacing-lg);
       border: 1px dashed var(--border-color);
@@ -767,13 +771,37 @@ Classes: .poi-content-panel .glass-panel .poi-panel-hero-wrap .poi-panel-quote</
     
     <h3>Toasts</h3>
     <div class="component-demo">
-      <div class="toast success" style="position: static; transform: none; box-shadow: none;">
-        <div class="toast-icon">✓</div>
-        <span>Operation successful!</span>
-      </div>
-      <div class="toast error" style="position: static; transform: none; box-shadow: none;">
-        <div class="toast-icon">!</div>
-        <span>Something went wrong.</span>
+      <div id="toast-container" class="toast-demo">
+        <div class="toast toast-info">
+          <div class="toast-icon-wrapper">
+            <span class="material-symbols-outlined" style="font-size:1.25rem">info</span>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">Naomi Kishida</div>
+            <div class="toast-description">Great, thanks a lot for the quick reply!</div>
+          </div>
+          <button type="button" class="toast-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="toast toast-success">
+          <div class="toast-icon-wrapper">
+            <span class="material-symbols-outlined" style="font-size:1.25rem">check_circle</span>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">Changes saved</div>
+            <div class="toast-description">The contract start date was changed</div>
+          </div>
+          <button type="button" class="toast-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="toast toast-error">
+          <div class="toast-icon-wrapper">
+            <span class="material-symbols-outlined" style="font-size:1.25rem">delete</span>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">Document deleted</div>
+            <div class="toast-description">The document was successfully deleted</div>
+          </div>
+          <button type="button" class="toast-close" aria-label="Close">&times;</button>
+        </div>
       </div>
     </div>
 

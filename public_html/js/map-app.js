@@ -701,6 +701,7 @@ function wireUserTileCards() {
     const name = el.getAttribute('data-user-tile');
     const tile = currentTiles.find((t) => t.name === name);
     if (tile && tile.lat != null && tile.lng != null) {
+      closeBottomPanel();
       flyToLocation(tile.lng, tile.lat, 18, { pitch: 45 });
       openUserProfilePanel(tile);
     }
@@ -2879,18 +2880,23 @@ function wireControls() {
       btn?.removeAttribute('disabled');
     }
   });
+  document.getElementById('map-center-europe')?.addEventListener('click', () => {
+    flyToLocation(10, 50, 2.5, { duration: 2000, bearing: 0, pitch: 0 });
+  });
 }
 
 function flyToLocation(lng, lat, zoom, opts = {}) {
   if (!appMap) return;
-  const { pitch = 0, duration = 4000, padding } = opts;
-  appMap.flyTo({
+  const { pitch = 0, bearing, duration = 4000, padding } = opts;
+  const flyOpts = {
     center: [lng, lat],
     zoom,
     pitch,
     padding: padding || { top: 0, right: 0, bottom: 0, left: 0 },
     duration
-  });
+  };
+  if (bearing !== undefined) flyOpts.bearing = bearing;
+  appMap.flyTo(flyOpts);
 }
 
 /** Fly to location with zoom so globe occupies ~80% of viewport height. Returns a Promise. */
@@ -3219,7 +3225,7 @@ async function openPOIContentPanel(poi) {
   const quoteAuthorEl = panel.querySelector('.poi-panel-quote-author');
   if (quoteAuthorEl) quoteAuthorEl.textContent = 'Guillaume Lassiat';
   const quoteRoleEl = panel.querySelector('.poi-panel-quote-role');
-  if (quoteRoleEl) quoteRoleEl.textContent = 'Inspirational';
+  if (quoteRoleEl) quoteRoleEl.textContent = 'Tech Enthusiast';
   const quoteAvatarEl = panel.querySelector('.poi-panel-quote-avatar');
   if (quoteAvatarEl) quoteAvatarEl.style.backgroundImage = `url('Guillaume_Lassiat.png')`;
 
@@ -4023,13 +4029,16 @@ function buildStockWidgetCardHtml(w, quote, _chartData, isDark, showDelete, vari
 
 function initResumeEmbed() {
   const btn = document.getElementById('btn-resume');
+  const generalMenuResume = document.getElementById('general-menu-resume');
   const overlay = document.getElementById('resume-embed-overlay');
   const iframe = document.getElementById('resume-embed-iframe');
   const closeBtn = document.getElementById('resume-embed-close');
 
   function openResume() {
     if (overlay && iframe) {
-      iframe.src = 'resume.html?v=' + Date.now();
+      document.getElementById('general-menu-panel')?.classList.remove('visible');
+      document.getElementById('general-menu-panel')?.setAttribute('aria-hidden', 'true');
+      iframe.src = 'resume.html?v=' + Date.now() + '&embed=1';
       overlay.classList.remove('hidden');
     }
   }
@@ -4040,6 +4049,7 @@ function initResumeEmbed() {
   }
 
   btn?.addEventListener('click', openResume);
+  generalMenuResume?.addEventListener('click', openResume);
   closeBtn?.addEventListener('click', closeResume);
   overlay?.addEventListener('click', (e) => {
     if (e.target === overlay) closeResume();
