@@ -19,6 +19,7 @@
   <link href="css/mobile-bottom-sheet.css" rel="stylesheet"/>
   <link href="css/tooltip-bottom.css" rel="stylesheet"/>
   <link href="css/components/core-actions.css" rel="stylesheet"/>
+  <link href="css/components/toast.css" rel="stylesheet"/>
   <style>
     .language-switcher { display: none; }
     .map-marker-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
@@ -69,63 +70,6 @@
     html.dark #gate-name-input:active {
       border-color: rgba(255, 255, 255, 0.3);
     }
-    .toast-error {
-      position: fixed;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 60;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 18px;
-      border: 1px solid rgba(239, 68, 68, 0.5);
-      border-radius: 8px;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.25s ease, visibility 0.25s ease;
-    }
-    .toast-error { background: #E4EBF1; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
-    html.dark .toast-error { background: #1c262d; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .toast-error.visible {
-      opacity: 1;
-      visibility: visible;
-    }
-    .toast-error .toast-close {
-      flex-shrink: 0;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      background: rgba(0,0,0,0.08);
-      color: inherit;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    html.dark .toast-error .toast-close { background: rgba(255,255,255,0.1); color: white; }
-    .toast-error .toast-close:hover { background: rgba(0,0,0,0.12); }
-    html.dark .toast-error .toast-close:hover { background: rgba(255,255,255,0.2); }
-    .toast-success {
-      position: fixed;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 60;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 18px;
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      border-radius: 8px;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.25s ease, visibility 0.25s ease;
-    }
-    .toast-success { background: #E4EBF1; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
-    html.dark .toast-success { background: #1c262d; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-    .toast-success.visible { opacity: 1; visibility: visible; }
     #map-container-wrap { background: #010b19; transition: background 0.3s ease; }
     html.light #map-container-wrap { background: #d4dae5; }
     .toggle-checkbox { top: 0; left: 0; right: auto; transition: left 0.2s, right 0.2s; }
@@ -569,22 +513,8 @@
     </div>
   </div>
 
-  <!-- Error Toast -->
-  <div id="toast-error" class="toast-error" role="alert">
-    <span id="toast-error-message" class="text-sm text-slate-800 dark:text-white" data-i18n="map:featureNotImplemented">Feature not yet implemented</span>
-    <button type="button" class="toast-close" aria-label="Close" id="toast-error-close">
-      <span class="material-symbols-outlined text-[18px]">close</span>
-    </button>
-  </div>
-
-  <!-- Success Toast -->
-  <div id="toast-success" class="toast-success" role="status">
-    <span class="material-symbols-outlined text-[20px] text-emerald-600 dark:text-emerald-400">check_circle</span>
-    <span id="toast-success-message" class="text-sm text-slate-800 dark:text-white" data-i18n="map:success">Success</span>
-    <button type="button" class="toast-success-close toast-close" aria-label="Close" id="toast-success-close" style="background:rgba(34,197,94,0.2)">
-      <span class="material-symbols-outlined text-[18px]">close</span>
-    </button>
-  </div>
+  <!-- Toast Container (toasts added dynamically) -->
+  <div id="toast-container" aria-live="polite" aria-label="Notifications"></div>
 
   <!-- Name Gate Overlay (centered on globe when no osiris_user_name) -->
   <div id="name-gate-overlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center p-6">

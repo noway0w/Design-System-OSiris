@@ -1996,34 +1996,88 @@ function wirePOITileCards() {
   });
 }
 
-function showToastError(message) {
-  const toast = document.getElementById('toast-error');
-  const msgEl = document.getElementById('toast-error-message');
-  const successToast = document.getElementById('toast-success');
-  if (successToast) successToast.classList.remove('visible');
-  if (toast) {
-    if (msgEl && message) msgEl.textContent = message;
-    toast.classList.add('visible');
+const ToastManager = (function () {
+  const ICONS = { info: 'info', success: 'check_circle', error: 'delete' };
+
+  function ensureContainer() {
+    let el = document.getElementById('toast-container');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast-container';
+      el.setAttribute('aria-live', 'polite');
+      el.setAttribute('aria-label', 'Notifications');
+      document.body.appendChild(el);
+    }
+    return el;
   }
+
+  function removeToast(el, duration) {
+    el.classList.add('toast-exit');
+    setTimeout(() => el.remove(), duration);
+  }
+
+  function show(variant, title, description, options = {}) {
+    const container = ensureContainer();
+    const { autoDismiss = variant === 'success' ? 3000 : 0 } = options;
+
+    const desc = typeof description === 'string' ? description : '';
+    const icon = ICONS[variant] || ICONS.info;
+
+    const el = document.createElement('div');
+    el.className = `toast toast-${variant}`;
+    el.setAttribute('role', variant === 'error' ? 'alert' : 'status');
+    el.innerHTML = `
+      <div class="toast-icon-wrapper">
+        <span class="material-symbols-outlined" style="font-size:1.25rem">${icon}</span>
+      </div>
+      <div class="toast-content">
+        <div class="toast-title">${escapeHtml(title || '')}</div>
+        ${desc ? `<div class="toast-description">${escapeHtml(desc)}</div>` : '<div class="toast-description"></div>'}
+      </div>
+      <button type="button" class="toast-close" aria-label="Close">
+        <span class="material-symbols-outlined" style="font-size:1.25rem">close</span>
+      </button>
+    `;
+
+    const closeBtn = el.querySelector('.toast-close');
+    const dismiss = () => removeToast(el, 260);
+
+    closeBtn.addEventListener('click', dismiss);
+
+    if (autoDismiss > 0) {
+      setTimeout(dismiss, autoDismiss);
+    }
+
+    container.appendChild(el);
+    return el;
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  return {
+    info: (title, desc) => show('info', title, desc),
+    success: (title, desc) => show('success', title, desc, { autoDismiss: 3000 }),
+    error: (title, desc) => show('error', title, desc),
+  };
+})();
+
+/** Programmatic API: toast.success("Title", "Description"), toast.error(...), toast.info(...) */
+const toast = ToastManager;
+
+function showToastError(message) {
+  ToastManager.error(message || 'Error', '');
 }
 
 function showToastSuccess(message) {
-  const toast = document.getElementById('toast-success');
-  const msgEl = document.getElementById('toast-success-message');
-  const errorToast = document.getElementById('toast-error');
-  if (errorToast) errorToast.classList.remove('visible');
-  if (toast) {
-    if (msgEl && message) msgEl.textContent = message;
-    toast.classList.add('visible');
-    setTimeout(() => toast.classList.remove('visible'), 3000);
-  }
+  ToastManager.success(message || 'Success', '');
 }
 
 function initNotImplementedToast() {
-  const errorToast = document.getElementById('toast-error');
-  const successToast = document.getElementById('toast-success');
-  document.getElementById('toast-error-close')?.addEventListener('click', () => errorToast?.classList.remove('visible'));
-  document.getElementById('toast-success-close')?.addEventListener('click', () => successToast?.classList.remove('visible'));
+  /* Toast container is in HTML; toasts are created dynamically with per-toast close handlers */
 }
 
 function closeBottomPanel() {
