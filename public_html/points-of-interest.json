@@ -1,0 +1,10 @@
+[
+  {"id":1,"brand":"Autodesk","location":"Autodesk University","type":"Autodesk","lat":37.80006,"lng":-122.39747,"icon":"projects/Autodesk Forma/Autodesk.png"},
+  {"id":2,"brand":"Autodesk","location":"Tjuvholmen allé 3, 0252 Oslo","type":"Product Work","lat":59.908741,"lng":10.722761,"icon":"projects/Autodesk Forma/Autodesk.png"},
+  {"id":3,"brand":"Mazars","location":"61 Rue Henri Regnault, 92400 Courbevoie","type":"Product Work","lat":48.89205,"lng":2.243972,"icon":"projects/Mazars/Mazars.png"},
+  {"id":4,"brand":"Blue Ocean Sailing","location":"Le Marin 97290, Martinique","type":"Freelance Work","lat":14.469999,"lng":-60.867442,"icon":"projects/Blue Ocean sailing/Freelance.png"},
+  {"id":5,"brand":"Biomerieux","location":"Voie Romaine, 69290 Craponne, France","type":"Product Work","lat":45.761267,"lng":4.827994,"icon":"projects/Biomerieux/Second-Design-Studio.png"},
+  {"id":6,"brand":"Biosens Numerique","location":"6 Rue de Nice, 75011 Paris","type":"Diasys","lat":48.859618,"lng":2.298554,"icon":"projects/Diasys/Biosens.png"},
+  {"id":7,"brand":"Renault","location":"Place de l'Étoile, Paris","type":"Freelance Work","lat":48.8738,"lng":2.295,"icon":"projects/Renault/Freelance.png"},
+  {"id":8,"brand":"Woodoo","location":"Tour Montparnasse, Paris","type":"Product Work","lat":48.8422,"lng":2.3219,"icon":"projects/Woodoo/Freelance.png"}
+]

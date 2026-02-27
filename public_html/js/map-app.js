@@ -242,13 +242,34 @@ async function clearAllUsers() {
 }
 
 async function fetchPointsOfInterest() {
-  const url = (typeof window.getPointsOfInterestUrl === 'function' ? window.getPointsOfInterestUrl() : 'points-of-interest.php') + '?_=' + Date.now();
+  const baseUrl = typeof window.getPointsOfInterestUrl === 'function' ? window.getPointsOfInterestUrl() : 'points-of-interest.php';
+  const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + '_=' + Date.now();
   try {
     const res = await fetch(url, { cache: 'no-store' });
     const text = await res.text();
-    if (!res.ok) return [];
-    if (text.trimStart().startsWith('<') || text.trimStart().startsWith('<?php')) return [];
+    if (!res.ok) {
+      const fallback = await fetchPointsOfInterestFallback();
+      return fallback;
+    }
+    if (text.trimStart().startsWith('<') || text.trimStart().startsWith('<?php')) {
+      const fallback = await fetchPointsOfInterestFallback();
+      return fallback;
+    }
     const data = JSON.parse(text);
+    if (Array.isArray(data) && data.length > 0) return data;
+    return await fetchPointsOfInterestFallback();
+  } catch {
+    return await fetchPointsOfInterestFallback();
+  }
+}
+
+async function fetchPointsOfInterestFallback() {
+  try {
+    const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+    const url = (base ? base.replace(/\/$/, '') + '/' : '') + 'points-of-interest.json?_=' + Date.now();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
@@ -320,16 +341,21 @@ function renderNearbyTiles(tiles) {
     const dataId = tile.id != null ? `data-user-id="${tile.id}"` : '';
     const fadeClass = previousUserNames.has(tile.name) ? '' : ' tile-fade-in';
     const canDelete = tile.id && (isAdmin || tile.name === currentUserName);
+    const isOwnTile = tile.name === currentUserName;
     const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
+    const avatarHtml = isOwnTile
+      ? `<button type="button" class="user-tile-avatar-edit relative w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass} flex-shrink-0 overflow-hidden cursor-pointer group/avatar transition-all" data-user-tile="${tile.name}" aria-label="Change profile picture">
+          <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/>
+          <span class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none rounded-lg"><span class="material-symbols-outlined text-white text-2xl">edit</span></span>
+        </button>`
+      : `<div class="w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass}"><img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/></div>`;
     html += `
       <div ${dataAttr} ${dataId} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
           ${deleteBtn}
           <div class="w-2.5 h-2.5 ${dotClass}"></div>
         </div>
-        <div class="w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass}">
-          <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/>
-        </div>
+        ${avatarHtml}
         <div>
           <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${tile.name}</h3>
           <div class="flex items-center gap-1 mt-1 ${iconClass} text-sm ${isActive ? 'font-medium' : ''}">
@@ -657,6 +683,15 @@ function wireUserTileCards() {
   if (!panelContent) return;
   panelContent.addEventListener('click', (e) => {
     if (e.target.closest('.user-tile-delete')) return;
+    const avatarEdit = e.target.closest('.user-tile-avatar-edit');
+    if (avatarEdit) {
+      e.stopPropagation();
+      e.preventDefault();
+      const name = avatarEdit.getAttribute('data-user-tile');
+      const tile = currentTiles.find((t) => t.name === name);
+      if (tile) openProfilePicturePicker(tile, null);
+      return;
+    }
     if (scrollDragJustEnded) {
       scrollDragJustEnded = false;
       return;
@@ -718,25 +753,33 @@ function renderPOITiles(pois) {
   if (!container) return;
   currentPOIs = Array.isArray(pois) ? pois : currentPOIs;
   let html = '';
-  currentPOIs.forEach((poi) => {
-    const hasLocation = poi.lat != null && poi.lng != null;
-    const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
-    const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
-    html += `
-      <div ${dataAttr} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
-        <div class="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
-          <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${poi.icon || 'brand/placeholder.png'}"/>
-        </div>
-        <div>
-          <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
-          <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
-            <span class="material-symbols-outlined text-[16px]">location_on</span>
-            <span>${poi.location || ''}</span>
+  if (currentPOIs.length === 0) {
+    html = `<div class="bottom-section-tile w-48 flex-shrink-0 p-4 rounded border border-slate-200/50 dark:border-white/5 flex flex-col items-center justify-center gap-2 text-center">
+      <span class="material-symbols-outlined text-3xl text-text-secondary">folder_off</span>
+      <span class="text-sm text-text-secondary">No featured projects yet</span>
+      <span class="text-xs text-slate-400">Ensure points-of-interest.php is configured</span>
+    </div>`;
+  } else {
+    currentPOIs.forEach((poi) => {
+      const hasLocation = poi.lat != null && poi.lng != null;
+      const cardClass = hasLocation ? 'cursor-pointer hover:border-primary/50 transition-colors' : '';
+      const dataAttr = hasLocation ? `data-poi-id="${poi.id}"` : '';
+      html += `
+        <div ${dataAttr} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
+          <div class="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
+            <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${poi.icon || 'brand/placeholder.png'}"/>
           </div>
-          <div class="text-text-secondary text-xs mt-0.5">${poi.type || ''}</div>
-        </div>
-      </div>`;
-  });
+          <div>
+            <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
+            <div class="flex items-center gap-1 mt-1 text-text-secondary text-sm">
+              <span class="material-symbols-outlined text-[16px]">location_on</span>
+              <span>${poi.location || ''}</span>
+            </div>
+            <div class="text-text-secondary text-xs mt-0.5">${poi.type || ''}</div>
+          </div>
+        </div>`;
+    });
+  }
   container.innerHTML = html;
 }
 
@@ -783,13 +826,18 @@ function wirePOITabs() {
   }
 
   tabNearby.addEventListener('click', () => setActiveTab('nearby'));
-  tabPOI.addEventListener('click', () => setActiveTab('poi'));
+  tabPOI.addEventListener('click', () => {
+    setActiveTab('poi');
+    if (currentPOIs.length > 0) renderPOITiles(currentPOIs);
+  });
   tabMapData?.addEventListener('click', () => setActiveTab('map-data'));
   tabWidgets?.addEventListener('click', () => {
     setActiveTab('widgets');
     renderWidgetTilesInTab();
   });
   tabRecommendations?.addEventListener('click', () => setActiveTab('recommendations'));
+
+  setActiveTab('poi');
 }
 
 function getInitials(name) {
@@ -2107,12 +2155,21 @@ async function openProfilePicturePicker(tile, parentPanel) {
   }
   panel.style.zIndex = String(PROFILE_PICKER_Z);
 
+  const currentUserName = sessionStorage.getItem('osiris_user_name')?.trim() || '';
+  const isOwnProfile = tile.name === currentUserName;
   const mobileHandleHtml = isMobile ? '<div class="profile-picker-mobile-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>' : '';
+  const nameEditHtml = isOwnProfile ? `
+    <div class="px-4 pb-3 border-b border-slate-200 dark:border-white/10">
+      <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display name</label>
+      <input type="text" class="profile-pick-name w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Your name" maxlength="64"/>
+    </div>
+  ` : '';
   let html = mobileHandleHtml + `
     <div class="p-4 border-b border-slate-200 dark:border-white/10">
       <h3 class="font-bold text-slate-800 dark:text-white">Change profile picture</h3>
       <p class="text-sm text-text-secondary mt-0.5">Choose one or upload your own</p>
     </div>
+    ${nameEditHtml}
     <div class="p-4 grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
       <div class="profile-pick-add col-span-3 flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-primary/50 cursor-pointer transition-colors min-h-[100px] overflow-hidden" data-pick="add" role="button">
         <div class="profile-pick-add-inner flex flex-col items-center justify-center">
@@ -2138,6 +2195,8 @@ async function openProfilePicturePicker(tile, parentPanel) {
   `;
 
   panel.innerHTML = html;
+  const nameInput = panel.querySelector('.profile-pick-name');
+  if (nameInput && tile.name) nameInput.value = tile.name;
 
   const renderSelected = () => {
     panel.querySelectorAll('.profile-pick-option').forEach((btn, i) => {
@@ -2206,31 +2265,51 @@ async function openProfilePicturePicker(tile, parentPanel) {
   panel.querySelector('.profile-pick-validate').addEventListener('click', async () => {
     const path = selectedPath || (selectedRandomIndex >= 0 ? USER_PICT_IMAGES[selectedRandomIndex] : null);
     if (!path) return;
+    const newName = (nameInput?.value ?? '').trim();
+    const nameChanged = isOwnProfile && newName && newName !== tile.name;
+    const payload = { name: tile.name, profilePicture: path };
+    if (nameChanged) payload.newName = newName;
     const url = typeof getProfilePictureUpdateUrl === 'function' ? getProfilePictureUpdateUrl() : 'api/users-profile-picture.php';
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: tile.name, profilePicture: path })
+        body: JSON.stringify(payload)
       });
       const errBody = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = errBody.error || (res.status === 404 ? 'API not found. Create api/users-profile-picture.php' : `Failed to update profile picture (HTTP ${res.status})`);
+        const msg = errBody.error || (res.status === 404 ? 'API not found. Create api/users-profile-picture.php' : `Failed to update profile (HTTP ${res.status})`);
         showToastError(msg);
         return;
       }
       const img = parentPanel?.querySelector('.user-profile-avatar');
       if (img) img.src = path;
+      const oldName = tile.name;
       tile.avatar = path;
-      const nt = currentTiles.find((t) => t.name === tile.name);
+      const nt = currentTiles.find((t) => t.name === oldName);
       if (nt) nt.avatar = path;
+      if (nameChanged && errBody.name) {
+        tile.name = errBody.name;
+        if (nt) nt.name = errBody.name;
+        sessionStorage.setItem('osiris_user_name', errBody.name);
+        if (parentPanel) {
+          parentPanel.setAttribute('data-user-name', errBody.name);
+          const nameEl = parentPanel.querySelector('.user-profile-name');
+          if (nameEl) nameEl.textContent = errBody.name;
+          if (userProfilePanels.has(oldName)) {
+            const v = userProfilePanels.get(oldName);
+            userProfilePanels.delete(oldName);
+            userProfilePanels.set(errBody.name, v);
+          }
+        }
+      }
       addUserTileMarkers(currentTiles);
       renderNearbyTiles(currentTiles);
-      showToastSuccess('Profile picture updated');
+      showToastSuccess(nameChanged ? 'Profile updated' : 'Profile picture updated');
       panel.remove();
       profilePickerPanel = null;
     } catch (e) {
-      showToastError(e?.message || 'Failed to update profile picture');
+      showToastError(e?.message || 'Failed to update profile');
     }
   });
 
@@ -2335,7 +2414,7 @@ async function openUserProfilePanel(tile) {
   panel.innerHTML = mobileHandleHtml + `
     <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
-        <div class="relative flex-shrink-0 group/avatar">
+        <div class="relative flex-shrink-0 group/avatar rounded-lg transition-all hover:ring-2 hover:ring-primary/50">
           <img class="user-profile-avatar w-12 h-12 rounded-lg object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
           ${avatarEditBtn}
         </div>

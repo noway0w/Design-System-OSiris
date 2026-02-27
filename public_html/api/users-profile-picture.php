@@ -19,6 +19,7 @@ if ($name === '') {
     exit;
 }
 $path = trim($body['profilePicture'] ?? $body['profile_picture'] ?? '');
+$newName = trim($body['newName'] ?? '');
 $dbPath = __DIR__ . '/users.db';
 try {
     $db = new PDO('sqlite:' . $dbPath);
@@ -36,13 +37,38 @@ foreach ($cols as $c) {
 if (!$hasProfilePicture) {
     $db->exec('ALTER TABLE users ADD COLUMN profile_picture TEXT');
 }
-$stmt = $db->prepare('UPDATE users SET profile_picture = ? WHERE name = ?');
-$stmt->execute([$path === '' ? null : $path, $name]);
-$check = $db->prepare('SELECT id FROM users WHERE name = ?');
-$check->execute([$name]);
-if (!$check->fetch() && $stmt->rowCount() === 0) {
-    http_response_code(404);
-    echo json_encode(['error' => 'User not found']);
-    exit;
+$updates = [];
+$params = [];
+if ($path !== '') {
+    $updates[] = 'profile_picture = ?';
+    $params[] = $path;
+} elseif ($path === '' && $newName === '') {
+    $updates[] = 'profile_picture = ?';
+    $params[] = null;
 }
-echo json_encode(['ok' => true, 'profilePicture' => $path ?: null]);
+if ($newName !== '' && $newName !== $name) {
+    $updates[] = 'name = ?';
+    $params[] = $newName;
+}
+if (!empty($updates)) {
+    $params[] = $name;
+    $sql = 'UPDATE users SET ' . implode(', ', $updates) . ' WHERE name = ?';
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+}
+$check = $db->prepare('SELECT id FROM users WHERE name = ?');
+$check->execute([$newName !== '' && $newName !== $name ? $newName : $name]);
+if (!$check->fetch()) {
+    $check2 = $db->prepare('SELECT id FROM users WHERE name = ?');
+    $check2->execute([$name]);
+    if (!$check2->fetch()) {
+        http_response_code(404);
+        echo json_encode(['error' => 'User not found']);
+        exit;
+    }
+}
+$result = ['ok' => true, 'profilePicture' => $path ?: null];
+if ($newName !== '' && $newName !== $name) {
+    $result['name'] = $newName;
+}
+echo json_encode($result);
