@@ -8,6 +8,20 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: public, max-age=300');
 
+$ADMIN_ONLY_BRANDS = ['World is a village'];
+function isAdminUser() {
+    $config = @include __DIR__ . '/config.php';
+    $adminIps = $config['ADMIN_IPS'] ?? ['195.139.147.156'];
+    $adminIps = is_array($adminIps) ? $adminIps : [$adminIps];
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $clientIp = trim($_SERVER['HTTP_X_REAL_IP']);
+    }
+    return in_array($clientIp, $adminIps, true);
+}
+
 /**
  * Default POI list (matches projects in public_html/projects/)
  * Used when DB fails or returns empty
@@ -126,6 +140,12 @@ try {
 
 if (empty($pois)) {
     $pois = getFallbackPois();
+}
+
+if (!isAdminUser()) {
+    $pois = array_values(array_filter($pois, function ($p) use ($ADMIN_ONLY_BRANDS) {
+        return !in_array($p['brand'] ?? '', $ADMIN_ONLY_BRANDS, true);
+    }));
 }
 
 echo json_encode($pois);

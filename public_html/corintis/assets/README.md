@@ -1,4 +1,4 @@
-# Curintis CAD Assets
+# Corintis CAD Assets
 
 Place the Gene Synthesizer IGES file here:
 

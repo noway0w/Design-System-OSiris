@@ -2752,14 +2752,14 @@ function initGeneralMenu() {
   });
 }
 
-function initCurintisEntryIfFlagged() {
-  if (!new URLSearchParams(window.location.search).has('curintis')) return;
+function initCorintisEntryIfFlagged() {
+  if (!new URLSearchParams(window.location.search).has('corintis')) return;
   const panel = document.getElementById('general-menu-panel');
   if (!panel) return;
   const link = document.createElement('a');
-  link.href = '/curintis/index.html';
+  link.href = '/corintis/index.html';
   link.className = 'neumorphic-menu-resume';
-  link.innerHTML = '<span class="material-symbols-outlined">precision_manufacturing</span><span>Curintis 3D</span>';
+  link.innerHTML = '<span class="material-symbols-outlined">precision_manufacturing</span><span>Corintis 3D</span>';
   panel.appendChild(link);
 }
 

@@ -56,7 +56,7 @@ All keys are optional except those required for a complete panel. Projects witho
 | `mission` | string[] | Mission bullets |
 | `process` | string[] | Process bullets |
 | `kpi` | string[] | KPI / results bullets |
-| `keyFigures` | object[] | `{ label, value, icon }` – e.g. `{ "label": "Project Year", "value": "2016", "icon": "calendar_today" }` |
+| `keyFigures` | object[] | Key facts – `{ label, value, icon }` – e.g. `{ "label": "Project Year", "value": "2016", "icon": "calendar_today" }` |
 | `websiteUrl` | string | External link; empty `""` hides the website button |
 | `facts` | string[] | Additional facts |
 | `intro` | string | Introductory paragraph |
@@ -177,7 +177,7 @@ POIs are stored in `api/points-of-interest.db` (SQLite). Each row:
 1. **POI list:** `GET points-of-interest.php` → `[{ id, brand, location, type, lat, lng, icon }, ...]`
 2. **Project content:** `GET projects-content.php?brand=[Brand]` (or `?slug=[Slug]`) → merged result:
    - Scanned media: `hero`, `images[]`, `videos[]`
-   - Content from `content.json`: `featuredLabel`, `heroStatement`, `quote`, `mission`, `process`, `kpi`, `keyFigures`, `galleryMetadata`, `heroImage`, etc.
+   - Content from `content.json`: `featuredLabel`, `heroStatement`, `quote`, `mission`, `process`, `kpi`, `keyFigures` (Key Facts), `galleryMetadata`, `heroImage`, etc.
 
 `heroImage` is applied after merge: if present, the API selects the matching image from `images[]` and sets `hero` to that URL.
 

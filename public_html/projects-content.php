@@ -7,6 +7,20 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: public, max-age=300');
 
+$ADMIN_ONLY_BRANDS = ['World is a village'];
+function isAdminUserContent() {
+    $config = @include __DIR__ . '/config.php';
+    $adminIps = $config['ADMIN_IPS'] ?? ['195.139.147.156'];
+    $adminIps = is_array($adminIps) ? $adminIps : [$adminIps];
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $clientIp = trim($_SERVER['HTTP_X_REAL_IP']);
+    }
+    return in_array($clientIp, $adminIps, true);
+}
+
 $projectsBase = __DIR__ . '/projects';
 $slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
 $location = isset($_GET['location']) ? trim($_GET['location']) : '';
@@ -19,6 +33,7 @@ $slugMap = [
     'Biosens Numerique' => 'Diasys',
     'Renault' => 'Renault',
     'Woodoo' => 'Woodoo',
+    'World is a village' => 'World is a village',
 ];
 
 if (!$slug && isset($_GET['brand'])) {
@@ -37,6 +52,11 @@ if ($slug === 'Autodesk Forma' && $location) {
 
 if (!$slug) {
     echo json_encode(['error' => 'Missing slug or brand', 'hero' => null, 'videos' => [], 'images' => []]);
+    exit;
+}
+
+if (in_array($slug, $ADMIN_ONLY_BRANDS, true) && !isAdminUserContent()) {
+    echo json_encode(['hero' => null, 'videos' => [], 'images' => []]);
     exit;
 }
 

@@ -15,6 +15,7 @@
     "Guide the ESRI partnership to successfully develop and launch their extension within Forma."
   ],
   "process": [
+    "Started with messy whiteboard sessions alongside PMs and engineers to untangle complex API requirements, translating those discussions into rough workflow diagrams before any high-fidelity UI was touched.",
     "Identified real friction points in the Developer Experience by building internal add-ons and testing the Extension API/SDK.",
     "Translated complex technical requirements into clear, usage-oriented demonstrations for strategic clients and public events.",
     "Collaborated cross-functionally with product, engineering, and content strategy to ensure a cohesive ecosystem narrative."

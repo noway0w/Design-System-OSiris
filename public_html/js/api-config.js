@@ -81,3 +81,9 @@ window.getUsersMeUrl = function () {
   const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
   return base ? `${base.replace(/\/$/, '')}/api/users-me.php` : 'api/users-me.php';
 };
+
+// CAD files API URL (Corintis 3D)
+window.getCadFilesUrl = function () {
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/api/cad-files.php` : '../api/cad-files.php';
+};

@@ -15,6 +15,7 @@
     "Integrate high LOD (Level of Detail) building data, starting with the Norway market."
   ],
   "process": [
+    "Mapped out user friction points through rough sketches and low-fidelity wireframes, iterating heavily on early comps to balance aggressive business goals with a seamless user journey.",
     "Mapped out end-to-end user journeys for selecting geographic boundaries, previewing data, and executing payments.",
     "Iterated in Figma to push the boundaries of how complex data is previewed in-browser before purchase.",
     "Collaborated tightly with data engineers to ensure the UI matched the technical realities of querying and loading worldwide datasets."

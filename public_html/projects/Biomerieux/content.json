@@ -16,6 +16,7 @@
     "The first step of this project was to audit Biomerieux's existing training journeys and project how interactive 3D technologies could scale globally to meet future production and educational demands."
   ],
   "process": [
+    "Navigated the high stakes of clinical environments through rigorous early ideation. We mapped out critical workflow diagrams and tested rapid, low-fidelity comps to ensure zero-error interactions under pressure.",
     "The process began with organizing several interviews with internal and external stakeholders, auditing the digital environment, and testing different scalable technologies. We designed the complete UX/UI of the App and the website hosting the WebGL environment.",
     "Initial drafts were produced using Three.js to validate the user flow. These results projected a clear path forward, allowing us to select Unreal Engine for the final, high-fidelity production. The final app design was completed alongside rigorous testing and security pentesting to ensure it was ready for enterprise deployment."
   ],

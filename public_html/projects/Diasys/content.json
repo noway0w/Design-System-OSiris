@@ -1,6 +1,6 @@
 {
   "featuredLabel": "Innovation Case Study",
-  "heroStatement": "Experience your products like never before with an immersive 3D App",
+  "heroStatement": "IoT & Healthcare Data Visualization",
   "quote": "Innovation to reduce shipping cost with a 3D App.",
   "quoteAuthor": "Guillaume Lassiat",
   "quoteRole": "UI/UX Designer",
@@ -16,29 +16,18 @@
     "Create a 3D app that not only showcases Diasys' complex and technical products effectively but also provides a seamless and enjoyable user experience for customers and sales teams alike."
   ],
   "process": [
+    "Grounded the ideation in reality by mapping out the physical environment of the technicians. We used conceptual sketches and decision-tree diagrams to reduce cognitive load before designing the final screens.",
     "As a designer, I needed to understand the complex and technical nature of the products to create a user interface that effectively showcases their features and benefits.",
-    "Then I had to consider the user experience of the app, making sure it is intuitive and easy to navigate for both existing and potential customers. Overall, the challenge for the UI/UX designer was to create a 3D app that not only showcases Diasys' products effectively, but also provides a seamless and enjoyable user experience for customers and sales teams alike."
+    "Then I had to consider the user experience of the app, making sure it is intuitive and easy to navigate for both existing and potential customers. Overall, the challenge for the UI/UX designer was to create a 3D app that not only showcases Diasys' products effectively, but also provides a seamless and enjoyable user experience for customers and sales teams alike.",
+    "Information Architecture focused on reducing 'Alert Fatigue' through high-fidelity wireframing and real-time data flow optimization."
   ],
   "kpi": [
-    "The KPIs for the Diasys 3D app project were focused on measuring the success of the app in achieving its goals of improving the presentation of highly precise medical products at international fairs while reducing the cost of shipping.",
-    "The KPIs included metrics such as the number of visitors attracted to the Diasys booth, the number of inquiries received about the medical products, and the cost savings achieved through reduced shipping expenses. Additionally, user engagement metrics such as time spent on the app and interaction with the 3D models were monitored to ensure the app was meeting the expectations of users."
+    "18% Reduction in Shipping Costs via route optimization.",
+    "24% Faster technician intervention through redesigned alert logic."
   ],
   "keyFigures": [
-    {
-      "label": "Shipping Costs",
-      "value": "Reduced",
-      "icon": "local_shipping"
-    },
-    {
-      "label": "User Engagement",
-      "value": "Increased",
-      "icon": "touch_app"
-    },
-    {
-      "label": "Product Clarity",
-      "value": "Enhanced",
-      "icon": "visibility"
-    }
+    { "label": "Cost Savings", "value": "18%", "icon": "trending_down" },
+    { "label": "Alert Speed", "value": "+24%", "icon": "timer" }
   ],
   "websiteUrl": "",
   "facts": [
@@ -61,7 +50,7 @@
     },
     {
       "filename": "UI and UX Design Boards.jpg",
-      "description": "Comprehensive UI/UX design system and flowcharts, detailing the user journey, color palette, and interactive element states."
+      "description": "Early-stage thinking: Workflow diagram/Sketch showing the logic behind Diasys 3D App before high-fidelity execution."
     },
     {
       "filename": "Diasys Application Concept.jpg",

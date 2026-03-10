@@ -165,7 +165,7 @@
   z-index: 2;
 }
 
-/* Key figures cards */
+/* Key facts cards */
 .poi-key-figure {
   transition: all 0.2s;
 }
@@ -326,7 +326,7 @@ html:not(.dark) .poi-content-panel .poi-panel-quote {
   color: #475569;
 }
 
-/* Key figures: labels and values must be dark in light mode */
+/* Key facts: labels and values must be dark in light mode */
 html:not(.dark) .poi-content-panel .poi-panel-key-figures .text-slate-400 {
   color: #64748b !important;
 }

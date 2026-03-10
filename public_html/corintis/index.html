@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D CAD Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="../css/tailwind.css" rel="stylesheet"/>
+  <link href="../css/variables.css" rel="stylesheet"/>
+  <style>
+    .corintis-canvas-wrap { position: relative; min-height: 0; }
+    #corintis-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+    .corintis-overlay { pointer-events: none; }
+    .corintis-overlay > * { pointer-events: auto; }
+    /* Floating panels - map-app dark theme for readability */
+    .corintis-floating-panel {
+      position: fixed;
+      width: 16rem;
+      max-width: calc(100vw - 2rem);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      background: rgba(248, 250, 252, 0.25);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.2s, top 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1), right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 40;
+    }
+    html.dark .corintis-floating-panel,
+    .dark .corintis-floating-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .corintis-floating-panel:hover { box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2); }
+    html.dark .corintis-floating-panel:hover,
+    .dark .corintis-floating-panel:hover { box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6); }
+    .corintis-floating-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      cursor: grab;
+      user-select: none;
+      background: rgba(255, 255, 255, 0.4);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      min-height: 2.5rem;
+      color: #1e293b;
+    }
+    html.dark .corintis-floating-panel-header,
+    .dark .corintis-floating-panel-header {
+      background: rgba(30, 41, 59, 0.6);
+      border-bottom-color: rgba(255, 255, 255, 0.05);
+      color: #f1f5f9;
+    }
+    .corintis-floating-panel-header:active { cursor: grabbing; }
+    .corintis-floating-panel-body {
+      overflow: hidden;
+      transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+      background: rgba(255, 255, 255, 0.5);
+      color: #334155;
+    }
+    html.dark .corintis-floating-panel-body,
+    .dark .corintis-floating-panel-body {
+      background: rgba(15, 23, 42, 0.5);
+      color: #e2e8f0;
+    }
+    .corintis-floating-panel.collapsed .corintis-floating-panel-body {
+      max-height: 0 !important;
+      opacity: 0;
+    }
+    .corintis-floating-panel .expand-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      color: inherit;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .corintis-floating-panel.collapsed .expand-btn { transform: rotate(-90deg); }
+    .corintis-floating-panel .expand-btn:hover { background: rgba(0, 0, 0, 0.06); }
+    html.dark .corintis-floating-panel .expand-btn:hover,
+    .dark .corintis-floating-panel .expand-btn:hover { background: rgba(255, 255, 255, 0.08); }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-white min-h-screen flex flex-col">
+  <div class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
+    <a href="../map-app.html" class="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors">
+      <span class="material-symbols-outlined">arrow_back</span>
+      <span>Back to Map</span>
+    </a>
+    <h1 class="text-lg font-bold">3D CAD Explorer</h1>
+    <div class="flex items-center gap-2">
+      <label class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors">
+        <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc" class="hidden"/>
+        <span class="material-symbols-outlined text-lg">upload_file</span>
+        <span class="text-sm font-medium">Import CAD</span>
+      </label>
+      <button type="button" id="corintis-reset-panels" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Re-organize panels to initial position">
+        <span class="material-symbols-outlined text-lg">reorder</span>
+        <span class="text-sm font-medium">Reset panels</span>
+      </button>
+    </div>
+  </div>
+  <div class="flex-1 min-h-[60vh] flex overflow-hidden relative">
+    <div class="flex-1 relative corintis-canvas-wrap min-h-0">
+      <canvas id="corintis-canvas"></canvas>
+    <div id="corintis-loading" class="corintis-overlay absolute inset-0 flex items-center justify-center bg-background-light/80 dark:bg-background-dark/80">
+      <div class="w-full max-w-md mx-4 p-6 bg-card-light dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-xl">
+        <div class="text-primary text-lg font-semibold mb-2 corintis-loading-text">Loading…</div>
+        <div class="text-sm text-slate-500 dark:text-slate-400 mb-4 corintis-loading-status">Initializing</div>
+        <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div id="corintis-loading-bar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    <div id="corintis-error" class="corintis-overlay absolute inset-0 hidden items-center justify-center bg-background-light/90 dark:bg-background-dark/90">
+      <div class="max-w-md p-6 bg-card-light dark:bg-card-dark rounded-lg border border-slate-200 dark:border-white/10 shadow-xl text-center">
+        <span class="material-symbols-outlined text-4xl text-red-500 mb-4">error</span>
+        <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">CAD file not found</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mb-4 corintis-error-msg">Use <strong>Import CAD</strong> to load an IGES, STEP, DXF, or IFC file, then enable it from the Loaded files list.</p>
+      </div>
+    </div>
+    </div>
+    <div id="corintis-floating-panels" class="absolute inset-0 pointer-events-none z-10"></div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.module.js",
+      "three/examples/jsm/utils/BufferGeometryUtils": "./buffer-geometry-utils-shim.js",
+      "three/examples/jsm/utils/BufferGeometryUtils.js": "./buffer-geometry-utils-shim.js",
+      "web-ifc": "https://cdn.jsdelivr.net/npm/web-ifc@0.0.39/web-ifc-api.js",
+      "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.5.21/src/index.js"
+    },
+    "scopes": {
+      "https://cdn.jsdelivr.net/npm/three@0.149.0/": {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js"
+        }
+      },
+      "https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.126/": {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
+          "three/examples/jsm/utils/BufferGeometryUtils": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/utils/BufferGeometryUtils.js"
+        }
+      }
+    }
+  }
+  </script>
+  <script src="../js/api-config.js"></script>
+  <script src="../js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+  <script>
+(function () {
+  const canvas = document.getElementById('corintis-canvas');
+  const loadingEl = document.getElementById('corintis-loading');
+  const errorEl = document.getElementById('corintis-error');
+  const importInput = document.getElementById('import-cad-input');
+
+  const floatingPanelsContainer = document.getElementById('corintis-floating-panels');
+  const loadingBar = document.getElementById('corintis-loading-bar');
+  const loadingStatus = document.querySelector('.corintis-loading-status');
+
+  const PANEL_GAP = 10;
+  const PANEL_HEADER_H = 40;
+  const PANEL_BODY_MAX_H = 320;
+  const PANEL_Z = 40;
+  const PANEL_ANCHOR_TOP = 76;
+  const PANEL_ANCHOR_OFFSET = 12;
+  let corintisPanelAlign = 'right';
+
+  function createFloatingPanel(id, title, icon, bodyHtml, initialCollapsed = true) {
+    const panel = document.createElement('div');
+    panel.className = 'corintis-floating-panel' + (initialCollapsed ? ' collapsed' : '');
+    panel.setAttribute('data-panel-id', id);
+    panel.innerHTML = `
+      <div class="corintis-floating-panel-header">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <span class="material-symbols-outlined text-lg text-primary flex-shrink-0">${icon}</span>
+          <span class="text-sm font-semibold truncate">${title}</span>
+        </div>
+        <button type="button" class="expand-btn flex-shrink-0" aria-label="Expand/collapse">
+          <span class="material-symbols-outlined text-[20px]">expand_more</span>
+        </button>
+      </div>
+      <div class="corintis-floating-panel-body" style="max-height: ${PANEL_BODY_MAX_H}px;">
+        <div class="p-3">${bodyHtml}</div>
+      </div>
+    `;
+    const expandBtn = panel.querySelector('.expand-btn');
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('collapsed');
+      requestAnimationFrame(() => layoutCorintisPanels());
+    });
+    return panel;
+  }
+
+  function getPanelHeight(panel) {
+    const header = panel.querySelector('.corintis-floating-panel-header');
+    const headerH = header?.offsetHeight ?? PANEL_HEADER_H;
+    if (panel.classList.contains('collapsed')) return headerH;
+    const body = panel.querySelector('.corintis-floating-panel-body');
+    const bodyInner = body?.querySelector('div');
+    const bodyH = bodyInner ? bodyInner.scrollHeight + 24 : 120;
+    return headerH + Math.min(bodyH, PANEL_BODY_MAX_H);
+  }
+
+  function layoutCorintisPanels() {
+    const panels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel') || []);
+    let y = PANEL_ANCHOR_TOP;
+    const isLeft = corintisPanelAlign === 'left';
+    panels.forEach((panel, i) => {
+      const h = getPanelHeight(panel);
+      panel.style.top = y + 'px';
+      panel.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+      if (isLeft) {
+        panel.style.left = PANEL_ANCHOR_OFFSET + 'px';
+        panel.style.right = 'auto';
+      } else {
+        panel.style.right = PANEL_ANCHOR_OFFSET + 'px';
+        panel.style.left = 'auto';
+      }
+      panel.style.zIndex = String(PANEL_Z + i);
+      y += h + PANEL_GAP;
+    });
+  }
+
+  function isPanelOffScreen(panel) {
+    const rect = panel.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    return rect.right < 0 || rect.left > vw || rect.bottom < 0 || rect.top > vh;
+  }
+
+  function realignPanelsToLeft() {
+    corintisPanelAlign = 'left';
+    layoutCorintisPanels();
+  }
+
+  function resetPanelsToInitial() {
+    corintisPanelAlign = 'right';
+    layoutCorintisPanels();
+  }
+
+  function initFloatingPanels() {
+    if (!floatingPanelsContainer) return;
+
+    const layersBody = '<div id="corintis-layers-list" class="space-y-1 max-h-40 overflow-y-auto"></div>';
+    const loadedBody = '<div id="corintis-loaded-files-list" class="space-y-1 max-h-40 overflow-y-auto"><p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, or IFC file.</p></div>';
+    const inspectionBody = `
+      <div class="space-y-3">
+        <label class="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+          <input type="checkbox" id="clipping-enable" class="rounded accent-primary w-4 h-4"/>
+          <span class="text-sm">Enable sectioning</span>
+        </label>
+        <div class="flex gap-1">
+          <button type="button" class="clipping-axis-btn flex-1 px-2 py-1.5 text-xs font-medium rounded bg-primary/20 text-primary dark:bg-primary/30" data-axis="x">X</button>
+          <button type="button" class="clipping-axis-btn flex-1 px-2 py-1.5 text-xs font-medium rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300" data-axis="y">Y</button>
+          <button type="button" class="clipping-axis-btn flex-1 px-2 py-1.5 text-xs font-medium rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300" data-axis="z">Z</button>
+        </div>
+        <div>
+          <label class="text-xs text-slate-600 dark:text-slate-400 block mb-1">Section position</label>
+          <input type="range" id="clipping-slider" min="0" max="100" value="50" class="w-full h-2 accent-primary cursor-pointer" disabled/>
+        </div>
+      </div>
+    `;
+    const visualBody = `
+      <div class="space-y-3">
+        <label class="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300" title="Transparent shell overlay">
+          <input type="checkbox" id="ghost-mode-toggle" class="rounded accent-primary w-4 h-4" checked/>
+          <span class="text-sm">Ghost exterior</span>
+        </label>
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-base text-slate-600 dark:text-slate-400">opacity</span>
+          <input type="range" id="opacity-slider" min="10" max="100" value="100" class="flex-1 h-2 accent-primary cursor-pointer"/>
+          <span id="opacity-value" class="text-xs font-medium text-slate-600 dark:text-slate-400 w-8">100%</span>
+        </div>
+      </div>
+    `;
+
+    const panels = [
+      createFloatingPanel('layers', 'Layers', 'layers', layersBody),
+      createFloatingPanel('loaded', 'Loaded files', 'folder_open', loadedBody),
+      createFloatingPanel('inspection', 'Internal Inspection', 'content_cut', inspectionBody),
+      createFloatingPanel('visual', 'Visual rendering', 'visibility', visualBody)
+    ];
+
+    panels.forEach((panel) => floatingPanelsContainer.appendChild(panel));
+    layoutCorintisPanels();
+
+    panels.forEach((panel) => {
+      const header = panel.querySelector('.corintis-floating-panel-header');
+      const startDrag = (clientX, clientY) => {
+        const rect = panel.getBoundingClientRect();
+        panel.style.transition = 'none';
+        window._corintisPanelDrag = { panel, startX: clientX, startY: clientY, startLeft: rect.left, startTop: rect.top };
+      };
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.expand-btn')) return;
+        startDrag(e.clientX, e.clientY);
+      });
+      header.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.expand-btn')) return;
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
+    });
+
+    const moveDrag = (clientX, clientY) => {
+      if (!window._corintisPanelDrag) return;
+      const { panel, startX, startY, startLeft, startTop } = window._corintisPanelDrag;
+      const dx = clientX - startX, dy = clientY - startY;
+      panel.style.left = (startLeft + dx) + 'px';
+      panel.style.top = (startTop + dy) + 'px';
+      panel.style.right = 'auto';
+    };
+
+    const endDrag = () => {
+      const d = window._corintisPanelDrag;
+      window._corintisPanelDrag = null;
+      if (!d?.panel) return;
+      d.panel.style.transition = '';
+      const allPanels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel') || []);
+      const anyOffScreen = allPanels.some((p) => isPanelOffScreen(p));
+      if (anyOffScreen) realignPanelsToLeft();
+    };
+
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchmove', (e) => {
+      if (window._corintisPanelDrag) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', endDrag);
+  }
+
+  initFloatingPanels();
+
+  const layersList = document.getElementById('corintis-layers-list');
+  const loadedFilesList = document.getElementById('corintis-loaded-files-list');
+
+  let scene, camera, renderer, controls, cadMeshes = [];
+  let cadGroup = null;
+  let edgesGroup = null;
+  let cadBounds = null;
+  let layers = [];
+  let layerVisibility = {};
+  let loadedFiles = [];
+  let activeFileId = null;
+  let clippingPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
+  let clippingEnabled = false;
+  let clippingAxis = 'x';
+  let clippingValue = 0.5;
+  let opacityValue = 1;
+  let ghostMode = true;
+
+  function showError(msg) {
+    loadingEl.classList.add('hidden');
+    errorEl.classList.remove('hidden');
+    errorEl.classList.add('flex');
+    const msgEl = errorEl.querySelector('.corintis-error-msg');
+    if (msgEl && msg) msgEl.textContent = msg;
+  }
+
+  function showLoading(text, status, progress) {
+    loadingEl.classList.remove('hidden');
+    loadingEl.classList.add('flex');
+    errorEl.classList.add('hidden');
+    const textEl = loadingEl.querySelector('.corintis-loading-text');
+    if (textEl && text) textEl.textContent = text;
+    if (loadingStatus) loadingStatus.textContent = status || '';
+    if (loadingBar) loadingBar.style.width = (progress != null ? Math.min(100, progress) : 0) + '%';
+  }
+
+  function updateLoadingProgress(status, progress) {
+    if (loadingStatus) loadingStatus.textContent = status || '';
+    if (loadingBar) loadingBar.style.width = (progress != null ? Math.min(100, progress) : 0) + '%';
+  }
+
+  function hideLoading() {
+    loadingEl.classList.add('hidden');
+    loadingEl.classList.remove('flex');
+    errorEl.classList.add('hidden');
+    errorEl.classList.remove('flex');
+  }
+
+  function initThree() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x101a22);
+    if (document.documentElement.classList.contains('light')) {
+      scene.background.setHex(0xf6f7f8);
+    }
+
+    camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    camera.position.set(80, 60, 80);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.localClippingEnabled = true;
+
+    const amb = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(50, 80, 50);
+    dir.castShadow = true;
+    scene.add(dir);
+    const fill = new THREE.DirectionalLight(0x88ccff, 0.3);
+    fill.position.set(-30, 20, -30);
+    scene.add(fill);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = true;
+
+    window.addEventListener('resize', () => {
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    });
+  }
+
+  function ensureTypedArray(arr, Ctor) {
+    if (arr instanceof Ctor) return arr;
+    return new Ctor(arr);
+  }
+
+  function occtMeshToThree(meshData) {
+    const geom = new THREE.BufferGeometry();
+    const posArr = ensureTypedArray(meshData.attributes.position.array, Float32Array);
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+    if (meshData.attributes.normal) {
+      const normArr = ensureTypedArray(meshData.attributes.normal.array, Float32Array);
+      geom.setAttribute('normal', new THREE.Float32BufferAttribute(normArr, 3));
+    }
+    if (meshData.index && meshData.index.array) {
+      const idxArr = ensureTypedArray(meshData.index.array, Uint32Array);
+      geom.setIndex(new THREE.BufferAttribute(idxArr, 1));
+    }
+    geom.computeVertexNormals();
+    return geom;
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  function getClippingConstant() {
+    if (!cadBounds) return 0;
+    const { min, max } = cadBounds;
+    const axisIdx = { x: 0, y: 1, z: 2 }[clippingAxis];
+    const lo = [min.x, min.y, min.z][axisIdx];
+    const hi = [max.x, max.y, max.z][axisIdx];
+    return -hi + clippingValue * (hi - lo);
+  }
+
+  function disposeMaterial(material) {
+    if (!material) return;
+    if (Array.isArray(material)) {
+      material.forEach((m) => { if (m && typeof m.dispose === 'function') m.dispose(); });
+    } else if (typeof material.dispose === 'function') {
+      material.dispose();
+    }
+  }
+
+  function forEachMaterial(mesh, fn) {
+    const m = mesh.material;
+    if (!m) return;
+    (Array.isArray(m) ? m : [m]).forEach((mat) => { if (mat) fn(mat); });
+  }
+
+  function applyClippingToMeshes() {
+    const planes = clippingEnabled ? [new THREE.Plane(clippingPlane.normal.clone(), getClippingConstant())] : [];
+    cadMeshes.forEach(({ mesh }) => {
+      forEachMaterial(mesh, (mat) => { mat.clippingPlanes = planes; });
+    });
+    if (edgesGroup) {
+      const edgePlanes = planes;
+      edgesGroup.children.forEach((line) => {
+        if (line.material) line.material.clippingPlanes = edgePlanes;
+      });
+    }
+  }
+
+  function applyOpacity() {
+    if (ghostMode) {
+      const ghostOpacity = Math.max(0.06, Math.min(0.25, (opacityValue / 100) * 0.2));
+      cadMeshes.forEach(({ mesh }) => {
+        forEachMaterial(mesh, (mat) => {
+          mat.transparent = true;
+          mat.opacity = ghostOpacity;
+          mat.side = THREE.DoubleSide;
+          mat.depthWrite = false;
+          mat.depthTest = false;
+        });
+      });
+      if (edgesGroup) edgesGroup.visible = true;
+    } else {
+      const useTransparency = opacityValue < 1;
+      cadMeshes.forEach(({ mesh }) => {
+        forEachMaterial(mesh, (mat) => {
+          mat.transparent = useTransparency;
+          mat.opacity = opacityValue;
+          mat.side = THREE.DoubleSide;
+          mat.depthWrite = opacityValue >= 1;
+        });
+      });
+      if (edgesGroup) edgesGroup.visible = false;
+    }
+  }
+
+  function clearCad() {
+    if (edgesGroup) {
+      scene.remove(edgesGroup);
+      edgesGroup.children.forEach((line) => {
+        line.geometry.dispose();
+        if (line.material) line.material.dispose();
+      });
+      edgesGroup = null;
+    }
+    if (cadGroup) {
+      scene.remove(cadGroup);
+      cadMeshes.forEach(({ mesh, geometry }) => {
+        geometry.dispose();
+        disposeMaterial(mesh.material);
+      });
+      cadMeshes = [];
+      cadGroup = null;
+    }
+    layers = [];
+    layerVisibility = {};
+  }
+
+  function collectLayersFromNode(node, acc, prefix = '') {
+    if (!node) return;
+    const name = (node.name && String(node.name).trim()) || 'Unnamed';
+    const fullName = prefix ? `${prefix} › ${name}` : name;
+    const raw = node.meshes || [];
+    const meshIndices = Array.isArray(raw) ? raw.map((i) => Number(i)).filter((i) => !isNaN(i) && i >= 0) : [];
+    if (meshIndices.length > 0) {
+      acc.push({ id: acc.length, name: fullName, meshIndices });
+    }
+    const children = node.children || [];
+    for (const child of children) {
+      collectLayersFromNode(child, acc, fullName);
+    }
+  }
+
+  function updateLayersPanel() {
+    if (!layersList) return;
+    layersList.innerHTML = '';
+    if (layers.length === 0) {
+      layersList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">No layers</p>';
+      return;
+    }
+    layers.forEach((layer) => {
+      const visible = layerVisibility[layer.id] !== false;
+      const label = document.createElement('label');
+      label.className = 'flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer group';
+      label.innerHTML = `
+        <input type="checkbox" class="corintis-layer-toggle rounded accent-primary" data-layer-id="${layer.id}" ${visible ? 'checked' : ''}/>
+        <span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1" title="${layer.name}">${layer.name}</span>
+      `;
+      label.querySelector('input').addEventListener('change', (e) => {
+        const id = parseInt(e.target.dataset.layerId, 10);
+        layerVisibility[id] = e.target.checked;
+        const layer = layers.find((l) => l.id === id);
+        if (layer) {
+          layer.meshIndices.forEach((idx) => {
+            if (cadMeshes[idx]?.mesh) cadMeshes[idx].mesh.visible = e.target.checked;
+            if (cadMeshes[idx]?.edgesLine) cadMeshes[idx].edgesLine.visible = e.target.checked;
+          });
+        }
+      });
+      layersList.appendChild(label);
+    });
+  }
+
+  function collectMeshesFromObject3D(obj, out) {
+    const hasGeom = obj.geometry && (
+      obj.isMesh || obj.isLineSegments || obj.isLine || obj.isLineLoop || obj.isPoints
+    );
+    if (hasGeom) out.push({ mesh: obj, geometry: obj.geometry });
+    if (obj.children) {
+      for (const c of obj.children) collectMeshesFromObject3D(c, out);
+    }
+  }
+
+  function buildMeshesFromDxfParsed(dxfData) {
+    clearCad();
+    const positions = [];
+    const indices = [];
+    let layerMap = {};
+    let layerIndex = 0;
+    function getLayerId(name) {
+      if (!layerMap[name]) layerMap[name] = layerIndex++;
+      return layerMap[name];
+    }
+    function addLineSegments(verts, layer) {
+      for (let i = 0; i < verts.length - 1; i++) {
+        const a = verts[i], b = verts[i + 1];
+        const idx = positions.length / 3;
+        positions.push(a.x || 0, a.y || 0, a.z || 0);
+        positions.push(b.x || 0, b.y || 0, b.z || 0);
+        indices.push(idx, idx + 1);
+      }
+    }
+    function arcPoints(center, radius, startAngle, endAngle, segments) {
+      const pts = [];
+      for (let i = 0; i <= segments; i++) {
+        const a = startAngle + (endAngle - startAngle) * (i / segments);
+        pts.push({
+          x: center.x + radius * Math.cos(a),
+          y: center.y + radius * Math.sin(a),
+          z: (center.z || 0)
+        });
+      }
+      return pts;
+    }
+    function processEntity(e, layer) {
+      if (!e) return;
+      const l = e.layer || layer || '0';
+      if (e.type === 'LINE' && e.vertices && e.vertices.length >= 2) {
+        addLineSegments(e.vertices, l);
+      } else if (e.type === 'LWPOLYLINE' && e.vertices && e.vertices.length >= 2) {
+        const pts = e.vertices.map((v) => ({ x: v.x, y: v.y, z: 0 }));
+        addLineSegments(pts, l);
+      } else if (e.type === 'POLYLINE' && e.vertices && e.vertices.length >= 2) {
+        const pts = e.vertices.map((v) => ({ x: v.x, y: v.y, z: v.z || 0 }));
+        addLineSegments(pts, l);
+      } else if (e.type === 'CIRCLE' && e.center && e.radius != null) {
+        const pts = arcPoints(e.center, e.radius, 0, Math.PI * 2, 32);
+        addLineSegments(pts, l);
+      } else if (e.type === 'ARC' && e.center && e.radius != null) {
+        const toRad = (a) => (typeof a === 'number' && Math.abs(a) > 2 * Math.PI) ? a * Math.PI / 180 : (a ?? 0);
+        const start = toRad(e.startAngle);
+        const end = e.endAngle != null ? toRad(e.endAngle) : start + Math.PI;
+        const pts = arcPoints(e.center, e.radius, start, end, 24);
+        addLineSegments(pts, l);
+      } else if (e.type === '3DFACE' && e.vertices && e.vertices.length >= 3) {
+        const v = e.vertices;
+        for (let i = 0; i < v.length - 1; i++) {
+          addLineSegments([v[i], v[(i + 1) % v.length]], l);
+        }
+      }
+    }
+    const entities = dxfData.entities || [];
+    for (const e of entities) processEntity(e);
+    const blocks = dxfData.blocks || {};
+    for (const key of Object.keys(blocks)) {
+      const b = blocks[key];
+      if (b && b.entities) for (const e of b.entities) processEntity(e, b.layer);
+    }
+    if (positions.length === 0) throw new Error('DXF file produced no geometry');
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setIndex(indices);
+    geom.computeBoundingSphere();
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xd3d3d3, clippingPlanes: [] });
+    const lineSeg = new THREE.LineSegments(geom, lineMat);
+    lineSeg.renderOrder = 0;
+    const collected = [{ mesh: lineSeg, geometry: geom }];
+    const layerList = Object.keys(layerMap).map((n) => ({ id: layerMap[n], name: n, meshIndices: [0] }));
+    layers = layerList.length > 0 ? layerList : [{ id: 0, name: 'Default', meshIndices: [0] }];
+    layers.forEach((l) => { layerVisibility[l.id] = true; });
+    cadGroup = new THREE.Group();
+    edgesGroup = new THREE.Group();
+    cadGroup.add(lineSeg);
+    cadMeshes.push({ mesh: lineSeg, geometry: geom, edgesLine: null });
+    const box = new THREE.Box3().setFromObject(cadGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    cadGroup.position.sub(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = maxDim > 0 ? 60 / maxDim : 1;
+    cadGroup.scale.setScalar(scale);
+    scene.add(cadGroup);
+    cadBounds = { min: box.min.clone(), max: box.max.clone() };
+    applyClippingToMeshes();
+    applyOpacity();
+    updateLayersPanel();
+    const opacitySlider = document.getElementById('opacity-slider');
+    if (opacitySlider) opacitySlider.value = Math.round(opacityValue * 100);
+    if (canvas && renderer && camera) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w > 0 && h > 0) { camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h); }
+    }
+    hideLoading();
+  }
+
+  function buildMeshesFromIfcModel(result) {
+    if (!result?.ifcModel) throw new Error('Failed to parse IFC');
+    clearCad();
+    const collected = [];
+    collectMeshesFromObject3D(result.ifcModel, collected);
+    if (collected.length === 0) throw new Error('IFC file produced no geometry');
+    layers = collected.map((_, i) => ({ id: i, name: `Part ${i + 1}`, meshIndices: [i] }));
+    layers.forEach((l) => { layerVisibility[l.id] = true; });
+    cadGroup = new THREE.Group();
+    edgesGroup = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af,
+      metalness: 0.3,
+      roughness: 0.6,
+      side: THREE.DoubleSide,
+      clippingPlanes: []
+    });
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x9ca3af, clippingPlanes: [] });
+    for (const { mesh, geometry } of collected) {
+      const isLine = mesh.isLineSegments || mesh.isLine || mesh.isLineLoop || mesh.isPoints;
+      const useMat = isLine ? lineMat.clone() : mat.clone();
+      disposeMaterial(mesh.material);
+      mesh.material = useMat;
+      mesh.castShadow = !isLine;
+      mesh.receiveShadow = !isLine;
+      mesh.renderOrder = 0;
+      cadGroup.add(mesh);
+      let edgesLine = null;
+      if (!isLine && geometry) {
+        const edgesGeom = new THREE.EdgesGeometry(geometry, 15);
+        const edgesMat = new THREE.LineBasicMaterial({
+          color: 0x5E778C,
+          transparent: true,
+          opacity: 1,
+          depthTest: true,
+          depthWrite: true,
+          clippingPlanes: []
+        });
+        edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
+        edgesLine.renderOrder = 10;
+        edgesGroup.add(edgesLine);
+      }
+      cadMeshes.push({ mesh, geometry, edgesLine });
+    }
+    const box = new THREE.Box3().setFromObject(cadGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    cadGroup.position.sub(center);
+    edgesGroup.position.sub(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = maxDim > 0 ? 60 / maxDim : 1;
+    cadGroup.scale.setScalar(scale);
+    edgesGroup.scale.setScalar(scale);
+    scene.add(cadGroup);
+    scene.add(edgesGroup);
+    cadBounds = { min: box.min.clone(), max: box.max.clone() };
+    applyClippingToMeshes();
+    applyOpacity();
+    updateLayersPanel();
+    const opacitySlider = document.getElementById('opacity-slider');
+    if (opacitySlider) opacitySlider.value = Math.round(opacityValue * 100);
+    if (canvas && renderer && camera) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (w > 0 && h > 0) { camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h); }
+    }
+    hideLoading();
+  }
+
+  function buildMeshesFromDxfEntity(result) {
+    if (result?.dxfParsed) {
+      return buildMeshesFromDxfParsed(result.dxfParsed);
+    }
+    if (!result || !result.success || !result.entity) {
+      throw new Error('Failed to parse DXF');
+    }
+    clearCad();
+    const collected = [];
+    collectMeshesFromObject3D(result.entity, collected);
+    if (collected.length === 0) {
+      throw new Error('DXF file produced no geometry');
+    }
+    layers = collected.map((_, i) => ({ id: i, name: `Part ${i + 1}`, meshIndices: [i] }));
+    layers.forEach((l) => { layerVisibility[l.id] = true; });
+
+    cadGroup = new THREE.Group();
+    edgesGroup = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af,
+      metalness: 0.3,
+      roughness: 0.6,
+      side: THREE.DoubleSide,
+      clippingPlanes: []
+    });
+    const lineMat = new THREE.LineBasicMaterial({
+      color: 0xd3d3d3,
+      clippingPlanes: []
+    });
+    for (const { mesh, geometry } of collected) {
+      const isLine = mesh.isLineSegments;
+      const useMat = isLine ? lineMat.clone() : mat.clone();
+      disposeMaterial(mesh.material);
+      mesh.material = useMat;
+      mesh.castShadow = !isLine;
+      mesh.receiveShadow = !isLine;
+      mesh.renderOrder = 0;
+      cadGroup.add(mesh);
+      let edgesLine = null;
+      if (!isLine && geometry) {
+        const edgesGeom = new THREE.EdgesGeometry(geometry, 15);
+        const edgesMat = new THREE.LineBasicMaterial({
+          color: 0x5E778C,
+          transparent: true,
+          opacity: 1,
+          depthTest: true,
+          depthWrite: true,
+          clippingPlanes: []
+        });
+        edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
+        edgesLine.renderOrder = 10;
+        edgesGroup.add(edgesLine);
+      }
+      cadMeshes.push({ mesh, geometry, edgesLine });
+    }
+    const box = new THREE.Box3().setFromObject(cadGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    cadGroup.position.sub(center);
+    if (edgesGroup.children.length > 0) {
+      edgesGroup.position.sub(center);
+    }
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = maxDim > 0 ? 60 / maxDim : 1;
+    cadGroup.scale.setScalar(scale);
+    if (edgesGroup.children.length > 0) edgesGroup.scale.setScalar(scale);
+
+    scene.add(cadGroup);
+    if (edgesGroup.children.length > 0) scene.add(edgesGroup);
+    const bbox = new THREE.Box3().setFromObject(cadGroup);
+    cadBounds = { min: bbox.min.clone(), max: bbox.max.clone() };
+
+    applyClippingToMeshes();
+    applyOpacity();
+    updateLayersPanel();
+    const opacitySlider = document.getElementById('opacity-slider');
+    if (opacitySlider) opacitySlider.value = Math.round(opacityValue * 100);
+    if (canvas && renderer && camera) {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
+    hideLoading();
+  }
+
+  function buildMeshesFromResult(result) {
+    if (result?.entity) return buildMeshesFromDxfEntity(result);
+    if (result?.dxfParsed) return buildMeshesFromDxfParsed(result.dxfParsed);
+    if (result?.ifcModel) return buildMeshesFromIfcModel(result);
+    if (!result || !result.success || !result.meshes || result.meshes.length === 0) {
+      throw new Error('Failed to parse CAD file');
+    }
+
+    clearCad();
+
+    layers = [];
+    if (result.root) {
+      collectLayersFromNode(result.root, layers);
+    }
+    if (layers.length === 0 && result.meshes.length > 0) {
+      layers = result.meshes.map((m, i) => ({
+        id: i,
+        name: (m.name && String(m.name).trim()) || `Part ${i + 1}`,
+        meshIndices: [i]
+      }));
+    }
+    layers.forEach((l) => { layerVisibility[l.id] = true; });
+
+    cadGroup = new THREE.Group();
+    edgesGroup = new THREE.Group();
+    for (const m of result.meshes) {
+      const geom = occtMeshToThree(m);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x9ca3af,
+        metalness: 0.3,
+        roughness: 0.6,
+        side: THREE.DoubleSide,
+        clippingPlanes: []
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.renderOrder = 0;
+      cadGroup.add(mesh);
+      cadMeshes.push({ mesh, geometry: geom, edgesLine: null });
+
+      const edgesGeom = new THREE.EdgesGeometry(geom, 15);
+      const edgesMat = new THREE.LineBasicMaterial({
+        color: 0x5E778C,
+        transparent: true,
+        opacity: 1,
+        depthTest: true,
+        depthWrite: true,
+        clippingPlanes: []
+      });
+      const edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
+      edgesLine.renderOrder = 10;
+      edgesGroup.add(edgesLine);
+      cadMeshes[cadMeshes.length - 1].edgesLine = edgesLine;
+    }
+
+    const box = new THREE.Box3().setFromObject(cadGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    cadGroup.position.sub(center);
+    edgesGroup.position.sub(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 60 / maxDim;
+    cadGroup.scale.setScalar(scale);
+    edgesGroup.scale.setScalar(scale);
+
+    scene.add(cadGroup);
+    scene.add(edgesGroup);
+    const bbox = new THREE.Box3().setFromObject(cadGroup);
+    cadBounds = { min: bbox.min.clone(), max: bbox.max.clone() };
+
+    applyClippingToMeshes();
+    applyOpacity();
+
+    updateLayersPanel();
+    if (layers.length > 0) {
+      const opacitySlider = document.getElementById('opacity-slider');
+      if (opacitySlider) opacitySlider.value = Math.round(opacityValue * 100);
+    }
+
+    if (canvas && renderer && camera) {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    }
+
+    hideLoading();
+  }
+
+  const OCTT_CDN = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist';
+  const DB_NAME = 'corintis-cad-repository';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'files';
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve(req.result);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+    });
+  }
+
+  async function saveToRepository(entry) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const record = {
+        id: entry.id,
+        name: entry.name,
+        format: entry.format,
+        buffer: entry.buffer,
+        result: (entry.format === 'dxf' || entry.format === 'ifc') ? null : entry.result,
+        createdAt: entry.createdAt || Date.now()
+      };
+      const req = store.put(record);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function parseIfNeeded(entry) {
+    if (entry.result && !(entry.result?.entity)) return entry.result;
+    if (!entry.buffer) throw new Error('No data to parse');
+    const format = entry.format || detectFormat(entry.name);
+    showLoading('Loading from repository…', 'Parsing geometry…', 50);
+    const buf = entry.buffer.slice(0);
+    const result = format === 'dxf' ? await parseDxf(buf)
+      : format === 'ifc' ? await parseIfc(buf)
+      : await parseOcctInWorker(buf, format);
+    entry.result = (result?.entity ? null : result);
+    entry.format = format;
+    try {
+      await saveToRepository(entry);
+    } catch (e) {
+      console.warn('Could not update repository:', e);
+    }
+    return result;
+  }
+
+  function detectFormat(name) {
+    const ext = (name || '').toLowerCase().split('.').pop();
+    if (['stp', 'step'].includes(ext)) return 'step';
+    if (['dxf'].includes(ext)) return 'dxf';
+    if (['ifc'].includes(ext)) return 'ifc';
+    return 'iges';
+  }
+
+  async function loadFromRepository() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function removeFromRepository(id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const key = typeof id === 'number' ? id : (Number(id) || id);
+      const req = store.delete(key);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function deleteFromServer(id) {
+    const url = typeof getCadFilesUrl === 'function' ? getCadFilesUrl() : '../api/cad-files.php';
+    const res = await fetch(url + '?id=' + encodeURIComponent(String(id)), { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server delete failed');
+    }
+  }
+
+  async function uploadToServer(entry) {
+    const url = typeof getCadFilesUrl === 'function' ? getCadFilesUrl() : '../api/cad-files.php';
+    const form = new FormData();
+    form.append('id', String(entry.id));
+    form.append('name', entry.name);
+    form.append('format', entry.format || detectFormat(entry.name));
+    form.append('file', new Blob([entry.buffer]), entry.name);
+    const res = await fetch(url, { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server upload failed');
+    }
+  }
+
+  async function runPreScanWithProgress(buffer, onProgress) {
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+    const lines = text.split(/\r?\n/);
+    let projectName = 'Unknown Project';
+    let lastMarker = '';
+    const stepStatus = {
+      S: (name) => `Reading Prologue: [${name}]...`,
+      G: () => 'Extracting Metadata (Units, Author, Environment)...',
+      D: () => 'Indexing Geometric Entities (Lines, Surfaces, NURBS)...',
+      P: () => 'Calculating Coordinate Geometry and Parameters...',
+      T: () => 'Verifying Data Integrity... Success.'
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.length >= 73) {
+        const marker = line.charAt(72);
+        if (marker === 'S' && !projectName) {
+          const content = line.slice(0, 72).trim();
+          if (content) projectName = content.replace(/\s+/g, ' ').slice(0, 50);
+        }
+        if (stepStatus[marker] && marker !== lastMarker) {
+          lastMarker = marker;
+          const status = marker === 'S' ? stepStatus.S(projectName) : stepStatus[marker]();
+          const progress = Math.min(20 * (Object.keys(stepStatus).indexOf(marker) + 1), 90);
+          onProgress(status, progress);
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      }
+      if (i % 1000 === 0 || i === lines.length - 1) {
+        const progress = Math.min(90, ((i + 1) / lines.length) * 80);
+        const m = lastMarker || 'S';
+        onProgress(m === 'S' ? stepStatus.S(projectName) : stepStatus[m](), progress);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+
+    onProgress('Verifying Data Integrity... Success.', 100);
+    return projectName;
+  }
+
+  function parseOcctInWorker(buffer, format) {
+    const workerScript = `
+      importScripts('${OCTT_CDN}/occt-import-js.js');
+      onmessage = async function (ev) {
+        try {
+          const modulOverrides = {
+            locateFile: function (path) { return '${OCTT_CDN}/' + path; }
+          };
+          const occt = await occtimportjs(modulOverrides);
+          const uint8 = new Uint8Array(ev.data.buffer);
+          const result = occt.ReadFile(ev.data.format, uint8, ev.data.params);
+          postMessage({ ok: true, result });
+        } catch (e) {
+          postMessage({ ok: false, error: e.message || String(e) });
+        }
+      };
+    `;
+    const blob = new Blob([workerScript], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(workerUrl);
+      worker.onmessage = (ev) => {
+        URL.revokeObjectURL(workerUrl);
+        worker.terminate();
+        const msg = ev.data;
+        if (msg.ok) {
+          resolve(msg.result);
+        } else {
+          reject(new Error(msg.error || 'Worker parsing failed'));
+        }
+      };
+      worker.onerror = (err) => {
+        URL.revokeObjectURL(workerUrl);
+        worker.terminate();
+        reject(new Error(err.message || 'Worker failed'));
+      };
+      worker.postMessage({ format: format || 'iges', buffer, params: null }, [buffer]);
+    });
+  }
+
+  async function parseDxf(buffer) {
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+    if (!text || text.length < 10) {
+      throw new Error('DXF file is empty or binary (binary DXF not supported)');
+    }
+    try {
+      const mod = await import('https://esm.sh/dxf-parser@1.1.2');
+      let dxf;
+      if (typeof mod.default === 'function') {
+        dxf = mod.default(text);
+      } else if (mod.DxfParser) {
+        const parser = new mod.DxfParser();
+        dxf = parser.parseSync ? parser.parseSync(text) : parser.parse(text);
+      } else {
+        throw new Error('DXF parser: unexpected module format');
+      }
+      const hasEntities = dxf.entities && dxf.entities.length > 0;
+      const hasBlocks = dxf.blocks && Object.keys(dxf.blocks).length > 0;
+      if (!dxf || (!hasEntities && !hasBlocks)) {
+        throw new Error('DXF file produced no geometry');
+      }
+      return { success: true, dxfParsed: dxf };
+    } catch (e) {
+      try {
+        const { DXFLoader } = await import('https://cdn.jsdelivr.net/npm/three-dxf-loader@5.2.0/dist/three-dxf-loader.js');
+        return new Promise((resolve, reject) => {
+          const blob = new Blob([buffer], { type: 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          const loader = new DXFLoader();
+          loader.setEnableLayer(true);
+          loader.setConsumeUnits(true);
+          loader.setDefaultColor(0xd3d3d3);
+          loader.load(
+            url,
+            (data) => {
+              URL.revokeObjectURL(url);
+              if (data?.entity) {
+                const collected = [];
+                collectMeshesFromObject3D(data.entity, collected);
+                if (collected.length > 0) {
+                  resolve({ success: true, entity: data.entity });
+                } else {
+                  reject(new Error('DXF file produced no geometry'));
+                }
+              } else {
+                reject(new Error('DXF file produced no geometry'));
+              }
+            },
+            () => {},
+            (err) => {
+              URL.revokeObjectURL(url);
+              reject(new Error(err?.message || 'Failed to parse DXF'));
+            }
+          );
+        });
+      } catch (e2) {
+        throw new Error(e?.message || e2?.message || 'Failed to parse DXF');
+      }
+    }
+  }
+
+  async function parseIfc(buffer) {
+    let mod;
+    try {
+      mod = await import('https://cdn.jsdelivr.net/npm/web-ifc-three@0.0.126/IFCLoader.js');
+    } catch (e) {
+      mod = await import('https://esm.sh/web-ifc-three@0.0.126');
+    }
+    const IFCLoader = mod.IFCLoader || mod.default;
+    if (!IFCLoader) throw new Error('IFC loader not found');
+    const loader = new IFCLoader();
+    if (loader.ifcManager && loader.ifcManager.setWasmPath) {
+      const base = window.location.pathname.replace(/\/[^/]*$/, '') || '/corintis';
+      const wasmBase = window.location.origin + base + '/wasm/';
+      loader.ifcManager.setWasmPath(wasmBase);
+    }
+    const model = await loader.parse(buffer);
+    if (!model) throw new Error('IFC file produced no geometry');
+    return { success: true, ifcModel: model };
+  }
+
+  function updateLoadedFilesPanel() {
+    if (!loadedFilesList) return;
+    loadedFilesList.innerHTML = '';
+    if (loadedFiles.length === 0) {
+      loadedFilesList.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, or IFC file.</p>';
+      clearCad();
+      activeFileId = null;
+      return;
+    }
+    loadedFiles.forEach((entry) => {
+      const isActive = activeFileId === entry.id;
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 group';
+      row.innerHTML = `
+        <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+          <input type="radio" name="corintis-loaded-file" class="rounded-full accent-primary flex-shrink-0" data-file-id="${entry.id}" ${isActive ? 'checked' : ''}/>
+          <span class="text-sm text-slate-700 dark:text-slate-300 truncate" title="${entry.name}">${entry.name}</span>
+        </label>
+        <button type="button" class="corintis-delete-file flex-shrink-0 p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-500 transition-colors" data-file-id="${entry.id}" title="Delete file">
+          <span class="material-symbols-outlined text-lg">delete</span>
+        </button>
+      `;
+      row.querySelector('input').addEventListener('change', async (e) => {
+        const id = e.target.dataset.fileId;
+        if (id && e.target.checked) {
+          activeFileId = id;
+          const ent = loadedFiles.find((f) => String(f.id) === String(id));
+          if (ent) {
+            try {
+              const result = await parseIfNeeded(ent);
+              buildMeshesFromResult(result);
+            } catch (err) {
+              console.error('Load error:', err);
+              showError(err?.message || 'Failed to load file');
+            }
+          }
+          updateLoadedFilesPanel();
+        }
+      });
+      row.querySelector('.corintis-delete-file').addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = row.querySelector('input').dataset.fileId;
+        if (!id) return;
+        const idx = loadedFiles.findIndex((f) => String(f.id) === String(id));
+        if (idx < 0) return;
+        loadedFiles.splice(idx, 1);
+        try {
+          await deleteFromServer(id);
+        } catch (err) {
+          console.warn('Could not delete from server:', err);
+        }
+        try {
+          await removeFromRepository(id);
+        } catch (err) {
+          console.warn('Could not remove from repository:', err);
+        }
+        if (String(activeFileId) === String(id)) {
+          activeFileId = loadedFiles.length > 0 ? loadedFiles[0].id : null;
+          if (loadedFiles.length > 0) {
+            const ent = loadedFiles[0];
+            try {
+              const result = await parseIfNeeded(ent);
+              buildMeshesFromResult(result);
+            } catch (err) {
+              clearCad();
+              showError(err?.message || 'Failed to load file');
+            }
+          }
+        }
+        updateLoadedFilesPanel();
+      });
+      loadedFilesList.appendChild(row);
+    });
+  }
+
+  async function addFileToLoadedList(name, buffer) {
+    const format = detectFormat(name);
+    const bufferForStorage = buffer.slice(0);
+    if (format === 'iges') {
+      await runPreScanWithProgress(buffer, (status, progress) => {
+        updateLoadingProgress(status, progress);
+      });
+    } else if (format === 'step') {
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+      for (let i = 0; i <= 100; i += 10) {
+        updateLoadingProgress(`Reading STEP file… ${i}%`, i);
+        await new Promise((r) => setTimeout(r, 30));
+      }
+    } else if (format === 'dxf') {
+      updateLoadingProgress('Parsing DXF…', 30);
+    } else if (format === 'ifc') {
+      updateLoadingProgress('Parsing IFC…', 30);
+    }
+    updateLoadingProgress('Building 3D geometry…', 95);
+    const bufferForWorker = buffer.slice(0);
+    const result = format === 'dxf' ? await parseDxf(bufferForWorker)
+      : format === 'ifc' ? await parseIfc(bufferForWorker)
+      : await parseOcctInWorker(bufferForWorker, format);
+    const id = Date.now();
+    const entry = { id, name, format, result, buffer: bufferForStorage, createdAt: id };
+    loadedFiles.push(entry);
+    try {
+      await saveToRepository(entry);
+    } catch (e) {
+      console.warn('Could not save to repository:', e);
+    }
+    try {
+      await uploadToServer(entry);
+    } catch (e) {
+      console.warn('Could not upload to server:', e);
+    }
+    if (loadedFiles.length > 0) {
+    }
+    activeFileId = id;
+    buildMeshesFromResult(result);
+    updateLoadedFilesPanel();
+  }
+
+  function restoreFromRepository(records) {
+    loadedFiles = records.map((r) => ({
+      id: r.id,
+      name: r.name,
+      format: r.format,
+      result: r.result,
+      buffer: r.buffer,
+      createdAt: r.createdAt
+    }));
+    if (loadedFiles.length > 0) {
+    }
+    updateLoadedFilesPanel();
+  }
+
+  const resetPanelsBtn = document.getElementById('corintis-reset-panels');
+  if (resetPanelsBtn) {
+    resetPanelsBtn.addEventListener('click', () => resetPanelsToInitial());
+  }
+
+  if (importInput) {
+    importInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        const format = detectFormat(file.name);
+        const formatLabel = { iges: 'IGES', step: 'STEP', dxf: 'DXF', ifc: 'IFC' }[format] || 'CAD';
+        showLoading(
+          `Importing ${formatLabel} (${sizeMB} MB)…`,
+          'Reading file…',
+          0
+        );
+        const buffer = await file.arrayBuffer();
+        await addFileToLoadedList(file.name, buffer);
+        hideLoading();
+      } catch (err) {
+        console.error('Import CAD error:', err);
+        hideLoading();
+        showError(err?.message || 'Failed to import CAD file');
+      }
+      importInput.value = '';
+    });
+  }
+
+  const clippingEnable = document.getElementById('clipping-enable');
+  const clippingSlider = document.getElementById('clipping-slider');
+  const opacitySlider = document.getElementById('opacity-slider');
+  const opacityValueEl = document.getElementById('opacity-value');
+  const axisBtns = document.querySelectorAll('.clipping-axis-btn');
+
+  if (clippingEnable) {
+    clippingEnable.addEventListener('change', () => {
+      clippingEnabled = clippingEnable.checked;
+      if (clippingSlider) clippingSlider.disabled = !clippingEnabled;
+      applyClippingToMeshes();
+    });
+  }
+
+  if (clippingSlider) {
+    clippingSlider.addEventListener('input', () => {
+      clippingValue = parseInt(clippingSlider.value, 10) / 100;
+      applyClippingToMeshes();
+    });
+  }
+
+  axisBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      clippingAxis = btn.dataset.axis;
+      axisBtns.forEach((b) => {
+        b.classList.toggle('bg-primary/20', b.dataset.axis === clippingAxis);
+        b.classList.toggle('text-primary', b.dataset.axis === clippingAxis);
+        b.classList.toggle('dark:bg-primary/30', b.dataset.axis === clippingAxis);
+        b.classList.toggle('bg-slate-200', b.dataset.axis !== clippingAxis);
+        b.classList.toggle('dark:bg-slate-700', b.dataset.axis !== clippingAxis);
+      });
+      const normals = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+      clippingPlane.normal.set(...normals[clippingAxis]);
+      applyClippingToMeshes();
+    });
+  });
+
+  if (opacitySlider) {
+    opacitySlider.addEventListener('input', () => {
+      opacityValue = parseInt(opacitySlider.value, 10) / 100;
+      if (opacityValueEl) opacityValueEl.textContent = Math.round(opacityValue * 100) + '%';
+      applyOpacity();
+    });
+  }
+
+  const ghostToggle = document.getElementById('ghost-mode-toggle');
+  if (ghostToggle) {
+    ghostToggle.addEventListener('change', () => {
+      ghostMode = ghostToggle.checked;
+      applyOpacity();
+      applyClippingToMeshes();
+    });
+  }
+
+  async function initFromRepository() {
+    try {
+      const records = await loadFromRepository();
+      if (records.length > 0) {
+        restoreFromRepository(records);
+      }
+    } catch (e) {
+      console.warn('Could not load from repository:', e);
+    }
+  }
+
+  initThree();
+  initFromRepository();
+  hideLoading();
+  animate();
+})();
+  </script>
+</body>
+</html>
