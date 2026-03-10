@@ -2752,6 +2752,17 @@ function initGeneralMenu() {
   });
 }
 
+function initCurintisEntryIfFlagged() {
+  if (!new URLSearchParams(window.location.search).has('curintis')) return;
+  const panel = document.getElementById('general-menu-panel');
+  if (!panel) return;
+  const link = document.createElement('a');
+  link.href = '/curintis/index.html';
+  link.className = 'neumorphic-menu-resume';
+  link.innerHTML = '<span class="material-symbols-outlined">precision_manufacturing</span><span>Curintis 3D</span>';
+  panel.appendChild(link);
+}
+
 function wireControls() {
   document.getElementById('map-zoom-in')?.addEventListener('click', () => appMap?.zoomIn({ duration: ZOOM_ANIMATION_MS }));
   document.getElementById('map-zoom-out')?.addEventListener('click', () => appMap?.zoomOut({ duration: ZOOM_ANIMATION_MS }));
@@ -3274,7 +3285,7 @@ async function openPOIContentPanel(poi) {
           <p class="text-slate-400 text-sm mb-1">${escapeHtml(f.label || '')}</p>
           <p class="text-3xl font-bold text-white">${escapeHtml(f.value || '')}</p>
         </div>
-        <span class="material-symbols-outlined text-primary/50 text-4xl group-hover:text-primary transition-colors">${escapeHtml(f.icon || 'info')}</span>
+        <span class="material-symbols-outlined text-primary/50 text-4xl group-hover:text-primary transition-colors">${escapeHtml((f.icon || 'info').replace(/-/g, '_'))}</span>
       </div>`).join('');
   }
 

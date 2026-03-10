@@ -220,7 +220,7 @@
             </div>
           </div>
         </div>
-        <!-- Mission & Key Figures Grid -->
+        <!-- Mission & Key Facts Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
           <div class="space-y-6">
             <h3 class="text-xl font-bold text-white flex items-center gap-3">
@@ -230,7 +230,7 @@
             <div class="poi-panel-mission text-slate-400 leading-relaxed text-lg space-y-4"></div>
           </div>
           <div class="space-y-4">
-            <h3 class="text-xl font-bold text-white mb-6" data-i18n="map:keyFigures">Key Figures</h3>
+            <h3 class="text-xl font-bold text-white mb-6" data-i18n="map:keyFigures">Key Facts</h3>
             <div class="poi-panel-key-figures space-y-4"></div>
           </div>
         </div>
@@ -435,10 +435,10 @@
     <!-- Tooltip above bottom arrow - desktop only, shows on load -->
     <div id="tooltip-bottom" class="tooltip-bottom" role="tooltip" aria-label="Scroll hint" aria-hidden="true">
       <div class="tooltip-bottom-header">
-        <h3 class="tooltip-bottom-title" data-i18n="map:discoverMoreTooltip">Discover More</h3>
+        <h3 class="tooltip-bottom-title" data-i18n="map:discoverMoreTooltip">Discover more</h3>
         <button type="button" class="tooltip-bottom-close" id="tooltip-bottom-close" aria-label="Close tooltip"><span class="material-symbols-outlined text-[20px]">close</span></button>
       </div>
-      <p class="tooltip-bottom-text" data-i18n="map:tooltipDesc">Click the arrow below to open your toolkit. This section holds all your essential features, including different map tiles, interactive widgets, and user management tools.</p>
+      <p class="tooltip-bottom-text" data-i18n="map:tooltipDesc">Discover 17 years of design logic and key facts behind global digital products. Click the arrow below to open your toolkit. This section holds all your essential features, including different map tiles, interactive widgets, and user management tools.</p>
       <div class="tooltip-bottom-video-wrap" id="tooltip-video-wrap">
         <div class="tooltip-video-skeleton" id="tooltip-video-skeleton" aria-hidden="false"></div>
         <video id="tooltip-bottom-video" class="tooltip-video-el hidden" loop muted playsinline autoplay preload="auto" data-src="assets/Tooltip_content/Tooltip_content_bottom.mp4"></video>
@@ -550,6 +550,7 @@
       renderNearbyTiles([]);
       initNotImplementedToast();
       initGeneralMenu();
+      initCurintisEntryIfFlagged();
       initMapApp({ showNameGate: !sessionStorage.getItem('osiris_user_name') });
       initBottomPanel();
       initPOIContentPanel();
