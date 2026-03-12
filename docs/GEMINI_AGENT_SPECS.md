@@ -116,7 +116,13 @@ OSiris/
 ├── package.json               # tailwind, esbuild, i18next
 ├── tailwind.config.js
 └── docs/
-    └── GEMINI_AGENT_SPECS.md  # This file
+    ├── AGENT_RULES.md          # Agent rules (plan mode, tasks, lessons)
+    ├── GEMINI_AGENT_SPECS.md   # This file
+    ├── PROJECT_OVERVIEW.md     # Project overview
+    ├── README.md               # Docs index
+    └── tasks/
+        ├── todo.md             # Plans (per AGENT_RULES)
+        └── lessons.md          # Lessons learned
 ```
 
 ### 2.2 Database Schema (SQLite – users.db)
