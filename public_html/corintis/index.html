@@ -103,8 +103,8 @@
     </a>
     <h1 class="text-lg font-bold">3D CAD Explorer</h1>
     <div class="flex items-center gap-2">
-      <label class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors">
-        <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc" class="hidden"/>
+      <label for="import-cad-input" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors">
+        <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc,application/iges,model/iges" class="hidden"/>
         <span class="material-symbols-outlined text-lg">upload_file</span>
         <span class="text-sm font-medium">Import CAD</span>
       </label>
@@ -112,16 +112,35 @@
         <span class="material-symbols-outlined text-lg">reorder</span>
         <span class="text-sm font-medium">Reset panels</span>
       </button>
+      <div class="flex items-center gap-1 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10" title="Inlet Velocity (m/s)">
+        <span class="text-xs font-medium mr-1">V:</span>
+        <input type="number" id="cfd-vx" value="1" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="x">
+        <input type="number" id="cfd-vy" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="y">
+        <input type="number" id="cfd-vz" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="z">
+      </div>
+      <button type="button" id="corintis-run-cfd" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Run CFD analysis (requires local sidecar)">
+        <span class="material-symbols-outlined text-lg">science</span>
+        <span class="text-sm font-medium">Run Analysis</span>
+      </button>
+      <button type="button" id="corintis-redo-cfd" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Re-run CFD analysis">
+        <span class="material-symbols-outlined text-lg">refresh</span>
+        <span class="text-sm font-medium">Re-do</span>
+      </button>
     </div>
   </div>
   <div class="flex-1 min-h-[60vh] flex overflow-hidden relative">
     <div class="flex-1 relative corintis-canvas-wrap min-h-0">
       <canvas id="corintis-canvas"></canvas>
-    <div id="corintis-loading" class="corintis-overlay absolute inset-0 flex items-center justify-center bg-background-light/80 dark:bg-background-dark/80">
-      <div class="w-full max-w-md mx-4 p-6 bg-card-light dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/10 shadow-xl">
-        <div class="text-primary text-lg font-semibold mb-2 corintis-loading-text">Loading…</div>
-        <div class="text-sm text-slate-500 dark:text-slate-400 mb-4 corintis-loading-status">Initializing</div>
-        <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+    <div id="corintis-loading" class="corintis-floating-panel" style="display: none; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 20rem; z-index: 60;">
+      <div class="corintis-floating-panel-header">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg animate-spin">progress_activity</span>
+          <span class="font-medium text-sm corintis-loading-text">Loading...</span>
+        </div>
+      </div>
+      <div class="corintis-floating-panel-body p-4">
+        <div class="text-xs text-slate-500 dark:text-slate-400 mb-3 corintis-loading-status">Initializing</div>
+        <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div id="corintis-loading-bar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
@@ -162,10 +181,12 @@
   }
   </script>
   <script src="../js/api-config.js"></script>
+  <script src="cfd-config.js"></script>
   <script src="../js/theme-service.js"></script>
   <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/exporters/STLExporter.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
   <script>
 (function () {
@@ -306,11 +327,24 @@
     panels.forEach((panel) => floatingPanelsContainer.appendChild(panel));
     layoutCorintisPanels();
 
-    panels.forEach((panel) => {
+    const draggablePanels = [...panels];
+    if (loadingEl && loadingEl.classList.contains('corintis-floating-panel')) {
+      draggablePanels.push(loadingEl);
+    }
+
+    draggablePanels.forEach((panel) => {
       const header = panel.querySelector('.corintis-floating-panel-header');
+      if (!header) return;
       const startDrag = (clientX, clientY) => {
         const rect = panel.getBoundingClientRect();
         panel.style.transition = 'none';
+        // Remove centering transform if present so absolute positioning works
+        if (panel.style.transform) panel.style.transform = 'none';
+        // Ensure we set initial position in pixels to match current visual location
+        panel.style.left = rect.left + 'px';
+        panel.style.top = rect.top + 'px';
+        panel.style.right = 'auto'; // Clear right if set (for right-aligned panels)
+        
         window._corintisPanelDrag = { panel, startX: clientX, startY: clientY, startLeft: rect.left, startTop: rect.top };
       };
       header.addEventListener('mousedown', (e) => {
@@ -358,6 +392,7 @@
   let scene, camera, renderer, controls, cadMeshes = [];
   let cadGroup = null;
   let edgesGroup = null;
+  let flowLinesGroup = null;
   let cadBounds = null;
   let layers = [];
   let layerVisibility = {};
@@ -370,17 +405,18 @@
   let opacityValue = 1;
   let ghostMode = true;
 
-  function showError(msg) {
-    loadingEl.classList.add('hidden');
+  function showError(msg, title) {
+    loadingEl.style.display = 'none';
     errorEl.classList.remove('hidden');
     errorEl.classList.add('flex');
     const msgEl = errorEl.querySelector('.corintis-error-msg');
+    const titleEl = errorEl.querySelector('h2');
     if (msgEl && msg) msgEl.textContent = msg;
+    if (titleEl) titleEl.textContent = title || 'CAD file not found';
   }
 
   function showLoading(text, status, progress) {
-    loadingEl.classList.remove('hidden');
-    loadingEl.classList.add('flex');
+    loadingEl.style.display = 'flex';
     errorEl.classList.add('hidden');
     const textEl = loadingEl.querySelector('.corintis-loading-text');
     if (textEl && text) textEl.textContent = text;
@@ -394,8 +430,7 @@
   }
 
   function hideLoading() {
-    loadingEl.classList.add('hidden');
-    loadingEl.classList.remove('flex');
+    loadingEl.style.display = 'none';
     errorEl.classList.add('hidden');
     errorEl.classList.remove('flex');
   }
@@ -530,7 +565,146 @@
     }
   }
 
+  const CFD_SERVER = (typeof window.CFD_SERVER === 'string' && window.CFD_SERVER) || 'http://localhost:3000';
+  const STL_SCALE_METERS = 0.001;
+
+  function removeFlowLines() {
+    if (flowLinesGroup) {
+      scene.remove(flowLinesGroup);
+      flowLinesGroup.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+          else obj.material.dispose();
+        }
+      });
+      flowLinesGroup = null;
+    }
+  }
+
+  async function loadFlowLines(url) {
+    removeFlowLines();
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to load streamlines');
+    const data = await res.json();
+
+    const streamlines = data.streamlines || [];
+    if (streamlines.length === 0) return;
+
+    flowLinesGroup = new THREE.Group();
+    flowLinesGroup.name = 'flowLines';
+    const allVelocities = streamlines.flatMap((s) => s.velocity || []);
+    let vMin = Infinity;
+    let vMax = -Infinity;
+    if (allVelocities.length > 0) {
+      for (let i = 0; i < allVelocities.length; i++) {
+        if (allVelocities[i] < vMin) vMin = allVelocities[i];
+        if (allVelocities[i] > vMax) vMax = allVelocities[i];
+      }
+    } else {
+      vMin = 0;
+      vMax = 1;
+    }
+    const vRange = vMax - vMin || 1;
+
+    streamlines.forEach((line) => {
+      const points = (line.points || []).map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+      if (points.length < 2) return;
+      const geom = new THREE.BufferGeometry().setFromPoints(points);
+      const colors = new Float32Array(points.length * 3);
+      const velocities = line.velocity || [];
+      points.forEach((_, i) => {
+        const v = velocities[i] ?? 0;
+        const t = (v - vMin) / vRange;
+        const c = new THREE.Color().setHSL(0.6 - t * 0.6, 1, 0.5);
+        colors[i * 3] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      });
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      const mat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9
+      });
+      const lineObj = new THREE.Line(geom, mat);
+      flowLinesGroup.add(lineObj);
+    });
+
+    if (cadGroup) {
+      flowLinesGroup.position.copy(cadGroup.position);
+      flowLinesGroup.quaternion.copy(cadGroup.quaternion);
+      flowLinesGroup.scale.setScalar(1000);
+    }
+    scene.add(flowLinesGroup);
+  }
+
+  async function triggerAnalysis() {
+    if (!cadGroup || cadGroup.children.length === 0) {
+      showError('Load a CAD model first.');
+      return;
+    }
+    showLoading('Running CFD...', 'Checking CFD server...', 2);
+
+    try {
+      const healthRes = await fetch(`${CFD_SERVER}/health`, { method: 'GET' });
+      if (!healthRes.ok) {
+        const h = await healthRes.json().catch(() => ({}));
+        throw new Error(h.error || 'CFD server reported an error');
+      }
+    } catch (e) {
+      const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
+      const msg = isNetwork
+        ? 'CFD server unreachable. Start the sidecar: cd cfd-sidecar && npm run start:docker. If the app is on HTTPS, use the same machine for both.'
+        : (e.message || 'CFD server check failed');
+      showError(msg, 'CFD Analysis');
+      return;
+    }
+
+    showLoading('Running CFD...', 'Exporting geometry', 5);
+
+    const clone = cadGroup.clone();
+    clone.position.set(0, 0, 0);
+    clone.quaternion.identity();
+    clone.rotation.set(0, 0, 0);
+    clone.scale.multiplyScalar(STL_SCALE_METERS);
+    clone.updateMatrixWorld(true);
+    const exporter = new THREE.STLExporter();
+    const stlData = exporter.parse(clone, { binary: true });
+    const stlBuffer = stlData instanceof ArrayBuffer ? stlData : (stlData.buffer || stlData);
+
+    const formData = new FormData();
+    formData.append('geometry', new Blob([stlBuffer]), 'geometry.stl');
+    formData.append('vx', document.getElementById('cfd-vx').value || 1);
+    formData.append('vy', document.getElementById('cfd-vy').value || 0);
+    formData.append('vz', document.getElementById('cfd-vz').value || 0);
+
+    try {
+      updateLoadingProgress('Running OpenFOAM... (blockMesh → snappyHexMesh → simpleFoam, may take 2–5 min)', 15);
+      const res = await fetch(`${CFD_SERVER}/run-cfd`, {
+        method: 'POST',
+        body: formData
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || res.statusText);
+      const { caseId, streamlinesUrl } = json;
+
+      updateLoadingProgress('Loading flow lines', 95);
+      await loadFlowLines(`${CFD_SERVER}${streamlinesUrl}`);
+      hideLoading();
+    } catch (e) {
+      const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
+      const msg = isNetwork
+        ? 'CFD server unreachable. Start the sidecar: cd cfd-sidecar && npm run start:docker.'
+        : (e.message || 'CFD analysis failed');
+      showError(msg, 'CFD Analysis');
+    }
+  }
+
   function clearCad() {
+    removeFlowLines();
     if (edgesGroup) {
       scene.remove(edgesGroup);
       edgesGroup.children.forEach((line) => {
@@ -1349,6 +1523,11 @@
     activeFileId = id;
     buildMeshesFromResult(result);
     updateLoadedFilesPanel();
+    const loadedPanel = floatingPanelsContainer?.querySelector('[data-panel-id="loaded"]');
+    if (loadedPanel && loadedPanel.classList.contains('collapsed')) {
+      loadedPanel.classList.remove('collapsed');
+      requestAnimationFrame(() => layoutCorintisPanels());
+    }
   }
 
   function restoreFromRepository(records) {
@@ -1368,6 +1547,19 @@
   const resetPanelsBtn = document.getElementById('corintis-reset-panels');
   if (resetPanelsBtn) {
     resetPanelsBtn.addEventListener('click', () => resetPanelsToInitial());
+  }
+
+  const runCfdBtn = document.getElementById('corintis-run-cfd');
+  if (runCfdBtn) {
+    runCfdBtn.addEventListener('click', () => triggerAnalysis());
+  }
+
+  const redoCfdBtn = document.getElementById('corintis-redo-cfd');
+  if (redoCfdBtn) {
+    redoCfdBtn.addEventListener('click', () => {
+      removeFlowLines();
+      triggerAnalysis();
+    });
   }
 
   if (importInput) {
