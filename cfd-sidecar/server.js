@@ -131,6 +131,16 @@ app.get('/health', async (req, res) => {
   }
 });
 
+app.get('/shutdown', (req, res) => {
+  const addr = req.ip || req.connection?.remoteAddress || '';
+  const allowed = addr === '127.0.0.1' || addr === '::ffff:127.0.0.1' || addr === '::1' || String(addr).includes('127.0.0.1');
+  if (!allowed) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  res.json({ ok: true });
+  setTimeout(() => process.exit(0), 100);
+});
 
 function getStlBounds(buffer) {
   if (buffer.length < 84) throw new Error('Invalid STL file');
@@ -502,6 +512,7 @@ app.get('/streamlines/:caseId', (req, res) => {
 });
 
 ensureDir(config.casesDir);
+console.log(`Cases directory: ${config.casesDir}`);
 
 function startServer(port) {
   const server = app.listen(port, () => {

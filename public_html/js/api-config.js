@@ -87,3 +87,20 @@ window.getCadFilesUrl = function () {
   const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
   return base ? `${base.replace(/\/$/, '')}/api/cad-files.php` : '../api/cad-files.php';
 };
+
+// CFD sidecar control API URL (Corintis 3D – start/stop sidecar)
+window.getCfdControlUrl = function () {
+  const base = typeof window.CFD_CONTROL_API === 'string' && window.CFD_CONTROL_API
+    ? window.CFD_CONTROL_API
+    : (typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '');
+  return base ? `${base.replace(/\/$/, '')}/api/cfd-control.php` : '../api/cfd-control.php';
+};
+
+// CFD proxy URL (Corintis 3D – use when page is HTTPS or not localhost)
+window.getCfdProxyUrl = function () {
+  if (typeof window.CFD_PROXY_URL === 'string' && window.CFD_PROXY_URL) {
+    return window.CFD_PROXY_URL.replace(/\/$/, '');
+  }
+  const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
+  return base ? `${base.replace(/\/$/, '')}/api/cfd-proxy.php` : '../api/cfd-proxy.php';
+};

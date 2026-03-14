@@ -57,3 +57,13 @@ curl -s http://127.0.0.1/api/debug-users.php | head -c 300
 echo ""
 echo ""
 echo "If you see JSON above, PHP is working. If you see <?php, check socket path."
+
+# Optional: CFD sidecar for Corintis 3D analysis
+if [ -f /home/OSiris/cfd-sidecar/install-service.sh ]; then
+    echo ""
+    echo "=== CFD sidecar (optional) ==="
+    echo "To enable CFD analysis in Corintis 3D, install the sidecar as a systemd service:"
+    echo "  sudo /home/OSiris/cfd-sidecar/install-service.sh"
+    echo "This starts the CFD server on boot. Or add nginx to docker for the Start button:"
+    echo "  sudo /home/OSiris/cfd-sidecar/setup-docker-permissions.sh"
+fi

@@ -118,6 +118,11 @@
         <input type="number" id="cfd-vy" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="y">
         <input type="number" id="cfd-vz" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="z">
       </div>
+      <div id="corintis-cfd-control" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10">
+        <span id="cfd-status-text" class="text-xs text-slate-600 dark:text-slate-400">CFD: …</span>
+        <button type="button" id="corintis-start-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30" title="Start CFD server">Start</button>
+        <button type="button" id="corintis-stop-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30" title="Stop CFD server">Stop</button>
+      </div>
       <button type="button" id="corintis-run-cfd" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Run CFD analysis (requires local sidecar)">
         <span class="material-symbols-outlined text-lg">science</span>
         <span class="text-sm font-medium">Run Analysis</span>
@@ -150,6 +155,7 @@
         <span class="material-symbols-outlined text-4xl text-red-500 mb-4">error</span>
         <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">CAD file not found</h2>
         <p class="text-slate-600 dark:text-slate-400 text-sm mb-4 corintis-error-msg">Use <strong>Import CAD</strong> to load an IGES, STEP, DXF, or IFC file, then enable it from the Loaded files list.</p>
+        <div id="corintis-error-actions"></div>
       </div>
     </div>
     </div>
@@ -405,14 +411,18 @@
   let opacityValue = 1;
   let ghostMode = true;
 
-  function showError(msg, title) {
+  function showError(msg, title, actionsHtml) {
     loadingEl.style.display = 'none';
     errorEl.classList.remove('hidden');
     errorEl.classList.add('flex');
     const msgEl = errorEl.querySelector('.corintis-error-msg');
     const titleEl = errorEl.querySelector('h2');
+    const actionsEl = document.getElementById('corintis-error-actions');
     if (msgEl && msg) msgEl.textContent = msg;
     if (titleEl) titleEl.textContent = title || 'CAD file not found';
+    if (actionsEl) {
+      actionsEl.innerHTML = actionsHtml || '';
+    }
   }
 
   function showLoading(text, status, progress) {
@@ -565,8 +575,102 @@
     }
   }
 
-  const CFD_SERVER = (typeof window.CFD_SERVER === 'string' && window.CFD_SERVER) || 'http://localhost:3000';
+  const CFD_SERVER = (typeof window.CFD_SERVER === 'string' && window.CFD_SERVER) || 'http://localhost:8090';
   const STL_SCALE_METERS = 0.001;
+
+  function useCfdProxy() {
+    return window.location.protocol === 'https:' || !['localhost', '127.0.0.1'].includes(window.location.hostname);
+  }
+
+  function getCfdUrl(path) {
+    if (useCfdProxy() && typeof getCfdProxyUrl === 'function') {
+      const base = getCfdProxyUrl();
+      return base + '?path=' + encodeURIComponent(path);
+    }
+    return CFD_SERVER.replace(/\/$/, '') + path;
+  }
+
+  const CFD_CONTROL_URL = (function () {
+    const u = typeof getCfdControlUrl === 'function' ? getCfdControlUrl() : '../api/cfd-control.php';
+    try {
+      return new URL(u, window.location.href).href;
+    } catch (_) {
+      return u;
+    }
+  })();
+  let cfdStatusPollId = null;
+
+  async function fetchCfdStatus() {
+    try {
+      const res = await fetch(getCfdUrl('/health'), { method: 'GET' });
+      const data = await res.json().catch(() => ({}));
+      return res.ok && (data.ok === true || data.openfoam === true);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function startCfdServer() {
+    try {
+      const res = await fetch(CFD_CONTROL_URL + '?action=start', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok === true && data.running === true) return { ok: true };
+      return { ok: false, error: data.error || (res.ok ? 'Sidecar did not start in time' : res.statusText) };
+    } catch (e) {
+      const msg = e.name === 'TypeError' && e.message === 'Failed to fetch'
+        ? 'Control API unreachable. Start sidecar: sudo systemctl start cfd-sidecar (or cd cfd-sidecar && npm run start:docker)'
+        : (e.message || 'Start failed');
+      return { ok: false, error: msg };
+    }
+  }
+
+  async function stopCfdServer() {
+    try {
+      const res = await fetch(CFD_CONTROL_URL + '?action=stop', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      return data.ok === true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function updateCfdControlUI(running) {
+    const statusEl = document.getElementById('cfd-status-text');
+    const startBtn = document.getElementById('corintis-start-cfd');
+    const stopBtn = document.getElementById('corintis-stop-cfd');
+    if (!statusEl || !startBtn || !stopBtn) return;
+    if (running === true) {
+      statusEl.textContent = 'CFD: Running';
+      startBtn.classList.add('hidden');
+      stopBtn.classList.remove('hidden');
+    } else if (running === false) {
+      statusEl.textContent = 'CFD: Stopped';
+      startBtn.classList.remove('hidden');
+      stopBtn.classList.add('hidden');
+    } else {
+      statusEl.textContent = 'CFD: …';
+      startBtn.classList.add('hidden');
+      stopBtn.classList.add('hidden');
+    }
+  }
+
+  async function pollCfdStatus() {
+    const running = await fetchCfdStatus();
+    if (running !== null) updateCfdControlUI(running);
+  }
+
+  function startCfdStatusPoll() {
+    if (cfdStatusPollId) return;
+    pollCfdStatus();
+    cfdStatusPollId = setInterval(pollCfdStatus, 10000);
+  }
+
+  function stopCfdStatusPoll() {
+    if (cfdStatusPollId) {
+      clearInterval(cfdStatusPollId);
+      cfdStatusPollId = null;
+    }
+  }
 
   function removeFlowLines() {
     if (flowLinesGroup) {
@@ -649,7 +753,7 @@
     showLoading('Running CFD...', 'Checking CFD server...', 2);
 
     try {
-      const healthRes = await fetch(`${CFD_SERVER}/health`, { method: 'GET' });
+      const healthRes = await fetch(getCfdUrl('/health'), { method: 'GET' });
       if (!healthRes.ok) {
         const h = await healthRes.json().catch(() => ({}));
         throw new Error(h.error || 'CFD server reported an error');
@@ -657,9 +761,27 @@
     } catch (e) {
       const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
       const msg = isNetwork
-        ? 'CFD server unreachable. Start the sidecar: cd cfd-sidecar && npm run start:docker. If the app is on HTTPS, use the same machine for both.'
+        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar (or click Start below to try automatic start).'
         : (e.message || 'CFD server check failed');
-      showError(msg, 'CFD Analysis');
+      const actionsHtml = '<button type="button" id="corintis-error-start-cfd" class="px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90">Start CFD server</button>';
+      showError(msg, 'CFD Analysis', actionsHtml);
+      const startBtn = document.getElementById('corintis-error-start-cfd');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          startBtn.disabled = true;
+          startBtn.textContent = 'Starting…';
+          const result = await startCfdServer();
+          if (result.ok) {
+            hideLoading();
+            updateCfdControlUI(true);
+          } else {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start CFD server';
+            const msgEl = errorEl.querySelector('.corintis-error-msg');
+            if (msgEl) msgEl.textContent = (msgEl.textContent || '') + ' [' + (result.error || 'Start failed') + ']. If Start fails, run: sudo systemctl start cfd-sidecar';
+          }
+        };
+      }
       return;
     }
 
@@ -683,7 +805,7 @@
 
     try {
       updateLoadingProgress('Running OpenFOAM... (blockMesh → snappyHexMesh → simpleFoam, may take 2–5 min)', 15);
-      const res = await fetch(`${CFD_SERVER}/run-cfd`, {
+      const res = await fetch(getCfdUrl('/run-cfd'), {
         method: 'POST',
         body: formData
       });
@@ -692,14 +814,32 @@
       const { caseId, streamlinesUrl } = json;
 
       updateLoadingProgress('Loading flow lines', 95);
-      await loadFlowLines(`${CFD_SERVER}${streamlinesUrl}`);
+      await loadFlowLines(getCfdUrl(streamlinesUrl));
       hideLoading();
     } catch (e) {
       const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
       const msg = isNetwork
-        ? 'CFD server unreachable. Start the sidecar: cd cfd-sidecar && npm run start:docker.'
+        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar (or click Start below to try automatic start).'
         : (e.message || 'CFD analysis failed');
-      showError(msg, 'CFD Analysis');
+      const actionsHtml = '<button type="button" id="corintis-error-start-cfd" class="px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90">Start CFD server</button>';
+      showError(msg, 'CFD Analysis', actionsHtml);
+      const startBtn = document.getElementById('corintis-error-start-cfd');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          startBtn.disabled = true;
+          startBtn.textContent = 'Starting…';
+          const result = await startCfdServer();
+          if (result.ok) {
+            hideLoading();
+            updateCfdControlUI(true);
+          } else {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start CFD server';
+            const msgEl = errorEl.querySelector('.corintis-error-msg');
+            if (msgEl) msgEl.textContent = (msgEl.textContent || '') + ' [' + (result.error || 'Start failed') + ']. If Start fails, run: sudo systemctl start cfd-sidecar';
+          }
+        };
+      }
     }
   }
 
@@ -1561,6 +1701,37 @@
       triggerAnalysis();
     });
   }
+
+  const startCfdBtn = document.getElementById('corintis-start-cfd');
+  if (startCfdBtn) {
+    startCfdBtn.addEventListener('click', async () => {
+      startCfdBtn.disabled = true;
+      startCfdBtn.textContent = 'Starting…';
+      const result = await startCfdServer();
+      startCfdBtn.disabled = false;
+      startCfdBtn.textContent = 'Start';
+      if (result.ok) {
+        updateCfdControlUI(true);
+      } else {
+        updateCfdControlUI(false);
+        const statusEl = document.getElementById('cfd-status-text');
+        if (statusEl) statusEl.textContent = 'CFD: ' + (result.error || 'Start failed');
+        console.warn('CFD Start failed:', result.error);
+      }
+    });
+  }
+
+  const stopCfdBtn = document.getElementById('corintis-stop-cfd');
+  if (stopCfdBtn) {
+    stopCfdBtn.addEventListener('click', async () => {
+      stopCfdBtn.disabled = true;
+      await stopCfdServer();
+      await pollCfdStatus();
+      stopCfdBtn.disabled = false;
+    });
+  }
+
+  startCfdStatusPoll();
 
   if (importInput) {
     importInput.addEventListener('change', async (e) => {

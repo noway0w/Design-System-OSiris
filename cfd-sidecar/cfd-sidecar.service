@@ -1,0 +1,17 @@
+[Unit]
+Description=CFD Sidecar for Corintis OpenFOAM analysis
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=OSiris
+WorkingDirectory=/home/OSiris/cfd-sidecar
+Environment=CFD_USE_DOCKER=1
+Environment=CFD_PORT=8090
+Environment=CFD_CASES_DIR=/var/lib/cfd-sidecar/cases
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
