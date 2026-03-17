@@ -97,40 +97,18 @@
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-white min-h-screen flex flex-col">
   <div class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
-    <a href="../map-app.html" class="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors">
-      <span class="material-symbols-outlined">arrow_back</span>
-      <span>Back to Map</span>
-    </a>
-    <h1 class="text-lg font-bold">3D CAD Explorer</h1>
+    <div class="flex items-center gap-3">
+      <a href="../map-app.html" class="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>Back to Map</span>
+      </a>
+      <button type="button" id="corintis-reset-panels" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer text-xs" title="Re-organize panels to initial position">
+        <span class="material-symbols-outlined text-base">reorder</span>
+        <span class="font-medium">Reset panels</span>
+      </button>
+    </div>
     <div class="flex items-center gap-2">
-      <label for="import-cad-input" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors">
-        <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc,application/iges,model/iges" class="hidden"/>
-        <span class="material-symbols-outlined text-lg">upload_file</span>
-        <span class="text-sm font-medium">Import CAD</span>
-      </label>
-      <button type="button" id="corintis-reset-panels" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Re-organize panels to initial position">
-        <span class="material-symbols-outlined text-lg">reorder</span>
-        <span class="text-sm font-medium">Reset panels</span>
-      </button>
-      <div class="flex items-center gap-1 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10" title="Inlet Velocity (m/s)">
-        <span class="text-xs font-medium mr-1">V:</span>
-        <input type="number" id="cfd-vx" value="1" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="x">
-        <input type="number" id="cfd-vy" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="y">
-        <input type="number" id="cfd-vz" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="z">
-      </div>
-      <div id="corintis-cfd-control" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10">
-        <span id="cfd-status-text" class="text-xs text-slate-600 dark:text-slate-400">CFD: …</span>
-        <button type="button" id="corintis-start-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30" title="Start CFD server">Start</button>
-        <button type="button" id="corintis-stop-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30" title="Stop CFD server">Stop</button>
-      </div>
-      <button type="button" id="corintis-run-cfd" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Run CFD analysis (requires local sidecar)">
-        <span class="material-symbols-outlined text-lg">science</span>
-        <span class="text-sm font-medium">Run Analysis</span>
-      </button>
-      <button type="button" id="corintis-redo-cfd" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-4 py-2 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Re-run CFD analysis">
-        <span class="material-symbols-outlined text-lg">refresh</span>
-        <span class="text-sm font-medium">Re-do</span>
-      </button>
+      <!-- Right side of header left intentionally minimal for now -->
     </div>
   </div>
   <div class="flex-1 min-h-[60vh] flex overflow-hidden relative">
@@ -211,7 +189,7 @@
   const PANEL_Z = 40;
   const PANEL_ANCHOR_TOP = 76;
   const PANEL_ANCHOR_OFFSET = 12;
-  let corintisPanelAlign = 'right';
+  let corintisPanelAlign = 'left';
 
   function createFloatingPanel(id, title, icon, bodyHtml, initialCollapsed = true) {
     const panel = document.createElement('div');
@@ -283,7 +261,7 @@
   }
 
   function resetPanelsToInitial() {
-    corintisPanelAlign = 'right';
+    corintisPanelAlign = 'left';
     layoutCorintisPanels();
   }
 
@@ -291,7 +269,18 @@
     if (!floatingPanelsContainer) return;
 
     const layersBody = '<div id="corintis-layers-list" class="space-y-1 max-h-40 overflow-y-auto"></div>';
-    const loadedBody = '<div id="corintis-loaded-files-list" class="space-y-1 max-h-40 overflow-y-auto"><p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, or IFC file.</p></div>';
+    const loadedBody = `
+      <div class="space-y-2">
+        <label for="import-cad-input" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors text-xs">
+          <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc,application/iges,model/iges" class="hidden"/>
+          <span class="material-symbols-outlined text-sm">upload_file</span>
+          <span class="font-medium">Import CAD</span>
+        </label>
+        <div id="corintis-loaded-files-list" class="space-y-1 max-h-40 overflow-y-auto">
+          <p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, or IFC file.</p>
+        </div>
+      </div>
+    `;
     const inspectionBody = `
       <div class="space-y-3">
         <label class="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
@@ -340,13 +329,59 @@
         </form>
       </div>
     `;
+    const analysisBody = `
+      <div class="space-y-3 text-sm">
+        <p class="text-slate-600 dark:text-slate-300 text-xs">
+          Configure inlet velocity and run CFD analysis for the current CAD model. Results are shown as colored streamlines.
+        </p>
+        <div class="flex items-center gap-1 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10" title="Inlet Velocity (m/s)">
+          <span class="text-xs font-medium mr-1">V:</span>
+          <input type="number" id="cfd-vx" value="1" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="x">
+          <input type="number" id="cfd-vy" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="y">
+          <input type="number" id="cfd-vz" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="z">
+        </div>
+        <div id="corintis-cfd-control" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10">
+          <span id="cfd-status-text" class="text-xs text-slate-600 dark:text-slate-400">CFD: …</span>
+          <button type="button" id="corintis-start-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30" title="Start CFD server">Start</button>
+          <button type="button" id="corintis-stop-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30" title="Stop CFD server">Stop</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="corintis-run-cfd" class="flex-1 flex items-center justify-center gap-1 bg-primary/90 text-white px-3 py-1.5 text-xs font-medium rounded hover:bg-primary">
+            <span class="material-symbols-outlined text-sm">science</span>
+            <span>Run Analysis</span>
+          </button>
+          <button type="button" id="corintis-redo-cfd" class="flex items-center justify-center gap-1 bg-card-light/60 dark:bg-card-dark/60 px-2.5 py-1.5 text-xs font-medium rounded border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            <span>Re-do</span>
+          </button>
+        </div>
+      </div>
+    `;
+    const modelsBody = `
+      <div class="space-y-3 text-sm">
+        <p class="text-xs text-slate-600 dark:text-slate-300">
+          The following models are installed on this VPS but <strong>disabled</strong> in this CAD explorer due to limited RAM.
+          Use cloud-backed assistants (e.g. on your main OpenClaw instance) for heavier workloads.
+        </p>
+        <ul id="corintis-models-list" class="space-y-1 text-xs text-slate-700 dark:text-slate-200">
+          <li><span class="font-mono">qwen2.5:0.5b</span> — tiny local model used for this panel.</li>
+          <li><span class="font-mono">phi3:mini</span> — installed, requires more RAM than available.</li>
+          <li><span class="font-mono">llama3.2:1b</span> — installed, not used here.</li>
+          <li><span class="font-mono">llama3.2:3b</span> — installed, too large for this VPS.</li>
+          <li><span class="font-mono">glm-4.7-flash</span> — installed, far too large for this VPS.</li>
+          <li><span class="font-mono">llama3.3</span> — installed, far too large for this VPS.</li>
+        </ul>
+      </div>
+    `;
 
     const panels = [
       createFloatingPanel('layers', 'Layers', 'layers', layersBody),
       createFloatingPanel('loaded', 'Loaded files', 'folder_open', loadedBody),
       createFloatingPanel('inspection', 'Internal Inspection', 'content_cut', inspectionBody),
       createFloatingPanel('visual', 'Visual rendering', 'visibility', visualBody),
-      createFloatingPanel('ai', 'CAD AI Assistant', 'smart_toy', aiBody, false)
+      createFloatingPanel('analysis', 'Analysis', 'science', analysisBody),
+      createFloatingPanel('models', 'Models', 'neurology', modelsBody),
+      createFloatingPanel('ai', 'CAD AI Assistant', 'smart_toy', aiBody, true)
     ];
 
     panels.forEach((panel) => floatingPanelsContainer.appendChild(panel));
@@ -522,6 +557,17 @@
   let opacityValue = 1;
   let ghostMode = true;
 
+  function notifyToast(type, message) {
+    if (!message) return;
+    try {
+      if (window.showToast) {
+        window.showToast({ type, message });
+      }
+    } catch (_) {
+      // ignore toast failures
+    }
+  }
+
   function showError(msg, title, actionsHtml) {
     loadingEl.style.display = 'none';
     errorEl.classList.remove('hidden');
@@ -534,6 +580,7 @@
     if (actionsEl) {
       actionsEl.innerHTML = actionsHtml || '';
     }
+    if (msg) notifyToast('error', msg);
   }
 
   function showLoading(text, status, progress) {
@@ -927,6 +974,7 @@
       updateLoadingProgress('Loading flow lines', 95);
       await loadFlowLines(getCfdUrl(streamlinesUrl));
       hideLoading();
+      notifyToast('success', 'CFD analysis completed and streamlines loaded.');
     } catch (e) {
       const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
       const msg = isNetwork
@@ -1823,11 +1871,13 @@
       startCfdBtn.textContent = 'Start';
       if (result.ok) {
         updateCfdControlUI(true);
+        notifyToast('success', 'CFD sidecar started.');
       } else {
         updateCfdControlUI(false);
         const statusEl = document.getElementById('cfd-status-text');
         if (statusEl) statusEl.textContent = 'CFD: ' + (result.error || 'Start failed');
         console.warn('CFD Start failed:', result.error);
+        notifyToast('error', result.error || 'Failed to start CFD sidecar.');
       }
     });
   }
@@ -1839,6 +1889,7 @@
       await stopCfdServer();
       await pollCfdStatus();
       stopCfdBtn.disabled = false;
+      notifyToast('info', 'CFD sidecar stop requested.');
     });
   }
 
@@ -1860,10 +1911,12 @@
         const buffer = await file.arrayBuffer();
         await addFileToLoadedList(file.name, buffer);
         hideLoading();
+        notifyToast('success', `Imported ${file.name}`);
       } catch (err) {
         console.error('Import CAD error:', err);
         hideLoading();
-        showError(err?.message || 'Failed to import CAD file');
+        const msg = err?.message || 'Failed to import CAD file';
+        showError(msg);
       }
       importInput.value = '';
     });
