@@ -7,6 +7,24 @@ const { spawn } = require('child_process');
 
 const config = require('./config');
 
+const GEOMETRY_ERROR_MSG = 'Geometry is an open shell or non-manifold. CFD requires a watertight solid volume.';
+
+function extractOpenFOAMErrorSnippet(combined) {
+  const lines = String(combined).split(/\r?\n/).filter((l) => l.trim());
+  const snippet = lines.slice(-4).join('\n').trim();
+  return snippet || String(combined).slice(-300).trim();
+}
+
+function killProcessTree(proc) {
+  try {
+    if (process.platform !== 'win32' && proc.pid) {
+      process.kill(-proc.pid, 'SIGKILL');
+    } else {
+      proc.kill('SIGKILL');
+    }
+  } catch (_) {}
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -30,14 +48,44 @@ function copyDir(src, dest) {
 
 function runCommand(cmd, args, cwd) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+    const opts = { cwd, stdio: ['ignore', 'pipe', 'pipe'] };
+    if (process.platform !== 'win32') opts.detached = true;
+    const proc = spawn(cmd, args, opts);
     let stderr = '';
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
-    proc.on('close', (code) => {
-      if (code !== 0) reject(new Error(`${cmd} failed (${code}): ${stderr.slice(-500)}`));
+    let stdout = '';
+    let resolved = false;
+    const finish = (err) => {
+      if (resolved) return;
+      resolved = true;
+      if (err) reject(err);
       else resolve();
+    };
+    const checkOutput = () => {
+      const combined = (stdout + stderr).toLowerCase();
+      if (combined.includes('fatal error') || combined.includes('fatal io error') || combined.includes("word 'infinity'") || combined.includes('not an external face') || combined.includes('external face of the mesh')) {
+        killProcessTree(proc);
+        finish(new Error('OpenFOAM Crash: ' + extractOpenFOAMErrorSnippet(stdout + stderr)));
+      }
+    };
+    proc.stdout.on('data', (d) => { stdout += d.toString(); checkOutput(); });
+    proc.stderr.on('data', (d) => { stderr += d.toString(); checkOutput(); });
+    proc.on('close', (code) => {
+      if (resolved) return;
+      resolved = true;
+      if (code !== 0) {
+        const combined = stdout + stderr;
+        const err = combined.slice(-500);
+        const errLower = combined.toLowerCase();
+        if (errLower.includes('fatal error') || errLower.includes('fatal io error') || errLower.includes('not an external face') || errLower.includes('external face of the mesh') || errLower.includes('infinity') || errLower.includes("word 'infinity'") || (errLower.includes('scalar') && errLower.includes('blockmesh'))) {
+          reject(new Error('OpenFOAM Crash: ' + extractOpenFOAMErrorSnippet(combined)));
+        } else {
+          reject(new Error(`${cmd} failed (${code}): ${err}`));
+        }
+      } else resolve();
     });
     proc.on('error', (e) => {
+      if (resolved) return;
+      resolved = true;
       if (e.code === 'ENOENT') {
         reject(new Error(`OpenFOAM not found. Install OpenFOAM and add blockMesh, snappyHexMesh, simpleFoam, foamToVTK to PATH. (${e.message})`));
       } else {
@@ -62,12 +110,34 @@ function runCommandDocker(cmd, args, casePath) {
   return new Promise((resolve, reject) => {
     const proc = spawn('docker', dockerArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stderr = '';
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    let stdout = '';
+    let resolved = false;
+    const finish = (err) => {
+      if (resolved) return;
+      resolved = true;
+      if (err) reject(err);
+      else resolve();
+    };
+    const checkOutput = () => {
+      const combined = (stdout + stderr).toLowerCase();
+      if (combined.includes('fatal error') || combined.includes('fatal io error') || combined.includes("word 'infinity'") || combined.includes('not an external face') || combined.includes('external face of the mesh')) {
+        killProcessTree(proc);
+        finish(new Error('OpenFOAM Crash: ' + extractOpenFOAMErrorSnippet(stdout + stderr)));
+      }
+    };
+    proc.stdout.on('data', (d) => { stdout += d.toString(); checkOutput(); });
+    proc.stderr.on('data', (d) => { stderr += d.toString(); checkOutput(); });
     proc.on('close', (code) => {
+      if (resolved) return;
+      resolved = true;
       if (code !== 0) {
-        const err = stderr.slice(-800);
-        if (err.includes('permission denied') || err.includes('Permission denied')) {
+        const combined = stdout + stderr;
+        const err = combined.slice(-800);
+        const errLower = combined.toLowerCase();
+        if (errLower.includes('permission denied')) {
           reject(new Error('Docker permission denied. Run: npm run start:docker (or: newgrp docker, then npm start)'));
+        } else if (errLower.includes('fatal error') || errLower.includes('fatal io error') || errLower.includes('not an external face') || errLower.includes('external face of the mesh') || errLower.includes('infinity') || errLower.includes("word 'infinity'") || (errLower.includes('scalar') && errLower.includes('blockmesh'))) {
+          reject(new Error('OpenFOAM Crash: ' + extractOpenFOAMErrorSnippet(combined)));
         } else {
           reject(new Error(`${cmd} failed (${code}): ${err}`));
         }
@@ -441,20 +511,59 @@ app.post('/run-cfd', upload.single('geometry'), async (req, res) => {
     const vz = parseFloat(req.body.vz) || 0;
     const velocity = [vx, vy, vz];
 
+    // 1a. Reject empty STLs (e.g. failed DXF extrusion)
+    const stlStats = fs.statSync(stlPath);
+    if (stlStats.size < 100) {
+      if (fs.existsSync(casePath)) {
+        try { fs.rmSync(casePath, { recursive: true }); } catch (rmErr) { console.warn('[CFD] Cleanup failed:', rmErr.message); }
+      }
+      return res.status(400).json({ error: 'The generated 3D model is empty. The CAD file may be a 2D wireframe that failed to extrude.' });
+    }
+
+    // 1b. Python mesh healing (trimesh: fix normals, fill holes). Required—no fallback.
+    const healedPath = path.join(triSurfaceDir, 'geometry_healed.stl');
+    const healScript = path.join(config.scriptDir, 'heal_mesh.py');
+    let pythonStderr = '';
+    try {
+      await new Promise((resolve, reject) => {
+        const proc = spawn('python3', [healScript, stlPath, healedPath], { cwd: __dirname, stdio: ['ignore', 'pipe', 'pipe'] });
+        proc.stderr.on('data', (d) => { pythonStderr += d.toString(); });
+        proc.stdout.on('data', () => {});
+        proc.on('close', (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(pythonStderr));
+        });
+        proc.on('error', reject);
+      });
+      fs.renameSync(healedPath, stlPath);
+    } catch (e) {
+      if (fs.existsSync(casePath)) {
+        try { fs.rmSync(casePath, { recursive: true }); } catch (rmErr) { console.warn('[CFD] Cleanup failed:', rmErr.message); }
+      }
+      const errSnippet = (e.message || pythonStderr || 'Unknown error').substring(0, 300);
+      return res.status(400).json({ error: 'Mesh healing failed: ' + errSnippet });
+    }
+
     // 1. Calculate bounds and generate blockMeshDict
-    const bounds = getStlBounds(req.file.buffer);
+    const bounds = getStlBounds(fs.readFileSync(stlPath));
     const blockMeshDictContent = generateBlockMeshDict(bounds);
     fs.writeFileSync(path.join(casePath, 'system', 'blockMeshDict'), blockMeshDictContent);
 
-    // 2. Set locationInMesh to center of bounds
-    const center = [
-      (bounds.min[0] + bounds.max[0]) / 2,
-      (bounds.min[1] + bounds.max[1]) / 2,
-      (bounds.min[2] + bounds.max[2]) / 2
-    ];
+    // 2. Set locationInMesh to a point in the FLUID (wind tunnel), 5% away from walls
+    const margin = 0.001;
+    const clamp = (v) => (Number.isFinite(v) ? v : 0);
+    const blockMin = bounds.min.map((v) => clamp(v - margin));
+    const blockMax = bounds.max.map((v) => clamp(v + margin));
+    const dx = blockMax[0] - blockMin[0];
+    const dy = blockMax[1] - blockMin[1];
+    const dz = blockMax[2] - blockMin[2];
+    const locX = blockMin[0] + (dx * 0.05);
+    const locY = blockMax[1] - (dy * 0.05);
+    const locZ = blockMax[2] - (dz * 0.05);
+    const locInFluid = [locX, locY, locZ].map(clamp);
     const snappyDictPath = path.join(casePath, 'system', 'snappyHexMeshDict');
     let snappyDict = fs.readFileSync(snappyDictPath, 'utf8');
-    snappyDict = snappyDict.replace(/locationInMesh\s*\([^)]+\);/, `locationInMesh (${center.join(' ')});`);
+    snappyDict = snappyDict.replace(/locationInMesh\s*\([^)]+\);/, `locationInMesh (${locInFluid.join(' ')});`);
     fs.writeFileSync(snappyDictPath, snappyDict);
 
     // 3. Generate TopoSet and CreatePatch Dicts
@@ -467,20 +576,57 @@ app.post('/run-cfd', upload.single('geometry'), async (req, res) => {
     const uDictContent = generateUDict(velocity);
     fs.writeFileSync(path.join(casePath, '0', 'U'), uDictContent);
 
+    const geometryErrorMsg = 'Geometry is an open shell or non-manifold. CFD requires a watertight solid volume.';
+
     console.log(`[CFD] Case ${caseId}: blockMesh...`);
-    await runOpenFOAM('blockMesh', [], casePath);
+    try {
+      await runOpenFOAM('blockMesh', [], casePath);
+    } catch (e) {
+      if ((e.message || '').startsWith('OpenFOAM Crash:')) throw e;
+      const err = (e.message || '').toLowerCase();
+      if (err.includes('infinity') || err.includes('fatal') || err.includes('scalar')) {
+        throw new Error(geometryErrorMsg);
+      }
+      throw e;
+    }
     console.log(`[CFD] Case ${caseId}: snappyHexMesh...`);
-    await runOpenFOAM('snappyHexMesh', ['-overwrite'], casePath);
-    
-    console.log(`[CFD] Case ${caseId}: topoSet...`);
-    await runOpenFOAM('topoSet', [], casePath);
-    console.log(`[CFD] Case ${caseId}: createPatch...`);
-    await runOpenFOAM('createPatch', ['-overwrite'], casePath);
+    try {
+      await runOpenFOAM('snappyHexMesh', ['-overwrite'], casePath);
+    } catch (e) {
+      if ((e.message || '').startsWith('OpenFOAM Crash:')) throw e;
+      const err = (e.message || '').toLowerCase();
+      if (err.includes('non-manifold') || err.includes('not an external face') || err.includes('external face of the mesh')) {
+        throw new Error(geometryErrorMsg);
+      }
+      if (err.includes('fatal') && (err.includes('surface') || err.includes('geometry') || err.includes('location'))) {
+        throw new Error(geometryErrorMsg);
+      }
+      throw e;
+    }
+
+    const boundaryPath = path.join(casePath, 'constant', 'polyMesh', 'boundary');
+    const hasInletOutlet = fs.existsSync(boundaryPath) && (() => {
+      try {
+        const content = fs.readFileSync(boundaryPath, 'utf8');
+        return content.includes('inlet') && content.includes('outlet');
+      } catch (_) { return false; }
+    })();
+    if (!hasInletOutlet) {
+      console.log(`[CFD] Case ${caseId}: topoSet...`);
+      await runOpenFOAM('topoSet', [], casePath);
+      console.log(`[CFD] Case ${caseId}: createPatch...`);
+      try {
+        await runOpenFOAM('createPatch', ['-overwrite'], casePath);
+      } catch (e) {
+        if ((e.message || '').startsWith('OpenFOAM Crash:')) throw e;
+        throw new Error(geometryErrorMsg);
+      }
+    }
 
     console.log(`[CFD] Case ${caseId}: simpleFoam...`);
     await runOpenFOAM('simpleFoam', [], casePath);
     console.log(`[CFD] Case ${caseId}: foamToVTK...`);
-    await runOpenFOAM('foamToVTK', ['-fields', 'U'], casePath);
+    await runOpenFOAM('foamToVTK', ['-fields', "'(U p)'"], casePath);
 
     console.log(`[CFD] Case ${caseId}: postprocess...`);
     const pyScript = path.join(config.scriptDir, 'postprocess_streamlines.py');
@@ -495,7 +641,14 @@ app.post('/run-cfd', upload.single('geometry'), async (req, res) => {
     res.json({ caseId, streamlinesUrl: `/streamlines/${caseId}` });
   } catch (e) {
     console.error(`[CFD] Case ${caseId}: failed:`, e.message);
-    res.status(500).json({ error: e.message || 'CFD run failed' });
+    if (fs.existsSync(casePath)) {
+      try { fs.rmSync(casePath, { recursive: true }); } catch (rmErr) { console.warn('[CFD] Cleanup failed:', rmErr.message); }
+    }
+    const isGeometryError = e.message && (
+      e.message.includes('open shell') || e.message.includes('non-manifold') || e.message.includes('watertight')
+    );
+    const status = isGeometryError ? 400 : 500;
+    res.status(status).json({ error: e.message || 'CFD run failed' });
   }
 });
 

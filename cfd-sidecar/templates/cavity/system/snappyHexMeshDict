@@ -17,6 +17,7 @@ FoamFile
 castellatedMesh true;
 snap            false;
 addLayers       false;
+keepPatches     yes;
 
 geometry
 {
@@ -64,7 +65,7 @@ snapControls
     nRelaxIter 5;
     nFeatureSnapIter 10;
     implicitFeatureSnap false;
-    explicitFeatureSnap true;
+    explicitFeatureSnap false;
     multiRegionFeatureSnap true;
 }
 

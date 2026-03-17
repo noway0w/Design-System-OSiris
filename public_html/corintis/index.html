@@ -322,12 +322,31 @@
         </div>
       </div>
     `;
+    const aiBody = `
+      <div class="flex flex-col gap-2 h-64">
+        <div id="corintis-ai-messages" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
+          <div class="text-slate-500 dark:text-slate-400">
+            Ask questions about the current CAD scene. I will include basic context (selection, camera, layers) with each message.
+          </div>
+        </div>
+        <form id="corintis-ai-form" class="flex flex-col gap-1">
+          <textarea id="corintis-ai-input" rows="2" class="w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white/70 dark:bg-black/40 px-2 py-1 resize-none focus:outline-none" placeholder="Ask OpenClaw about this model..."></textarea>
+          <div class="flex items-center justify-between gap-2">
+            <span id="corintis-ai-status" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+            <button type="submit" class="px-2.5 py-1 text-xs font-medium rounded bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed">
+              Send
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
 
     const panels = [
       createFloatingPanel('layers', 'Layers', 'layers', layersBody),
       createFloatingPanel('loaded', 'Loaded files', 'folder_open', loadedBody),
       createFloatingPanel('inspection', 'Internal Inspection', 'content_cut', inspectionBody),
-      createFloatingPanel('visual', 'Visual rendering', 'visibility', visualBody)
+      createFloatingPanel('visual', 'Visual rendering', 'visibility', visualBody),
+      createFloatingPanel('ai', 'CAD AI Assistant', 'smart_toy', aiBody, false)
     ];
 
     panels.forEach((panel) => floatingPanelsContainer.appendChild(panel));
@@ -391,6 +410,98 @@
   }
 
   initFloatingPanels();
+
+  // ---- CAD context helper for AI panel ----
+
+  function getCurrentCadContext() {
+    const ctx = {
+      hasCad: !!cadGroup,
+      activeFileId,
+      layers: layers.map((l) => ({
+        id: l.id,
+        name: l.name,
+        visible: layerVisibility[l.id] !== false
+      })),
+      clipping: {
+        enabled: clippingEnabled,
+        axis: clippingAxis,
+        value: clippingValue
+      }
+    };
+    if (camera) {
+      ctx.camera = {
+        position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        target: controls && controls.target ? { x: controls.target.x, y: controls.target.y, z: controls.target.z } : null
+      };
+    }
+    return ctx;
+  }
+
+  // ---- AI chat panel wiring ----
+
+  async function sendAiMessage(message) {
+    const statusEl = document.getElementById('corintis-ai-status');
+    if (statusEl) statusEl.textContent = 'Contacting OpenClaw...';
+    try {
+      const res = await fetch('../api/openclaw-chat.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          context: getCurrentCadContext()
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        const err = (data && data.error) || res.statusText || 'Unknown error';
+        throw new Error(err);
+      }
+      if (statusEl) statusEl.textContent = '';
+      return String(data.reply || '').trim();
+    } catch (e) {
+      if (statusEl) statusEl.textContent = 'Error: ' + (e.message || 'Request failed');
+      throw e;
+    }
+  }
+
+  (function initAiPanel() {
+    const form = document.getElementById('corintis-ai-form');
+    const input = document.getElementById('corintis-ai-input');
+    const messagesEl = document.getElementById('corintis-ai-messages');
+    if (!form || !input || !messagesEl) return;
+
+    function appendMessage(role, text) {
+      const row = document.createElement('div');
+      row.className = role === 'user'
+        ? 'text-xs text-right'
+        : 'text-xs text-left';
+      const bubble = document.createElement('div');
+      bubble.className = role === 'user'
+        ? 'inline-block px-2 py-1 rounded-lg bg-primary text-white text-[11px]'
+        : 'inline-block px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 text-[11px] text-slate-800 dark:text-slate-100';
+      bubble.textContent = text;
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const value = (input.value || '').trim();
+      if (!value) return;
+      appendMessage('user', value);
+      input.value = '';
+      form.querySelector('button[type="submit"]').disabled = true;
+      try {
+        const reply = await sendAiMessage(value);
+        if (reply) appendMessage('assistant', reply);
+      } catch (_) {
+        // Error already shown in status
+      } finally {
+        form.querySelector('button[type="submit"]').disabled = false;
+      }
+    });
+  })();
 
   const layersList = document.getElementById('corintis-layers-list');
   const loadedFilesList = document.getElementById('corintis-loaded-files-list');

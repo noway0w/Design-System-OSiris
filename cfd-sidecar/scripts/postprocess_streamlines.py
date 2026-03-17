@@ -124,6 +124,7 @@ def main():
             print(f"Streamline generation failed: {e}", file=sys.stderr)
             sys.exit(1)
 
+    # Export coordinates as-is from VTK (OpenFOAM blockMesh space). No offset applied.
     result = {"streamlines": [], "bounds": {"min": list(bounds[::2]), "max": list(bounds[1::2])}}
 
     if streams.n_cells == 0:
