@@ -13,16 +13,16 @@
     #corintis-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
     .corintis-overlay { pointer-events: none; }
     .corintis-overlay > * { pointer-events: auto; }
-    /* Floating panels - map-app dark theme for readability */
+    /* Floating panels - glassmorphism */
     .corintis-floating-panel {
       position: fixed;
       width: 16rem;
       max-width: calc(100vw - 2rem);
       border-radius: 0.5rem;
       overflow: hidden;
-      background: rgba(248, 250, 252, 0.25);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(0, 0, 0, 0.08);
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       pointer-events: auto;
@@ -34,8 +34,8 @@
     html.dark .corintis-floating-panel,
     .dark .corintis-floating-panel {
       background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     }
@@ -52,6 +52,7 @@
       background: rgba(255, 255, 255, 0.4);
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       min-height: 2.5rem;
+      flex-shrink: 0;
       color: #1e293b;
     }
     html.dark .corintis-floating-panel-header,
@@ -64,7 +65,7 @@
     .corintis-floating-panel-body {
       overflow: hidden;
       transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.12);
       color: #334155;
     }
     html.dark .corintis-floating-panel-body,
@@ -72,43 +73,144 @@
       background: rgba(15, 23, 42, 0.5);
       color: #e2e8f0;
     }
-    .corintis-floating-panel.collapsed .corintis-floating-panel-body {
-      max-height: 0 !important;
-      opacity: 0;
-    }
-    .corintis-floating-panel .expand-btn {
+    .corintis-floating-panel .close-btn {
       width: 1.75rem;
       height: 1.75rem;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 0.5rem;
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       color: inherit;
       background: transparent;
       border: none;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .corintis-floating-panel.collapsed .expand-btn { transform: rotate(-90deg); }
-    .corintis-floating-panel .expand-btn:hover { background: rgba(0, 0, 0, 0.06); }
-    html.dark .corintis-floating-panel .expand-btn:hover,
-    .dark .corintis-floating-panel .expand-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .corintis-floating-panel .close-btn:hover { background: rgba(0, 0, 0, 0.06); }
+    html.dark .corintis-floating-panel .close-btn:hover,
+    .dark .corintis-floating-panel .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .corintis-floating-panel[data-panel-id="ai"] .corintis-floating-panel-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      max-height: none !important;
+    }
+    .corintis-floating-panel[data-panel-id="ai"] .corintis-floating-panel-body > div {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding: 0;
+    }
+    .corintis-floating-panel[data-panel-id="loaded"] .corintis-floating-panel-body,
+    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      max-height: none !important;
+    }
+    .corintis-floating-panel[data-panel-id="loaded"] .corintis-floating-panel-body > div,
+    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body > div {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding: 0.75rem;
+    }
+    /* Elegant discreet scrollbar for panel scrollable areas */
+    .corintis-floating-panel ::-webkit-scrollbar { width: 6px; height: 6px; }
+    .corintis-floating-panel ::-webkit-scrollbar-track { background: transparent; }
+    .corintis-floating-panel ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.3);
+      border-radius: 10px;
+    }
+    .corintis-floating-panel ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+    .corintis-resize-handle { position: absolute; z-index: 5; }
+    .corintis-resize-handle-r { right: 0; top: 0; bottom: 0; width: 6px; cursor: ew-resize; }
+    .corintis-resize-handle-b { bottom: 0; left: 0; right: 0; height: 6px; cursor: ns-resize; }
+    .corintis-resize-handle-l { left: 0; top: 0; bottom: 0; width: 6px; cursor: ew-resize; }
+    .corintis-resize-handle-t { top: 0; left: 0; right: 0; height: 6px; cursor: ns-resize; }
+    .corintis-resize-handle-br { right: 0; bottom: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+    .corintis-sidebar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 0;
+      z-index: 30;
+      pointer-events: auto;
+      background: rgba(248, 250, 252, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    html.dark .corintis-sidebar,
+    .dark .corintis-sidebar {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .corintis-sidebar-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #334155;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .corintis-sidebar-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+      color: #1e293b;
+    }
+    html.dark .corintis-sidebar-btn,
+    .dark .corintis-sidebar-btn {
+      color: #e2e8f0;
+    }
+    html.dark .corintis-sidebar-btn:hover,
+    .dark .corintis-sidebar-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+    }
+    .corintis-sidebar-btn.corintis-sidebar-btn-active {
+      background: rgba(19, 146, 236, 0.15);
+      color: #1392ec;
+    }
+    .corintis-sidebar-btn .material-symbols-outlined { font-size: 24px; }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-white min-h-screen flex flex-col">
   <div class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
     <div class="flex items-center gap-3">
-      <a href="../map-app.html" class="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors">
+      <a href="../map-app.html" class="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" title="Back to Map">
         <span class="material-symbols-outlined">arrow_back</span>
-        <span>Back to Map</span>
       </a>
-      <button type="button" id="corintis-reset-panels" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer text-xs" title="Re-organize panels to initial position">
-        <span class="material-symbols-outlined text-base">reorder</span>
-        <span class="font-medium">Reset panels</span>
+      <button type="button" id="corintis-reset-panels" class="flex items-center justify-center p-2 rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Reset panels">
+        <img src="icons/menu_open_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg" alt="" class="w-6 h-6 dark:hidden" width="24" height="24"/>
+        <img src="icons/menu_open_24dp_FFFFFF_FILL0_wght400_GRAD0_opsz24.svg" alt="" class="w-6 h-6 hidden dark:block" width="24" height="24"/>
       </button>
     </div>
     <div class="flex items-center gap-2">
-      <!-- Right side of header left intentionally minimal for now -->
+      <button type="button" id="corintis-theme-toggle" class="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" title="Toggle dark mode">
+        <img src="icons/contrast_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg" alt="" class="w-6 h-6 dark:hidden" width="24" height="24"/>
+        <img src="icons/contrast_24dp_FFFFFF_FILL0_wght400_GRAD0_opsz24.svg" alt="" class="w-6 h-6 hidden dark:block" width="24" height="24"/>
+      </button>
     </div>
   </div>
   <div class="flex-1 min-h-[60vh] flex overflow-hidden relative">
@@ -136,6 +238,29 @@
         <div id="corintis-error-actions"></div>
       </div>
     </div>
+    </div>
+    <div id="corintis-panel-sidebar" class="corintis-sidebar">
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="loaded" title="Loaded files">
+        <span class="material-symbols-outlined">folder_open</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="layers" title="Layers">
+        <span class="material-symbols-outlined">layers</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="inspection" title="Internal Inspection">
+        <span class="material-symbols-outlined">content_cut</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="visual" title="Visual rendering">
+        <span class="material-symbols-outlined">visibility</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="analysis" title="Analysis">
+        <span class="material-symbols-outlined">science</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="models" title="Models">
+        <span class="material-symbols-outlined">neurology</span>
+      </button>
+      <button type="button" class="corintis-sidebar-btn" data-panel-id="ai" title="CAD AI Assistant">
+        <span class="material-symbols-outlined">smart_toy</span>
+      </button>
     </div>
     <div id="corintis-floating-panels" class="absolute inset-0 pointer-events-none z-10"></div>
   </div>
@@ -186,65 +311,132 @@
   const PANEL_GAP = 10;
   const PANEL_HEADER_H = 40;
   const PANEL_BODY_MAX_H = 320;
+  const PANEL_AI_BODY_MAX_H = 420;
   const PANEL_Z = 40;
   const PANEL_ANCHOR_TOP = 76;
-  const PANEL_ANCHOR_OFFSET = 12;
+  const PANEL_SIDEBAR_WIDTH = 56;
+  const PANEL_ANCHOR_OFFSET = 12 + 56; /* 12 + sidebar width */
+  const PANEL_STORAGE_KEY = 'corintis_panel_positions';
+  const PANEL_MIN_W = 192; // 12rem
+  const PANEL_MAX_W_OFFSET = 32; // 2rem
+  const PANEL_MIN_H = 80;
   let corintisPanelAlign = 'left';
 
-  function createFloatingPanel(id, title, icon, bodyHtml, initialCollapsed = true) {
+  function loadPanelPositions() {
+    try {
+      const raw = localStorage.getItem(PANEL_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    } catch (_) { return null; }
+  }
+
+  function savePanelPositions() {
+    const panels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel[data-panel-id]') || []).filter((p) => isPanelOpen(p));
+    const positions = {};
+    panels.forEach((panel) => {
+      const id = panel.getAttribute('data-panel-id');
+      if (!id) return;
+      const rect = panel.getBoundingClientRect();
+      const w = panel.style.width ? parseFloat(panel.style.width) : rect.width;
+      const h = panel.offsetHeight;
+      positions[id] = { top: rect.top, left: rect.left, width: w, height: h };
+    });
+    try {
+      localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(positions));
+    } catch (_) {}
+  }
+
+  function createFloatingPanel(id, title, icon, bodyHtml) {
     const panel = document.createElement('div');
-    panel.className = 'corintis-floating-panel' + (initialCollapsed ? ' collapsed' : '');
+    panel.className = 'corintis-floating-panel';
     panel.setAttribute('data-panel-id', id);
+    panel.style.display = 'none';
+    const bodyWrapperClass = id === 'ai' ? 'corintis-ai-body-wrapper' : (id === 'loaded' || id === 'models' ? 'corintis-list-panel-wrapper' : 'p-3');
+    const bodyMaxHeight = (id === 'ai' || id === 'loaded' || id === 'models') ? 'none' : PANEL_BODY_MAX_H + 'px';
     panel.innerHTML = `
       <div class="corintis-floating-panel-header">
         <div class="flex items-center gap-2 min-w-0 flex-1">
           <span class="material-symbols-outlined text-lg text-primary flex-shrink-0">${icon}</span>
           <span class="text-sm font-semibold truncate">${title}</span>
         </div>
-        <button type="button" class="expand-btn flex-shrink-0" aria-label="Expand/collapse">
-          <span class="material-symbols-outlined text-[20px]">expand_more</span>
+        <button type="button" class="close-btn flex-shrink-0" aria-label="Close">
+          <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
-      <div class="corintis-floating-panel-body" style="max-height: ${PANEL_BODY_MAX_H}px;">
-        <div class="p-3">${bodyHtml}</div>
+      <div class="corintis-floating-panel-body" style="max-height: ${bodyMaxHeight};">
+        <div class="${bodyWrapperClass}">${bodyHtml}</div>
       </div>
+      <div class="corintis-resize-handle corintis-resize-handle-r" data-edge="r" aria-label="Resize"></div>
+      <div class="corintis-resize-handle corintis-resize-handle-b" data-edge="b" aria-label="Resize"></div>
+      <div class="corintis-resize-handle corintis-resize-handle-l" data-edge="l" aria-label="Resize"></div>
+      <div class="corintis-resize-handle corintis-resize-handle-t" data-edge="t" aria-label="Resize"></div>
+      <div class="corintis-resize-handle corintis-resize-handle-br" data-edge="br" aria-label="Resize"></div>
     `;
-    const expandBtn = panel.querySelector('.expand-btn');
-    expandBtn.addEventListener('click', (e) => {
+    const closeBtn = panel.querySelector('.close-btn');
+    closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      panel.classList.toggle('collapsed');
-      requestAnimationFrame(() => layoutCorintisPanels());
+      setPanelOpen(panel, false);
     });
     return panel;
+  }
+
+  function setPanelOpen(panel, open) {
+    const id = panel.getAttribute('data-panel-id');
+    if (!id) return;
+    panel.style.display = open ? 'flex' : 'none';
+    const btn = document.querySelector(`.corintis-sidebar-btn[data-panel-id="${id}"]`);
+    if (btn) btn.classList.toggle('corintis-sidebar-btn-active', open);
+    if (open) requestAnimationFrame(() => layoutCorintisPanels(false));
+  }
+
+  function isPanelOpen(panel) {
+    return panel.style.display !== 'none';
   }
 
   function getPanelHeight(panel) {
     const header = panel.querySelector('.corintis-floating-panel-header');
     const headerH = header?.offsetHeight ?? PANEL_HEADER_H;
-    if (panel.classList.contains('collapsed')) return headerH;
     const body = panel.querySelector('.corintis-floating-panel-body');
     const bodyInner = body?.querySelector('div');
     const bodyH = bodyInner ? bodyInner.scrollHeight + 24 : 120;
-    return headerH + Math.min(bodyH, PANEL_BODY_MAX_H);
+    const maxH = panel.getAttribute('data-panel-id') === 'ai' ? PANEL_AI_BODY_MAX_H : PANEL_BODY_MAX_H;
+    return headerH + Math.min(bodyH, maxH);
   }
 
-  function layoutCorintisPanels() {
-    const panels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel') || []);
-    let y = PANEL_ANCHOR_TOP;
+  function layoutCorintisPanels(forceDefault = false) {
+    const allPanels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel[data-panel-id]') || []);
+    const panels = allPanels.filter((p) => isPanelOpen(p));
+    const saved = forceDefault ? null : loadPanelPositions();
     const isLeft = corintisPanelAlign === 'left';
+    let y = PANEL_ANCHOR_TOP;
     panels.forEach((panel, i) => {
-      const h = getPanelHeight(panel);
-      panel.style.top = y + 'px';
-      panel.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
-      if (isLeft) {
-        panel.style.left = PANEL_ANCHOR_OFFSET + 'px';
+      const id = panel.getAttribute('data-panel-id');
+      const pos = saved && id && saved[id];
+      if (pos && typeof pos.top === 'number' && typeof pos.left === 'number') {
+        panel.style.top = pos.top + 'px';
+        panel.style.left = pos.left + 'px';
         panel.style.right = 'auto';
+        if (typeof pos.width === 'number' && pos.width >= PANEL_MIN_W) {
+          panel.style.width = Math.min(pos.width, window.innerWidth - PANEL_MAX_W_OFFSET) + 'px';
+        }
+        if (typeof pos.height === 'number' && pos.height >= PANEL_MIN_H) {
+          panel.style.height = pos.height + 'px';
+        }
       } else {
-        panel.style.right = PANEL_ANCHOR_OFFSET + 'px';
-        panel.style.left = 'auto';
+        const h = getPanelHeight(panel);
+        panel.style.top = y + 'px';
+        panel.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+        if (isLeft) {
+          panel.style.left = PANEL_ANCHOR_OFFSET + 'px';
+          panel.style.right = 'auto';
+        } else {
+          panel.style.right = PANEL_ANCHOR_OFFSET + 'px';
+          panel.style.left = 'auto';
+        }
+        y += h + PANEL_GAP;
       }
       panel.style.zIndex = String(PANEL_Z + i);
-      y += h + PANEL_GAP;
     });
   }
 
@@ -257,26 +449,33 @@
 
   function realignPanelsToLeft() {
     corintisPanelAlign = 'left';
-    layoutCorintisPanels();
+    try { localStorage.removeItem(PANEL_STORAGE_KEY); } catch (_) {}
+    layoutCorintisPanels(true);
   }
 
   function resetPanelsToInitial() {
     corintisPanelAlign = 'left';
-    layoutCorintisPanels();
+    try { localStorage.removeItem(PANEL_STORAGE_KEY); } catch (_) {}
+    const panels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel[data-panel-id]') || []);
+    panels.forEach((p) => setPanelOpen(p, false));
+    document.querySelectorAll('.corintis-sidebar-btn').forEach((b) => b.classList.remove('corintis-sidebar-btn-active'));
   }
 
   function initFloatingPanels() {
     if (!floatingPanelsContainer) return;
 
-    const layersBody = '<div id="corintis-layers-list" class="space-y-1 max-h-40 overflow-y-auto"></div>';
+    const layersBody = '<div id="corintis-layers-list" class="space-y-2 max-h-40 overflow-y-auto"></div>';
     const loadedBody = `
-      <div class="space-y-2">
-        <label for="import-cad-input" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors text-xs">
-          <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc,application/iges,model/iges" class="hidden"/>
-          <span class="material-symbols-outlined text-sm">upload_file</span>
-          <span class="font-medium">Import CAD</span>
-        </label>
-        <div id="corintis-loaded-files-list" class="space-y-1 max-h-40 overflow-y-auto">
+      <div class="flex flex-col h-full min-h-0">
+        <div class="flex-shrink-0 space-y-2">
+          <label for="import-cad-input" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 cursor-pointer hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors text-xs">
+            <input type="file" id="import-cad-input" accept=".igs,.iges,.stp,.step,.dxf,.ifc,application/iges,model/iges" class="hidden"/>
+            <span class="material-symbols-outlined text-sm">upload_file</span>
+            <span class="font-medium">Import CAD</span>
+          </label>
+          <p class="text-xs text-slate-500 dark:text-slate-400">IGES, STEP, DXF, IFC</p>
+        </div>
+        <div id="corintis-loaded-files-list" class="flex-1 overflow-y-auto pr-2 space-y-2 mt-2 min-h-0">
           <p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, or IFC file.</p>
         </div>
       </div>
@@ -311,24 +510,60 @@
         </div>
       </div>
     `;
-    const aiBody = `
-      <div class="flex flex-col gap-2 h-64">
-        <div id="corintis-ai-messages" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
-          <div class="text-slate-500 dark:text-slate-400">
-            Ask questions about the current CAD scene. I will include basic context (selection, camera, layers) with each message.
-          </div>
+    const aiBodyHtml = `
+<div class="corintis-ai-chat flex flex-col h-full min-h-0 bg-white/10 dark:bg-slate-800/30 backdrop-blur-md">
+  <div class="sticky top-0 z-10 flex-shrink-0 flex items-center justify-between px-3 py-2 backdrop-blur-md border-b border-white/20 dark:border-slate-600/50">
+    <div class="flex items-center gap-2 min-w-0">
+      <div class="relative flex-shrink-0">
+        <div class="size-10 rounded-full flex items-center justify-center border-2 border-primary bg-white/10 dark:bg-slate-800/30">
+          <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
         </div>
-        <form id="corintis-ai-form" class="flex flex-col gap-1">
-          <textarea id="corintis-ai-input" rows="2" class="w-full text-xs rounded border border-slate-300 dark:border-slate-600 bg-white/70 dark:bg-black/40 px-2 py-1 resize-none focus:outline-none" placeholder="Ask OpenClaw about this model..."></textarea>
-          <div class="flex items-center justify-between gap-2">
-            <span id="corintis-ai-status" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
-            <button type="submit" class="px-2.5 py-1 text-xs font-medium rounded bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed">
-              Send
-            </button>
-          </div>
-        </form>
+        <span class="absolute bottom-0 right-0 size-2.5 rounded-full bg-green-500 ring-2 ring-white/20 dark:ring-slate-800/50"></span>
       </div>
-    `;
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">AI Assistant</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Always active</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1 flex-shrink-0">
+      <button type="button" class="size-8 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="Search" aria-label="Search">
+        <span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-lg">search</span>
+      </button>
+      <button type="button" class="size-8 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="More options" aria-label="More options">
+        <span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-lg">more_vert</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="corintis-ai-messages" class="flex-1 overflow-y-auto space-y-4 p-3 pr-2 min-h-0">
+    <div class="flex items-end gap-2 max-w-[85%]">
+      <div class="size-8 rounded-full flex-shrink-0 flex items-center justify-center border border-primary/30">
+        <span class="material-symbols-outlined text-primary text-lg">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-0.5">
+        <div class="bg-primary/10 dark:bg-primary/20 backdrop-blur-md text-slate-800 dark:text-slate-100 px-5 py-3.5 rounded-xl rounded-bl-none text-sm leading-relaxed">
+          Ask questions about the current CAD scene. I will include basic context (selection, camera, layers) with each message.
+        </div>
+        <span class="text-[10px] text-slate-400 ml-1">10:24 AM</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-shrink-0 pt-2 pb-3.5 px-3 border-t border-white/20 dark:border-slate-600/50">
+    <form id="corintis-ai-form" class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <div class="flex-1 flex items-center bg-white/10 dark:bg-slate-800/30 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/20 dark:border-slate-600/50 focus-within:border-primary/50 transition-all">
+          <textarea id="corintis-ai-input" rows="2" class="flex-1 min-w-0 text-xs bg-transparent resize-none focus:outline-none border-0 placeholder-slate-400 dark:placeholder-slate-500" placeholder="Ask me anything..."></textarea>
+        </div>
+        <button type="submit" class="size-12 rounded-xl bg-primary hover:bg-primary/90 text-white flex items-center justify-center shadow-lg shadow-primary/20 transition-all transform active:scale-95 disabled:opacity-60 flex-shrink-0" title="Send" aria-label="Send">
+          <span class="material-symbols-outlined text-xl">send</span>
+        </button>
+      </div>
+      <span id="corintis-ai-status" class="text-[11px] text-slate-500 dark:text-slate-400"></span>
+    </form>
+  </div>
+</div>
+`;
     const analysisBody = `
       <div class="space-y-3 text-sm">
         <p class="text-slate-600 dark:text-slate-300 text-xs">
@@ -358,34 +593,97 @@
       </div>
     `;
     const modelsBody = `
-      <div class="space-y-3 text-sm">
-        <p class="text-xs text-slate-600 dark:text-slate-300">
+      <div class="flex flex-col h-full min-h-0 text-sm">
+        <p class="flex-shrink-0 text-xs text-slate-600 dark:text-slate-300">
           The following models are installed on this VPS but <strong>disabled</strong> in this CAD explorer due to limited RAM.
           Use cloud-backed assistants (e.g. on your main OpenClaw instance) for heavier workloads.
         </p>
-        <ul id="corintis-models-list" class="space-y-1 text-xs text-slate-700 dark:text-slate-200">
-          <li><span class="font-mono">qwen2.5:0.5b</span> — tiny local model used for this panel.</li>
-          <li><span class="font-mono">phi3:mini</span> — installed, requires more RAM than available.</li>
-          <li><span class="font-mono">llama3.2:1b</span> — installed, not used here.</li>
-          <li><span class="font-mono">llama3.2:3b</span> — installed, too large for this VPS.</li>
-          <li><span class="font-mono">glm-4.7-flash</span> — installed, far too large for this VPS.</li>
-          <li><span class="font-mono">llama3.3</span> — installed, far too large for this VPS.</li>
-        </ul>
+        <div id="corintis-models-list" class="flex-1 overflow-y-auto pr-2 space-y-2 mt-3 min-h-0">
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-qwen2.5-0.5b" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="qwen2.5:0.5b" checked/>
+            </div>
+            <label for="corintis-model-qwen2.5-0.5b" class="flex-1 min-w-0 cursor-pointer">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">qwen2.5:0.5b</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Active — tiny local model used for the claw agent.</p>
+            </label>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-phi3-mini" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="phi3:mini" disabled/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">phi3:mini</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Installed, requires more RAM than available.</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-llama3.2-1b" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="llama3.2:1b" disabled/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">llama3.2:1b</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Installed, not used here.</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-llama3.2-3b" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="llama3.2:3b" disabled/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">llama3.2:3b</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Installed, too large for this VPS.</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-glm-4.7-flash" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="glm-4.7-flash" disabled/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">glm-4.7-flash</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Installed, far too large for this VPS.</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+          <div class="flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group" data-purpose="model-item">
+            <div class="flex-shrink-0 flex items-center">
+              <input type="radio" name="corintis-model" id="corintis-model-llama3.3" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="llama3.3" disabled/>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate font-mono">llama3.3</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">Installed, far too large for this VPS.</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0"></div>
+          </div>
+        </div>
       </div>
     `;
 
     const panels = [
-      createFloatingPanel('layers', 'Layers', 'layers', layersBody),
       createFloatingPanel('loaded', 'Loaded files', 'folder_open', loadedBody),
+      createFloatingPanel('layers', 'Layers', 'layers', layersBody),
       createFloatingPanel('inspection', 'Internal Inspection', 'content_cut', inspectionBody),
       createFloatingPanel('visual', 'Visual rendering', 'visibility', visualBody),
       createFloatingPanel('analysis', 'Analysis', 'science', analysisBody),
       createFloatingPanel('models', 'Models', 'neurology', modelsBody),
-      createFloatingPanel('ai', 'CAD AI Assistant', 'smart_toy', aiBody, true)
+      createFloatingPanel('ai', 'CAD AI Assistant', 'smart_toy', aiBodyHtml)
     ];
 
     panels.forEach((panel) => floatingPanelsContainer.appendChild(panel));
-    layoutCorintisPanels();
+
+    document.querySelectorAll('.corintis-sidebar-btn').forEach((btn) => {
+      const id = btn.getAttribute('data-panel-id');
+      if (!id) return;
+      btn.addEventListener('click', () => {
+        const panel = floatingPanelsContainer?.querySelector(`[data-panel-id="${id}"]`);
+        if (!panel) return;
+        setPanelOpen(panel, !isPanelOpen(panel));
+      });
+    });
 
     const draggablePanels = [...panels];
     if (loadingEl && loadingEl.classList.contains('corintis-floating-panel')) {
@@ -408,11 +706,11 @@
         window._corintisPanelDrag = { panel, startX: clientX, startY: clientY, startLeft: rect.left, startTop: rect.top };
       };
       header.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.expand-btn')) return;
+        if (e.target.closest('.close-btn')) return;
         startDrag(e.clientX, e.clientY);
       });
       header.addEventListener('touchstart', (e) => {
-        if (e.target.closest('.expand-btn')) return;
+        if (e.target.closest('.close-btn')) return;
         startDrag(e.touches[0].clientX, e.touches[0].clientY);
       }, { passive: true });
     });
@@ -431,9 +729,13 @@
       window._corintisPanelDrag = null;
       if (!d?.panel) return;
       d.panel.style.transition = '';
-      const allPanels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel') || []);
+      const allPanels = Array.from(floatingPanelsContainer?.querySelectorAll('.corintis-floating-panel[data-panel-id]') || []);
       const anyOffScreen = allPanels.some((p) => isPanelOffScreen(p));
-      if (anyOffScreen) realignPanelsToLeft();
+      if (anyOffScreen) {
+        realignPanelsToLeft();
+      } else {
+        savePanelPositions();
+      }
     };
 
     document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
@@ -442,6 +744,78 @@
       if (window._corintisPanelDrag) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
     document.addEventListener('touchend', endDrag);
+
+    function startResize(panel, edge, clientX, clientY) {
+      const rect = panel.getBoundingClientRect();
+      panel.style.transition = 'none';
+      window._corintisPanelResize = {
+        panel,
+        edge,
+        startX: clientX,
+        startY: clientY,
+        startW: rect.width,
+        startH: rect.height,
+        startLeft: rect.left,
+        startTop: rect.top
+      };
+    }
+
+    function moveResize(clientX, clientY) {
+      const r = window._corintisPanelResize;
+      if (!r?.panel) return;
+      const { panel, edge, startX, startY, startW, startH, startLeft, startTop } = r;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      const maxW = window.innerWidth - PANEL_MAX_W_OFFSET;
+      if (edge === 'r' || edge === 'br') {
+        const newW = Math.max(PANEL_MIN_W, Math.min(maxW, startW + dx));
+        panel.style.width = newW + 'px';
+      }
+      if (edge === 'l') {
+        const newW = Math.max(PANEL_MIN_W, Math.min(maxW, startW - dx));
+        panel.style.width = newW + 'px';
+        panel.style.left = (startLeft + startW - newW) + 'px';
+      }
+      if (edge === 'b' || edge === 'br') {
+        const newH = Math.max(PANEL_MIN_H, startH + dy);
+        panel.style.height = newH + 'px';
+      }
+      if (edge === 't') {
+        const newH = Math.max(PANEL_MIN_H, startH - dy);
+        panel.style.height = newH + 'px';
+        panel.style.top = (startTop + startH - newH) + 'px';
+      }
+    }
+
+    function endResize() {
+      const r = window._corintisPanelResize;
+      window._corintisPanelResize = null;
+      if (r?.panel) {
+        r.panel.style.transition = '';
+        savePanelPositions();
+      }
+    }
+
+    panels.forEach((panel) => {
+      panel.querySelectorAll('.corintis-resize-handle').forEach((handle) => {
+        const edge = handle.getAttribute('data-edge');
+        const onStart = (x, y) => {
+          if (window._corintisPanelDrag) return;
+          startResize(panel, edge, x, y);
+        };
+        handle.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(e.clientX, e.clientY); });
+        handle.addEventListener('touchstart', (e) => { onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (window._corintisPanelResize) moveResize(e.clientX, e.clientY);
+    });
+    document.addEventListener('mouseup', () => { if (window._corintisPanelResize) endResize(); });
+    document.addEventListener('touchmove', (e) => {
+      if (window._corintisPanelResize) moveResize(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', () => { if (window._corintisPanelResize) endResize(); });
   }
 
   initFloatingPanels();
@@ -506,18 +880,38 @@
     if (!form || !input || !messagesEl) return;
 
     function appendMessage(role, text) {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const row = document.createElement('div');
-      row.className = role === 'user'
-        ? 'text-xs text-right'
-        : 'text-xs text-left';
-      const bubble = document.createElement('div');
-      bubble.className = role === 'user'
-        ? 'inline-block px-2 py-1 rounded-lg bg-primary text-white text-[11px]'
-        : 'inline-block px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 text-[11px] text-slate-800 dark:text-slate-100';
-      bubble.textContent = text;
-      row.appendChild(bubble);
+      if (role === 'user') {
+        row.className = 'flex items-end gap-2 justify-end ml-auto max-w-[85%]';
+        row.innerHTML = `
+          <div class="flex flex-col gap-0.5 items-end">
+            <div class="bg-primary text-white shadow-lg shadow-primary/20 px-5 py-3.5 rounded-xl rounded-br-none text-sm leading-relaxed">${escapeHtml(text)}</div>
+            <span class="text-[10px] text-slate-400 mr-1">${escapeHtml(time)}</span>
+          </div>
+          <div class="size-8 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-300 dark:border-slate-600">
+            <span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-lg">person</span>
+          </div>
+        `;
+      } else {
+        row.className = 'flex items-end gap-2 max-w-[85%]';
+        row.innerHTML = `
+          <div class="size-8 rounded-full flex-shrink-0 flex items-center justify-center border border-primary/30">
+            <span class="material-symbols-outlined text-primary text-lg">smart_toy</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <div class="bg-primary/10 dark:bg-primary/20 backdrop-blur-md text-slate-800 dark:text-slate-100 px-5 py-3.5 rounded-xl rounded-bl-none text-sm leading-relaxed">${escapeHtml(text)}</div>
+            <span class="text-[10px] text-slate-400 ml-1">${escapeHtml(time)}</span>
+          </div>
+        `;
+      }
       messagesEl.appendChild(row);
       messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
     }
 
     form.addEventListener('submit', async (e) => {
@@ -1050,10 +1444,10 @@
     layers.forEach((layer) => {
       const visible = layerVisibility[layer.id] !== false;
       const label = document.createElement('label');
-      label.className = 'flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer group';
+      label.className = 'flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 cursor-pointer transition-all active:scale-95 group';
       label.innerHTML = `
         <input type="checkbox" class="corintis-layer-toggle rounded accent-primary" data-layer-id="${layer.id}" ${visible ? 'checked' : ''}/>
-        <span class="text-sm text-slate-700 dark:text-slate-300 truncate flex-1" title="${layer.name}">${layer.name}</span>
+        <span class="text-sm text-slate-800 dark:text-slate-200 truncate flex-1" title="${layer.name}">${layer.name}</span>
       `;
       label.querySelector('input').addEventListener('change', (e) => {
         const id = parseInt(e.target.dataset.layerId, 10);
@@ -1716,16 +2110,24 @@
     }
     loadedFiles.forEach((entry) => {
       const isActive = activeFileId === entry.id;
+      const format = entry.format || detectFormat(entry.name);
+      const formatLabel = { iges: 'IGES', step: 'STEP', dxf: 'DXF', ifc: 'IFC' }[format] || 'CAD';
+      const radioId = 'corintis-loaded-file-' + String(entry.id).replace(/[^a-z0-9-]/gi, '-');
       const row = document.createElement('div');
-      row.className = 'flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 group';
+      row.className = 'flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group';
       row.innerHTML = `
-        <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-          <input type="radio" name="corintis-loaded-file" class="rounded-full accent-primary flex-shrink-0" data-file-id="${entry.id}" ${isActive ? 'checked' : ''}/>
-          <span class="text-sm text-slate-700 dark:text-slate-300 truncate" title="${entry.name}">${entry.name}</span>
+        <div class="flex-shrink-0 flex items-center">
+          <input type="radio" name="corintis-loaded-file" id="${radioId}" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" data-file-id="${entry.id}" ${isActive ? 'checked' : ''}/>
+        </div>
+        <label for="${radioId}" class="flex-1 min-w-0 cursor-pointer">
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate" title="${entry.name}">${entry.name}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${formatLabel}</p>
         </label>
-        <button type="button" class="corintis-delete-file flex-shrink-0 p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-500 transition-colors" data-file-id="${entry.id}" title="Delete file">
-          <span class="material-symbols-outlined text-lg">delete</span>
-        </button>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button type="button" class="corintis-delete-file p-2 text-slate-500 hover:text-red-500 hover:bg-white/20 dark:hover:bg-slate-700/50 rounded-lg transition-colors" data-file-id="${entry.id}" title="Delete file">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
       `;
       row.querySelector('input').addEventListener('change', async (e) => {
         const id = e.target.dataset.fileId;
@@ -1823,9 +2225,8 @@
     buildMeshesFromResult(result);
     updateLoadedFilesPanel();
     const loadedPanel = floatingPanelsContainer?.querySelector('[data-panel-id="loaded"]');
-    if (loadedPanel && loadedPanel.classList.contains('collapsed')) {
-      loadedPanel.classList.remove('collapsed');
-      requestAnimationFrame(() => layoutCorintisPanels());
+    if (loadedPanel && !isPanelOpen(loadedPanel)) {
+      setPanelOpen(loadedPanel, true);
     }
   }
 
@@ -1846,6 +2247,14 @@
   const resetPanelsBtn = document.getElementById('corintis-reset-panels');
   if (resetPanelsBtn) {
     resetPanelsBtn.addEventListener('click', () => resetPanelsToInitial());
+  }
+
+  const themeToggleBtn = document.getElementById('corintis-theme-toggle');
+  if (themeToggleBtn && typeof ThemeService !== 'undefined') {
+    themeToggleBtn.addEventListener('click', () => {
+      const effective = ThemeService.resolveEffectiveTheme(ThemeService.getTheme());
+      ThemeService.setTheme(effective === 'dark' ? 'light' : 'dark');
+    });
   }
 
   const runCfdBtn = document.getElementById('corintis-run-cfd');

@@ -14,6 +14,9 @@ module.exports = {
         'card-light': '#E4EBF1',
         'card-dark': '#1c262d',
         'text-secondary': '#9db0b9',
+        'ai-primary': '#ec5b13',
+        'ai-bg-light': '#f8f6f6',
+        'ai-bg-dark': '#221610',
       },
       fontFamily: {
         display: ['Plus Jakarta Sans', 'sans-serif'],

@@ -192,6 +192,8 @@ npm run build       # Both
 | Document | Purpose |
 |----------|---------|
 | **AGENT_RULES.md** | Agent rules: plan mode, subagents, task management, lessons. |
+| **CORINTIS_FLOATING_PANELS_SPEC.md** | Floating panel system: structure, functions, interactions. |
+| **CORINTIS_AI_PANEL_SPEC.md** | CAD AI Assistant panel: layout, styling, element IDs, behavior. |
 | **docs/tasks/todo.md** | Plans with checkable items (per AGENT_RULES). |
 | **docs/tasks/lessons.md** | Lessons learned after corrections. |
 | **GEMINI_AGENT_SPECS.md** | API endpoints, database schema, integration patterns, code review guidelines. |
