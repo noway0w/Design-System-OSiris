@@ -4,6 +4,7 @@ This document describes the CAD AI Assistant floating panel in the Corintis 3D C
 
 **File:** `public_html/corintis/index.html`  
 **Panel ID:** `ai`  
+**Default width:** 460px (overrides base 16rem for this panel)  
 **Related spec:** [CORINTIS_FLOATING_PANELS_SPEC.md](CORINTIS_FLOATING_PANELS_SPEC.md)
 
 ---
@@ -43,10 +44,7 @@ The AI panel body uses a three-section flex layout:
 - **Title:** "AI Assistant" (bold)
 - **Subtitle:** "Always active" (small, gray)
 
-**Right side:**
-- Search button: `search` Material Symbol
-- More options button: `more_vert` Material Symbol
-- Both: `size-8 rounded-full`, `hover:bg-slate-200 dark:hover:bg-slate-600`
+**Right side:** None. Search and More options buttons have been removed.
 
 ---
 
@@ -158,6 +156,6 @@ The AI panel uses `corintis-ai-body-wrapper` (set in `createFloatingPanel` when 
 ## 10. Dependencies
 
 - Tailwind CSS (`tailwind.css`) — `primary`, glass utilities
-- Material Symbols Outlined (Google Fonts) — `smart_toy`, `search`, `more_vert`, `person`, `send`
+- Material Symbols Outlined (Google Fonts) — `smart_toy`, `person`, `send`
 - `ThemeService` for dark mode
 - OpenClaw API: `../api/openclaw-chat.php`
