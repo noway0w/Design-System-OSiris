@@ -1,5 +1,5 @@
 <?php
-// Simple bridge between the browser and the local OpenClaw agent.
+// Simple bridge between the browser and the local Ollama model (no tools).
 // Expects a JSON POST body: { "message": string, "context": mixed }
 // Returns: { "ok": bool, "reply"?: string, "error"?: string }
 
@@ -42,48 +42,69 @@ if ($context !== null) {
 
 $prompt = $message . $contextSnippet;
 
-// Call the local OpenClaw agent.
-// IMPORTANT: force HOME to /var/lib/nginx so the php-fpm/nginx user
-// uses its own OpenClaw config and workspace under /var/lib/nginx.
-$cmd = 'HOME=/var/lib/nginx /home/OSiris/.npm-global/bin/openclaw agent --agent main --local -m ' . escapeshellarg($prompt);
+// Call the local Ollama HTTP API directly (no tools).
+// Requires Ollama running on 127.0.0.1:11434 and the model pulled (e.g. phi3:mini).
+$ollamaUrl = 'http://127.0.0.1:11434/v1/chat/completions';
+$model = 'qwen2.5:0.5b'; // smallest available Ollama model on this VPS
 
-$descriptorSpec = [
-    1 => ['pipe', 'w'], // stdout
-    2 => ['pipe', 'w'], // stderr
+$body = [
+    'model' => $model,
+    'messages' => [
+        [
+            'role' => 'user',
+            'content' => $prompt,
+        ],
+    ],
+    'stream' => false,
 ];
 
-$process = proc_open($cmd, $descriptorSpec, $pipes);
+$ch = curl_init($ollamaUrl);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 
-if (!is_resource($process)) {
+$response = curl_exec($ch);
+$curlErrNo = curl_errno($ch);
+$curlErr = curl_error($ch);
+$statusCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($curlErrNo !== 0) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Failed to start OpenClaw process']);
+    echo json_encode(['ok' => false, 'error' => 'Ollama HTTP error: ' . $curlErr]);
     exit;
 }
 
-// Read output with a basic timeout to avoid hanging PHP workers indefinitely.
-stream_set_blocking($pipes[1], true);
-stream_set_blocking($pipes[2], true);
-
-$stdout = stream_get_contents($pipes[1]);
-$stderr = stream_get_contents($pipes[2]);
-
-fclose($pipes[1]);
-fclose($pipes[2]);
-
-$exitCode = proc_close($process);
-
-if ($exitCode !== 0) {
+$resp = json_decode($response, true);
+if (!is_array($resp)) {
     http_response_code(500);
-    $msg = $stderr !== '' ? $stderr : 'OpenClaw exited with code ' . $exitCode;
-    echo json_encode(['ok' => false, 'error' => $msg]);
+    echo json_encode(['ok' => false, 'error' => 'Invalid Ollama response']);
     exit;
 }
 
-// For now, return the raw stdout as the reply.
-$reply = trim($stdout);
+if ($statusCode < 200 || $statusCode >= 300) {
+    $errField = isset($resp['error']) ? $resp['error'] : null;
+    if (is_array($errField)) {
+        $errMsg = json_encode($errField);
+    } else {
+        $errMsg = $errField ?: ('HTTP ' . $statusCode);
+    }
+    http_response_code($statusCode);
+    echo json_encode(['ok' => false, 'error' => 'Ollama API error: ' . $errMsg]);
+    exit;
+}
+
+$reply = '';
+if (isset($resp['choices'][0]['message']['content'])) {
+    $reply = (string)$resp['choices'][0]['message']['content'];
+} elseif (isset($resp['message']['content'])) {
+    // Some Ollama versions may return a single message
+    $reply = (string)$resp['message']['content'];
+}
 
 echo json_encode([
     'ok' => true,
-    'reply' => $reply,
+    'reply' => trim($reply),
 ]);
 
