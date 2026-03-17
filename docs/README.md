@@ -13,6 +13,7 @@ Documentation for the OSiris platform. For AI agents: follow [AGENT_RULES.md](AG
 | [GEMINI_AGENT_SPECS.md](GEMINI_AGENT_SPECS.md) | Technical specs: API, database, integration, code review. |
 | [CORINTIS_FLOATING_PANELS_SPEC.md](CORINTIS_FLOATING_PANELS_SPEC.md) | Floating panel system: structure, functions, interactions. |
 | [CORINTIS_AI_PANEL_SPEC.md](CORINTIS_AI_PANEL_SPEC.md) | CAD AI Assistant panel: layout, styling, element IDs, behavior. |
+| [CORINTIS_FEEDBACK_AND_TOASTS.md](CORINTIS_FEEDBACK_AND_TOASTS.md) | Toast-only feedback: success, error, info; no error overlay. |
 | [tasks/todo.md](tasks/todo.md) | Plans with checkable items. Write here before implementation. |
 | [tasks/lessons.md](tasks/lessons.md) | Lessons learned. Update after corrections. |
 

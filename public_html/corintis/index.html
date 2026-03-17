@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link href="../css/tailwind.css" rel="stylesheet"/>
   <link href="../css/variables.css" rel="stylesheet"/>
+  <link href="../css/components/toast.css" rel="stylesheet"/>
   <style>
     .corintis-canvas-wrap { position: relative; min-height: 0; }
     #corintis-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -105,7 +106,8 @@
       padding: 0;
     }
     .corintis-floating-panel[data-panel-id="loaded"] .corintis-floating-panel-body,
-    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body {
+    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body,
+    .corintis-floating-panel[data-panel-id="analysis"] .corintis-floating-panel-body {
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -113,7 +115,8 @@
       max-height: none !important;
     }
     .corintis-floating-panel[data-panel-id="loaded"] .corintis-floating-panel-body > div,
-    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body > div {
+    .corintis-floating-panel[data-panel-id="models"] .corintis-floating-panel-body > div,
+    .corintis-floating-panel[data-panel-id="analysis"] .corintis-floating-panel-body > div {
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -195,7 +198,38 @@
     .corintis-sidebar-btn .material-symbols-outlined { font-size: 24px; }
   </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-white min-h-screen flex flex-col">
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-white min-h-screen flex flex-col w-full overflow-x-hidden">
+  <div id="toast-container" aria-live="polite" aria-label="Notifications"></div>
+  <script>
+    (function() {
+      var ICONS = { info: 'info', success: 'check_circle', error: 'delete' };
+      window.showToast = function(opts) {
+        var type = (opts && opts.type) || 'info';
+        var message = (opts && opts.message) || '';
+        if (!message) return;
+        var container = document.getElementById('toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.setAttribute('aria-live', 'polite');
+          container.setAttribute('aria-label', 'Notifications');
+          document.body.insertBefore(container, document.body.firstChild);
+        }
+        var icon = ICONS[type] || ICONS.info;
+        var el = document.createElement('div');
+        el.className = 'toast toast-' + type;
+        el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        el.innerHTML = '<div class="toast-icon-wrapper"><span class="material-symbols-outlined" style="font-size:1.25rem">' + icon + '</span></div><div class="toast-content"><div class="toast-title">' + (type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info') + '</div><div class="toast-description">' + message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') + '</div></div><button type="button" class="toast-close" aria-label="Close"><span class="material-symbols-outlined" style="font-size:1.25rem">close</span></button>';
+        var dismiss = function() {
+          el.classList.add('toast-exit');
+          setTimeout(function() { el.remove(); }, 260);
+        };
+        el.querySelector('.toast-close').addEventListener('click', dismiss);
+        if (type === 'success') setTimeout(dismiss, 3000);
+        container.appendChild(el);
+      };
+    })();
+  </script>
   <div class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
     <div class="flex items-center gap-3">
       <a href="../map-app.html" class="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" title="Back to Map">
@@ -213,8 +247,8 @@
       </button>
     </div>
   </div>
-  <div class="flex-1 min-h-[60vh] flex overflow-hidden relative">
-    <div class="flex-1 relative corintis-canvas-wrap min-h-0">
+  <div class="flex-1 min-h-0 w-full flex overflow-hidden relative">
+    <div class="flex-1 w-full relative corintis-canvas-wrap min-h-0">
       <canvas id="corintis-canvas"></canvas>
     <div id="corintis-loading" class="corintis-floating-panel" style="display: none; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 20rem; z-index: 60;">
       <div class="corintis-floating-panel-header">
@@ -228,14 +262,6 @@
         <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div id="corintis-loading-bar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
         </div>
-      </div>
-    </div>
-    <div id="corintis-error" class="corintis-overlay absolute inset-0 hidden items-center justify-center bg-background-light/90 dark:bg-background-dark/90">
-      <div class="max-w-md p-6 bg-card-light dark:bg-card-dark rounded-lg border border-slate-200 dark:border-white/10 shadow-xl text-center">
-        <span class="material-symbols-outlined text-4xl text-red-500 mb-4">error</span>
-        <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">CAD file not found</h2>
-        <p class="text-slate-600 dark:text-slate-400 text-sm mb-4 corintis-error-msg">Use <strong>Import CAD</strong> to load an IGES, STEP, DXF, or IFC file, then enable it from the Loaded files list.</p>
-        <div id="corintis-error-actions"></div>
       </div>
     </div>
     </div>
@@ -301,7 +327,6 @@
 (function () {
   const canvas = document.getElementById('corintis-canvas');
   const loadingEl = document.getElementById('corintis-loading');
-  const errorEl = document.getElementById('corintis-error');
   const importInput = document.getElementById('import-cad-input');
 
   const floatingPanelsContainer = document.getElementById('corintis-floating-panels');
@@ -352,8 +377,8 @@
     panel.className = 'corintis-floating-panel';
     panel.setAttribute('data-panel-id', id);
     panel.style.display = 'none';
-    const bodyWrapperClass = id === 'ai' ? 'corintis-ai-body-wrapper' : (id === 'loaded' || id === 'models' ? 'corintis-list-panel-wrapper' : 'p-3');
-    const bodyMaxHeight = (id === 'ai' || id === 'loaded' || id === 'models') ? 'none' : PANEL_BODY_MAX_H + 'px';
+    const bodyWrapperClass = id === 'ai' ? 'corintis-ai-body-wrapper' : (id === 'loaded' || id === 'models' || id === 'analysis' ? 'corintis-list-panel-wrapper' : 'p-3');
+    const bodyMaxHeight = (id === 'ai' || id === 'loaded' || id === 'models' || id === 'analysis') ? 'none' : PANEL_BODY_MAX_H + 'px';
     panel.innerHTML = `
       <div class="corintis-floating-panel-header">
         <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -565,22 +590,19 @@
 </div>
 `;
     const analysisBody = `
-      <div class="space-y-3 text-sm">
-        <p class="text-slate-600 dark:text-slate-300 text-xs">
+      <div class="flex flex-col h-full min-h-0 text-sm">
+        <p class="flex-shrink-0 text-slate-600 dark:text-slate-300 text-xs">
           Configure inlet velocity and run CFD analysis for the current CAD model. Results are shown as colored streamlines.
         </p>
-        <div class="flex items-center gap-1 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10" title="Inlet Velocity (m/s)">
+        <div class="flex-shrink-0 flex items-center gap-1 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10 mt-2" title="Inlet Velocity (m/s)">
           <span class="text-xs font-medium mr-1">V:</span>
           <input type="number" id="cfd-vx" value="1" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="x">
           <input type="number" id="cfd-vy" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="y">
           <input type="number" id="cfd-vz" value="0" step="0.1" class="w-12 px-1 py-0.5 text-xs bg-white/50 dark:bg-black/50 rounded border border-slate-300 dark:border-slate-600 focus:outline-none" placeholder="z">
         </div>
-        <div id="corintis-cfd-control" class="flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-2 py-1 rounded-lg border border-white/30 dark:border-white/10">
-          <span id="cfd-status-text" class="text-xs text-slate-600 dark:text-slate-400">CFD: …</span>
-          <button type="button" id="corintis-start-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30" title="Start CFD server">Start</button>
-          <button type="button" id="corintis-stop-cfd" class="hidden px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30" title="Stop CFD server">Stop</button>
+        <div id="corintis-analysis-runs" class="flex-1 overflow-y-auto pr-2 space-y-2 mt-2 min-h-0">
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex-shrink-0 flex items-center gap-2 mt-2">
           <button type="button" id="corintis-run-cfd" class="flex-1 flex items-center justify-center gap-1 bg-primary/90 text-white px-3 py-1.5 text-xs font-medium rounded hover:bg-primary">
             <span class="material-symbols-outlined text-sm">science</span>
             <span>Run Analysis</span>
@@ -962,24 +984,13 @@
     }
   }
 
-  function showError(msg, title, actionsHtml) {
+  function showError(msg) {
     loadingEl.style.display = 'none';
-    errorEl.classList.remove('hidden');
-    errorEl.classList.add('flex');
-    const msgEl = errorEl.querySelector('.corintis-error-msg');
-    const titleEl = errorEl.querySelector('h2');
-    const actionsEl = document.getElementById('corintis-error-actions');
-    if (msgEl && msg) msgEl.textContent = msg;
-    if (titleEl) titleEl.textContent = title || 'CAD file not found';
-    if (actionsEl) {
-      actionsEl.innerHTML = actionsHtml || '';
-    }
     if (msg) notifyToast('error', msg);
   }
 
   function showLoading(text, status, progress) {
     loadingEl.style.display = 'flex';
-    errorEl.classList.add('hidden');
     const textEl = loadingEl.querySelector('.corintis-loading-text');
     if (textEl && text) textEl.textContent = text;
     if (loadingStatus) loadingStatus.textContent = status || '';
@@ -993,16 +1004,18 @@
 
   function hideLoading() {
     loadingEl.style.display = 'none';
-    errorEl.classList.add('hidden');
-    errorEl.classList.remove('flex');
+  }
+
+  function updateSceneBackgroundForTheme() {
+    if (!scene) return;
+    const isLight = document.documentElement.classList.contains('light');
+    scene.background.setHex(isLight ? 0xf6f7f8 : 0x101a22);
   }
 
   function initThree() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x101a22);
-    if (document.documentElement.classList.contains('light')) {
-      scene.background.setHex(0xf6f7f8);
-    }
+    updateSceneBackgroundForTheme();
 
     camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
     camera.position.set(80, 60, 80);
@@ -1192,9 +1205,9 @@
     const stopBtn = document.getElementById('corintis-stop-cfd');
     if (!statusEl || !startBtn || !stopBtn) return;
     if (running === true) {
-      statusEl.textContent = 'CFD: Running';
+      statusEl.textContent = 'CFD: …';
       startBtn.classList.add('hidden');
-      stopBtn.classList.remove('hidden');
+      stopBtn.classList.add('hidden');
     } else if (running === false) {
       statusEl.textContent = 'CFD: Stopped';
       startBtn.classList.remove('hidden');
@@ -1221,6 +1234,69 @@
     if (cfdStatusPollId) {
       clearInterval(cfdStatusPollId);
       cfdStatusPollId = null;
+    }
+  }
+
+  const CFD_RUNS_KEY = 'corintis_cfd_runs';
+  function loadCfdRuns() {
+    try {
+      const raw = localStorage.getItem(CFD_RUNS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (_) { return []; }
+  }
+  function saveCfdRun(entry) {
+    const runs = loadCfdRuns();
+    runs.push(entry);
+    localStorage.setItem(CFD_RUNS_KEY, JSON.stringify(runs));
+  }
+
+  function renderAnalysisRunsList(selectLast = true) {
+    const listEl = document.getElementById('corintis-analysis-runs');
+    if (!listEl) return;
+    const runs = loadCfdRuns();
+    listEl.innerHTML = '';
+    if (runs.length === 0) return;
+    const lastIdx = runs.length - 1;
+    runs.forEach((entry, idx) => {
+      const timeStr = new Date(entry.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+      const vStr = `V(${Number(entry.vx || 0).toFixed(1)}, ${Number(entry.vy || 0).toFixed(1)}, ${Number(entry.vz || 0).toFixed(1)})`;
+      const radioId = 'corintis-analysis-run-' + (entry.caseId || idx);
+      const isLast = idx === lastIdx;
+      const tile = document.createElement('div');
+      tile.className = 'flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group cursor-pointer';
+      tile.dataset.caseId = entry.caseId;
+      tile.innerHTML = `
+        <div class="flex-shrink-0 flex items-center">
+          <input type="radio" name="corintis-analysis-run" id="${radioId}" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="${entry.caseId}" ${isLast ? 'checked' : ''}/>
+        </div>
+        <label for="${radioId}" class="flex-1 min-w-0 cursor-pointer">
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">Analysis run</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${timeStr} — ${vStr}</p>
+        </label>
+      `;
+      tile.addEventListener('click', (e) => {
+        if (e.target.type === 'radio') return;
+        const radio = tile.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      });
+      const radio = tile.querySelector('input[type="radio"]');
+      if (radio) {
+        radio.addEventListener('change', async () => {
+          if (!radio.checked) return;
+          try {
+            await loadFlowLines(getCfdUrl(entry.streamlinesUrl));
+          } catch (err) {
+            notifyToast('error', 'Analysis result no longer available.');
+          }
+        });
+      }
+      listEl.appendChild(tile);
+    });
+    if (selectLast && runs.length > 0 && cadGroup) {
+      const last = runs[lastIdx];
+      loadFlowLines(getCfdUrl(last.streamlinesUrl)).catch(() => {
+        notifyToast('error', 'Analysis result no longer available.');
+      });
     }
   }
 
@@ -1313,27 +1389,9 @@
     } catch (e) {
       const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
       const msg = isNetwork
-        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar (or click Start below to try automatic start).'
+        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar'
         : (e.message || 'CFD server check failed');
-      const actionsHtml = '<button type="button" id="corintis-error-start-cfd" class="px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90">Start CFD server</button>';
-      showError(msg, 'CFD Analysis', actionsHtml);
-      const startBtn = document.getElementById('corintis-error-start-cfd');
-      if (startBtn) {
-        startBtn.onclick = async () => {
-          startBtn.disabled = true;
-          startBtn.textContent = 'Starting…';
-          const result = await startCfdServer();
-          if (result.ok) {
-            hideLoading();
-            updateCfdControlUI(true);
-          } else {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start CFD server';
-            const msgEl = errorEl.querySelector('.corintis-error-msg');
-            if (msgEl) msgEl.textContent = (msgEl.textContent || '') + ' [' + (result.error || 'Start failed') + ']. If Start fails, run: sudo systemctl start cfd-sidecar';
-          }
-        };
-      }
+      showError(msg);
       return;
     }
 
@@ -1368,31 +1426,18 @@
       updateLoadingProgress('Loading flow lines', 95);
       await loadFlowLines(getCfdUrl(streamlinesUrl));
       hideLoading();
+      const vx = parseFloat(document.getElementById('cfd-vx')?.value) || 1;
+      const vy = parseFloat(document.getElementById('cfd-vy')?.value) || 0;
+      const vz = parseFloat(document.getElementById('cfd-vz')?.value) || 0;
+      saveCfdRun({ caseId, streamlinesUrl, timestamp: Date.now(), vx, vy, vz });
+      renderAnalysisRunsList(false);
       notifyToast('success', 'CFD analysis completed and streamlines loaded.');
     } catch (e) {
       const isNetwork = e.name === 'TypeError' || e.message === 'Failed to fetch';
       const msg = isNetwork
-        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar (or click Start below to try automatic start).'
+        ? 'CFD service is not running. Start it: sudo systemctl start cfd-sidecar'
         : (e.message || 'CFD analysis failed');
-      const actionsHtml = '<button type="button" id="corintis-error-start-cfd" class="px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90">Start CFD server</button>';
-      showError(msg, 'CFD Analysis', actionsHtml);
-      const startBtn = document.getElementById('corintis-error-start-cfd');
-      if (startBtn) {
-        startBtn.onclick = async () => {
-          startBtn.disabled = true;
-          startBtn.textContent = 'Starting…';
-          const result = await startCfdServer();
-          if (result.ok) {
-            hideLoading();
-            updateCfdControlUI(true);
-          } else {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start CFD server';
-            const msgEl = errorEl.querySelector('.corintis-error-msg');
-            if (msgEl) msgEl.textContent = (msgEl.textContent || '') + ' [' + (result.error || 'Start failed') + ']. If Start fails, run: sudo systemctl start cfd-sidecar';
-          }
-        };
-      }
+      showError(msg);
     }
   }
 
@@ -2397,7 +2442,8 @@
   }
 
   initThree();
-  initFromRepository();
+  document.addEventListener('osiris-theme-change', () => updateSceneBackgroundForTheme());
+  initFromRepository().then(() => { renderAnalysisRunsList(true); });
   hideLoading();
   animate();
 })();
