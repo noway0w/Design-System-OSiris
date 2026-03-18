@@ -330,7 +330,6 @@
 (function () {
   const canvas = document.getElementById('corintis-canvas');
   const loadingEl = document.getElementById('corintis-loading');
-  const importInput = document.getElementById('import-cad-input');
 
   const floatingPanelsContainer = document.getElementById('corintis-floating-panels');
   const loadingBar = document.getElementById('corintis-loading-bar');
@@ -1244,30 +1243,41 @@
     runs.push(entry);
     localStorage.setItem(CFD_RUNS_KEY, JSON.stringify(runs));
   }
+  function deleteCfdRun(caseId) {
+    const runs = loadCfdRuns().filter((r) => String(r.caseId) !== String(caseId));
+    localStorage.setItem(CFD_RUNS_KEY, JSON.stringify(runs));
+  }
 
-  function renderAnalysisRunsList(selectLast = true) {
+  function renderAnalysisRunsList(selectLast = true, preferredCaseId = null) {
     const listEl = document.getElementById('corintis-analysis-runs');
     if (!listEl) return;
     const runs = loadCfdRuns();
     listEl.innerHTML = '';
     if (runs.length === 0) return;
     const lastIdx = runs.length - 1;
+    const preferredRun = preferredCaseId ? runs.find((r) => String(r.caseId) === String(preferredCaseId)) : null;
+    const selectedRun = preferredRun || runs[lastIdx];
     runs.forEach((entry, idx) => {
       const timeStr = new Date(entry.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
       const vStr = `V(${Number(entry.vx || 0).toFixed(1)}, ${Number(entry.vy || 0).toFixed(1)}, ${Number(entry.vz || 0).toFixed(1)})`;
       const radioId = 'corintis-analysis-run-' + (entry.caseId || idx);
-      const isLast = idx === lastIdx;
+      const isSelected = selectedRun && String(entry.caseId) === String(selectedRun.caseId);
       const tile = document.createElement('div');
       tile.className = 'flex items-center p-4 gap-4 rounded-xl bg-white/10 dark:bg-slate-800/30 backdrop-blur-md border border-white/20 dark:border-slate-600/50 hover:border-white/30 dark:hover:border-slate-500/50 transition-all active:scale-95 group cursor-pointer';
       tile.dataset.caseId = entry.caseId;
       tile.innerHTML = `
         <div class="flex-shrink-0 flex items-center">
-          <input type="radio" name="corintis-analysis-run" id="${radioId}" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="${entry.caseId}" ${isLast ? 'checked' : ''}/>
+          <input type="radio" name="corintis-analysis-run" id="${radioId}" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" value="${entry.caseId}" ${isSelected ? 'checked' : ''}/>
         </div>
         <label for="${radioId}" class="flex-1 min-w-0 cursor-pointer">
           <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">Analysis run</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${timeStr} — ${vStr}</p>
         </label>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button type="button" class="corintis-delete-analysis p-2 text-slate-500 hover:text-red-500 hover:bg-white/20 dark:hover:bg-slate-700/50 rounded-lg transition-colors" data-case-id="${entry.caseId}" title="Remove analysis">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
       `;
       tile.addEventListener('click', (e) => {
         if (e.target.type === 'radio') return;
@@ -1285,11 +1295,23 @@
           }
         });
       }
+      const deleteBtn = tile.querySelector('.corintis-delete-analysis');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const selectedCaseId = document.querySelector('input[name="corintis-analysis-run"]:checked')?.value;
+          const deletedWasSelected = selectedCaseId && String(selectedCaseId) === String(entry.caseId);
+          deleteCfdRun(entry.caseId);
+          if (deletedWasSelected) removeFlowLines();
+          renderAnalysisRunsList(true, deletedWasSelected ? null : selectedCaseId);
+          notifyToast('info', 'Analysis removed.');
+        });
+      }
       listEl.appendChild(tile);
     });
-    if (selectLast && runs.length > 0 && cadGroup) {
-      const last = runs[lastIdx];
-      loadFlowLines(getCfdUrl(last.streamlinesUrl)).catch(() => {
+    if (selectLast && runs.length > 0 && cadGroup && selectedRun) {
+      loadFlowLines(getCfdUrl(selectedRun.streamlinesUrl)).catch(() => {
         notifyToast('error', 'Analysis result no longer available.');
       });
     }
@@ -1778,7 +1800,10 @@
     if (result?.dxfParsed) return buildMeshesFromDxfParsed(result.dxfParsed);
     if (result?.ifcModel) return buildMeshesFromIfcModel(result);
     if (!result || !result.success || !result.meshes || result.meshes.length === 0) {
-      throw new Error('Failed to parse CAD file');
+      const hint = result && result.success === false
+        ? ' The file may use STEP features not supported by the viewer.'
+        : '';
+      throw new Error('Failed to parse CAD file.' + hint);
     }
 
     clearCad();
@@ -2018,7 +2043,7 @@
     return projectName;
   }
 
-  function parseOcctInWorker(buffer, format) {
+  function parseOcctInWorker(buffer, format, paramsOverride) {
     const workerScript = `
       importScripts('${OCTT_CDN}/occt-import-js.js');
       onmessage = async function (ev) {
@@ -2037,6 +2062,10 @@
     `;
     const blob = new Blob([workerScript], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(blob);
+    const params = paramsOverride != null ? paramsOverride
+      : (format === 'step' || format === 'stp')
+        ? { linearDeflection: 0.1, angularDeflection: 0.5 }
+        : null;
     return new Promise((resolve, reject) => {
       const worker = new Worker(workerUrl);
       worker.onmessage = (ev) => {
@@ -2054,7 +2083,7 @@
         worker.terminate();
         reject(new Error(err.message || 'Worker failed'));
       };
-      worker.postMessage({ format: format || 'iges', buffer, params: null }, [buffer]);
+      worker.postMessage({ format: format || 'iges', buffer, params }, [buffer]);
     });
   }
 
@@ -2243,9 +2272,19 @@
     }
     updateLoadingProgress('Building 3D geometry…', 95);
     const bufferForWorker = buffer.slice(0);
-    const result = format === 'dxf' ? await parseDxf(bufferForWorker)
-      : format === 'ifc' ? await parseIfc(bufferForWorker)
-      : await parseOcctInWorker(bufferForWorker, format);
+    let result;
+    if (format === 'dxf') {
+      result = await parseDxf(bufferForWorker);
+    } else if (format === 'ifc') {
+      result = await parseIfc(bufferForWorker);
+    } else {
+      result = await parseOcctInWorker(bufferForWorker, format);
+      if ((format === 'step' || format === 'stp') && (!result?.meshes || result.meshes.length === 0)) {
+        updateLoadingProgress('Retrying with relaxed settings…', 90);
+        const retry = await parseOcctInWorker(buffer.slice(0), format, { linearDeflection: 0.2, angularDeflection: 1 });
+        if (retry?.meshes && retry.meshes.length > 0) result = retry;
+      }
+    }
     const id = Date.now();
     const entry = { id, name, format, result, buffer: bufferForStorage, createdAt: id };
     loadedFiles.push(entry);
@@ -2344,8 +2383,9 @@
 
   startCfdStatusPoll();
 
-  if (importInput) {
-    importInput.addEventListener('change', async (e) => {
+  const importInputEl = document.getElementById('import-cad-input');
+  if (importInputEl) {
+    importInputEl.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
       try {
@@ -2367,7 +2407,7 @@
         const msg = err?.message || 'Failed to import CAD file';
         showError(msg);
       }
-      importInput.value = '';
+      importInputEl.value = '';
     });
   }
 
