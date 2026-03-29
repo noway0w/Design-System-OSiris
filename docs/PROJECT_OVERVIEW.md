@@ -11,7 +11,7 @@ This document defines and explains the OSiris project for AI agents (e.g. Gemini
 1. **Live Tracking Map Dashboard** – A Mapbox-powered map app with user presence, POIs, widgets, and map data layers.
 2. **Corintis 3D CAD Explorer** – A standalone Three.js SPA for viewing and inspecting CAD files (IGES, STEP, DXF, IFC).
 
-Both share the same design system (OSiris Design System) and are served from `public_html/`. Corintis is feature-flagged via `?corintis` in the map app URL.
+Both share the same design system (OSiris Design System) and are served from `public_html/`. The 3D CAD Explorer is deployed under **`public_html/disable/`** (URL `/disable/index.html`). The map app shows a link to it when the feature flag `?corintis` is present (query name is historical; the on-disk folder is `disable`).
 
 ---
 
@@ -37,7 +37,7 @@ Both share the same design system (OSiris Design System) and are served from `pu
 │       ├── initGeneralMenu()                                                  │
 │       ├── initCorintisEntryIfFlagged()  ← only when ?corintis in URL         │
 │       │         │                                                           │
-│       │         └── Appends "Corintis 3D" link → /corintis/index.html         │
+│       │         └── Appends "Corintis 3D" link → /disable/index.html         │
 │       │                                                                      │
 │       └── Map App: map-app.js (~4100 LOC)                                    │
 │             • Mapbox GL JS (globe)                                           │
@@ -46,16 +46,45 @@ Both share the same design system (OSiris Design System) and are served from `pu
 │                                                                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  /corintis/index.html  (standalone SPA – no map-app.js)                      │
+│  /disable/index.html  (standalone SPA – no map-app.js)                       │
 │       │                                                                      │
 │       ├── Three.js + OrbitControls                                           │
 │       ├── occt-import-js (IGES, STEP)                                        │
 │       ├── dxf-parser (DXF)                                                   │
-│       ├── web-ifc-three (IFC, local WASM at corintis/wasm/web-ifc.wasm)      │
+│       ├── web-ifc-three (IFC, local WASM at disable/wasm/web-ifc.wasm)       │
 │       ├── Floating panels: Layers, Loaded files, Internal Inspection, Visual  │
 │       └── IndexedDB: corintis-cad-repository (file storage)                  │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+The same layout in Mermaid (renders in GitHub, GitLab, and many Markdown viewers):
+
+```mermaid
+flowchart TB
+  subgraph platform["OSiris platform"]
+    subgraph map["map-app.html (?corintis)"]
+      initMenu["initGeneralMenu()"]
+      initCor["initCorintisEntryIfFlagged() — only if ?corintis"]
+      link["Link: Corintis 3D → /disable/index.html"]
+      mapApp["Map app: map-app.js"]
+      initMenu --> initCor
+      initCor --> link
+      initMenu --> mapApp
+      mapApp --> mb["Mapbox GL JS globe"]
+      mapApp --> feat["Users, POIs, widgets, map tiles"]
+      mapApp --> gate["Gate overlay, heartbeat, location"]
+    end
+
+    subgraph cad["/disable/index.html — standalone SPA"]
+      t["Three.js + OrbitControls"]
+      occt["occt-import-js — IGES, STEP"]
+      dxf["dxf-parser — DXF"]
+      ifc["web-ifc-three — IFC + wasm/web-ifc.wasm"]
+      panels["Floating panels: Layers, Files, Inspection, Visual"]
+      idb["IndexedDB: corintis-cad-repository"]
+    end
+  end
 ```
 
 ---
@@ -67,7 +96,7 @@ Both share the same design system (OSiris Design System) and are served from `pu
 | `/` or `/index.html` | Redirects to `map-app.html` on production domain |
 | `/map-app.html` | Main map dashboard |
 | `/map-app.html?corintis` | Map dashboard with "Corintis 3D" menu entry |
-| `/corintis/index.html` | 3D CAD Explorer (standalone) |
+| `/disable/index.html` | 3D CAD Explorer (standalone) |
 | `/design-system.html` | Design system documentation |
 | `/city-image-processor.html` | City image processor (Gemini API) |
 
@@ -92,7 +121,7 @@ OSiris/
 │   │   └── i18n-service.js       # i18next
 │   ├── css/                      # Tailwind, variables, components
 │   ├── api/                      # PHP REST endpoints
-│   ├── corintis/
+│   ├── disable/
 │   │   ├── index.html            # 3D CAD Explorer SPA
 │   │   └── wasm/
 │   │       └── web-ifc.wasm      # IFC parsing (local)
@@ -122,7 +151,9 @@ OSiris/
 | IGES | occt-import-js | WASM-based |
 | STEP | occt-import-js | WASM-based |
 | DXF | dxf-parser | JS |
-| IFC | web-ifc-three | Local WASM at `corintis/wasm/web-ifc.wasm` |
+| IFC | web-ifc-three | Local WASM at `disable/wasm/web-ifc.wasm` |
+| 3DM | rhino3dm | WASM from jsDelivr; mesh, extrusion, optional Brep tessellation if API available |
+| DWG | @mlightcad/libredwg-web | WASM from jsDelivr; lines, arcs, circles, polylines, 3DFACE |
 
 ### 6.2 Floating Panels
 
@@ -136,7 +167,7 @@ Panels are draggable, collapsible, and re-align off-screen. "Reset panels" resto
 ### 6.3 File Loading Flow
 
 1. User clicks "Import CAD" (hidden file input).
-2. File picker opens; user selects IGES/STEP/DXF/IFC.
+2. File picker opens; user selects IGES/STEP/DXF/IFC/3DM/DWG.
 3. `change` event → `file.arrayBuffer()` → `addFileToLoadedList()`.
 4. `addFileToLoadedList()` parses file, pushes to `loadedFiles`, calls `updateLoadedFilesPanel()`.
 5. Loaded files panel auto-expands when a file is added.
@@ -172,7 +203,7 @@ See `docs/GEMINI_AGENT_SPECS.md` for full technical details.
 | **API base** | `window.OSIRIS_API_URL`; empty = same-origin |
 | **Mapbox token** | `localStorage.getItem('mapbox_access_token')` or `window.MAPBOX_DEFAULT_TOKEN` |
 | **Session** | `osiris_user_name`, `osiris_authenticated` in sessionStorage |
-| **Corintis isolation** | No imports from map-app.js; standalone page |
+| **CAD Explorer isolation** | No imports from map-app.js; standalone page at `public_html/disable/` |
 | **Feature flag** | `?corintis` (not `?curintis`) for Corintis menu entry |
 
 ---
