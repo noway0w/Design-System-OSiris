@@ -1,0 +1,16 @@
+[Unit]
+Description=OSiris manager WebSocket (port 8880)
+After=network.target osiris-server.service
+
+[Service]
+Type=simple
+User=OSiris
+Group=OSiris
+WorkingDirectory=/home/OSiris/osiris-service
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/OSiris/osiris-service/venv/bin/python -u /home/OSiris/osiris-service/osiris_manager.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

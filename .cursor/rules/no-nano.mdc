@@ -1,0 +1,11 @@
+---
+description: Never suggest or use nano; use alternatives like vim, tee, cat heredoc, scp, or Remote-SSH
+alwaysApply: true
+---
+
+# Never Use nano
+
+When providing instructions that require editing files on a server or locally:
+
+- **Never** suggest or use `nano`
+- Use instead: `vim`, `tee` with heredoc, `cat` with heredoc, `scp` (edit locally then copy), or Cursor/VS Code Remote-SSH

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mode MAINTENANCE - Flux Vidéo OSiris</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background: #1a1a1a;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #vpsStream {
+            width: 100%;
+            border-radius: 12px;
+            background-color: #000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            min-height: 300px;
+            border: 1px solid #333;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.8em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .metric-sub {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .ip-address {
+            font-family: monospace;
+            color: #00ff00;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        #cityImage {
+            max-width: 100%;
+            max-height: 80px;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        /* Styles pour la carte météo */
+        .weather-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        #weatherIcon {
+            width: 40px;
+            height: 40px;
+        }
+        
+        #tempIcon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+        }
+
+        .status-container {
+            margin: 15px 0;
+            padding: 8px 16px;
+            background: #333;
+            border-radius: 50px;
+            display: inline-block;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #555;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        #localVideo {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 2px;
+            height: 2px;
+            opacity: 0.01;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Toggle Switch */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            gap: 20px;
+        }
+        
+        .switch-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .switch-label {
+            margin-right: 10px;
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00ff00;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #00ff00;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .camera-btn {
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: none; /* Hidden by default, shown if multiple cams */
+        }
+        .camera-btn:hover {
+            background: #555;
+        }
+
+        /* OVERLAY & MODAL */
+        #addUserOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            color: #f0f0f0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .modal-close:hover { color: #fff; }
+
+        .modal-step { display: none; }
+        .modal-step.active { display: block; }
+
+        .modal h2 { margin-top: 0; font-size: 1.4em; color: #fff; }
+        .modal p { color: #ccc; font-size: 0.95em; line-height: 1.4; }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #333;
+            color: #fff;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .modal-input:focus { outline: none; border-color: #00ff00; }
+
+        .modal-gif {
+            width: 100px;
+            height: 100px;
+            margin: 15px auto;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #444;
+            display: block;
+        }
+
+        .btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-secondary { background: #555; color: #fff; }
+
+        /* LOADER */
+        .loader-ring {
+            display: inline-block;
+            width: 64px;
+            height: 64px;
+            margin: 20px auto;
+        }
+        .loader-ring:after {
+            content: " ";
+            display: block;
+            width: 46px;
+            height: 46px;
+            margin: 8px;
+            border-radius: 50%;
+            border: 5px solid #00ff00;
+            border-color: #00ff00 transparent #00ff00 transparent;
+            animation: ring 1.2s linear infinite;
+        }
+        @keyframes ring {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .add-user-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .add-user-btn:hover { background: #1976D2; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>OSiris Live Feed</h1>
+        
+        <div class="status-container">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">Connexion...</span>
+        </div>
+
+        <!-- TOGGLES & CONTROLS -->
+        <div class="switch-container">
+            <!-- Add User Button -->
+            <button class="add-user-btn" id="openAddUser" title="Add New User">+</button>
+
+            <!-- Record Toggle -->
+            <div class="switch-group">
+                <span class="switch-label">Record new user</span>
+                <label class="switch">
+                    <input type="checkbox" id="learnToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <!-- Camera Switch Toggle -->
+            <div class="switch-group" id="cameraToggleGroup" style="display:none;">
+                <span class="switch-label">Front / Rear</span>
+                <label class="switch">
+                    <input type="checkbox" id="cameraToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <img id="vpsStream" alt="En attente du flux..." />
+
+        <!-- DASHBOARD -->
+        <div class="dashboard">
+            <div class="card">
+                <h3>Location</h3>
+                <div id="clientIp" class="ip-address">Fetching IP...</div>
+                <div id="locationName" class="metric-sub">--</div>
+                <img id="cityImage" alt="City View" />
+            </div>
+
+            <!-- NEW WEATHER CARD -->
+            <div class="card" id="weatherCard" style="display:none;">
+                <h3>Weather</h3>
+                <div class="weather-container">
+                    <img id="weatherIcon" alt="Weather" />
+                    <div class="metric"><span id="tempMetric">--</span>°C</div>
+                    <img id="tempIcon" alt="Temp" />
+                </div>
+                <div class="metric-sub">Humidity: <span id="humidityMetric">--</span>%</div>
+            </div>
+
+            <div class="card">
+                <h3>FPS (Client)</h3>
+                <div id="fpsMetric" class="metric">0</div>
+                <div class="metric-sub">frames/sec</div>
+            </div>
+            
+            <div class="card">
+                <h3>RAM OSiris</h3>
+                <div id="ramMetric" class="metric">-</div>
+                <div class="metric-sub">MB Used</div>
+            </div>
+            
+            <div class="card">
+                <h3>Server Load</h3>
+                <div id="loadMetric" class="metric">-</div>
+                <div class="metric-sub">Global CPU %</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD USER OVERLAY -->
+    <div id="addUserOverlay">
+        <div class="modal">
+            <span class="modal-close" id="closeOverlay">&times;</span>
+            
+            <!-- STEP 1: INPUT -->
+            <div id="step1" class="modal-step active">
+                <h2>Add New User</h2>
+                <p>Enter your name below and get ready. Look at the camera.</p>
+                <img src="https://media.giphy.com/media/3o7TKSjRrfPHw02Yut/giphy.gif" alt="Face Scan Placeholder" class="modal-gif" id="scanGif" />
+                <input type="text" id="newUserName" class="modal-input" placeholder="Enter Name (e.g. Alice)" />
+                <button class="btn" id="btnStartRecord">Start Recording</button>
+            </div>
+
+            <!-- STEP 2: RECORDING -->
+            <div id="step2" class="modal-step">
+                <h2>Recording...</h2>
+                <div class="loader-ring"></div>
+                <p>Move your head slightly...</p>
+                <h1 id="countdown">6</h1>
+            </div>
+
+            <!-- STEP 3: RESULT -->
+            <div id="step3" class="modal-step">
+                <!-- Success State -->
+                <div id="resultSuccess" style="display:none;">
+                    <h2 style="color:#00ff00;">Success!</h2>
+                    <p>Face data captured successfully.</p>
+                    <button class="btn" id="btnValidate">Validate & Save</button>
+                </div>
+
+                <!-- Error State -->
+                <div id="resultError" style="display:none;">
+                    <h2 style="color:red;">Error</h2>
+                    <p>No faces detected. Please try again.</p>
+                </div>
+
+                <button class="btn btn-secondary" id="btnRetry" style="margin-top:10px;">Cancel / Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎥 FLUX LOCAL (Hidden) -->
+    <video id="localVideo" autoplay muted playsinline></video>
+
+    <script>
+    let currentStream = null;
+    let facingMode = "user"; // Default to front camera
+    let localVideo = document.getElementById('localVideo');
+
+    async function getPublicIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error('Error fetching IP:', error);
+            return null;
+        }
+    }
+
+    async function checkCameras() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            console.log("Cameras found:", videoDevices.length);
+            if (videoDevices.length > 1) {
+                document.getElementById('cameraToggleGroup').style.display = 'flex';
+            }
+        } catch (err) {
+            console.warn("Could not enumerate devices:", err);
+        }
+    }
+
+    async function getCameraStream() {
+        // Stop any existing stream properly
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+
+        // IMPORTANT: Pause video and clear srcObject to avoid freezing on Safari
+        if (localVideo) {
+            localVideo.pause();
+            localVideo.srcObject = null;
+            // localVideo.load() removed as it can cause crashes on iOS Chrome/Safari during switch
+        }
+
+        // Increased delay to ensure hardware is released (crucial for iOS)
+        await new Promise(r => setTimeout(r, 500));
+        
+        try {
+            // Attempt 1: Standard constraints
+            const constraints = { 
+                video: { 
+                    facingMode: facingMode, // "user" or "environment"
+                    width: { ideal: 640 }
+                },
+                audio: false
+            };
+
+            console.log("Requesting camera with:", constraints);
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            currentStream = stream;
+            localVideo.srcObject = stream;
+            
+            // Promise-based play with error handling
+            try {
+                await localVideo.play();
+            } catch (playErr) {
+                console.error("Video play error:", playErr);
+            }
+
+        } catch (err) {
+            console.error("Camera Error Attempt 1:", err);
+            
+            // Fallback Logic
+            try {
+                console.log("Retrying with minimal constraints...");
+                
+                // Fallback: No resolution constraints, just facing mode
+                const fallbackConstraints = {
+                    video: { facingMode: facingMode },
+                    audio: false
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                currentStream = stream;
+                localVideo.srcObject = stream;
+                await localVideo.play();
+
+            } catch (retryErr) {
+                 console.error("Camera Error Attempt 2:", retryErr);
+                 // Final attempt: Any video
+                 try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    currentStream = stream;
+                    localVideo.srcObject = stream;
+                    await localVideo.play();
+                 } catch (finalErr) {
+                     alert("Camera Failed completely: " + finalErr.name + "\n" + finalErr.message);
+                 }
+            }
+        }
+    }
+
+    async function startVideo() {
+        let clientIP = null;
+
+        try {
+            // Start camera first to ensure we catch any user gesture and init fast
+            await getCameraStream();
+            await checkCameras();
+
+            const ws = new WebSocket("wss://osiris.guillaumelassiat.com/osiris-ws");
+
+            // Get IP in parallel/background
+            getPublicIP().then(ip => {
+                clientIP = ip;
+                if (ip) {
+                    document.getElementById('clientIp').textContent = ip;
+                    // If WS is ready, send it now
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: "init_ip", ip: ip }));
+                    }
+                } else {
+                    document.getElementById('clientIp').textContent = "Unknown IP";
+                }
+            });
+
+            const vpsStream = document.getElementById('vpsStream');
+            const statusText = document.getElementById("statusText");
+            const statusDot = document.getElementById("statusDot");
+            const fpsMetric = document.getElementById("fpsMetric");
+            const learnToggle = document.getElementById('learnToggle');
+            const cameraToggle = document.getElementById('cameraToggle');
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let isProcessing = false;
+            let frameCount = 0;
+            let lastTime = performance.now();
+
+            setInterval(() => {
+                const now = performance.now();
+                const fps = Math.round(frameCount * 1000 / (now - lastTime));
+                fpsMetric.textContent = fps;
+                frameCount = 0;
+                lastTime = now;
+            }, 1000);
+
+            // Toggle Listener
+            learnToggle.addEventListener('change', (e) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    console.log("Toggling generation:", e.target.checked);
+                    ws.send(JSON.stringify({
+                        type: "toggle_generation",
+                        enabled: e.target.checked
+                    }));
+                }
+            });
+
+            // Camera Toggle Listener
+            cameraToggle.addEventListener('change', async (e) => {
+                try {
+                    // Logic: Checked = Rear (Environment), Unchecked = Front (User)
+                    if (e.target.checked) {
+                        facingMode = "environment";
+                    } else {
+                        facingMode = "user";
+                    }
+                    
+                    await getCameraStream();
+                } catch (e) {
+                    alert("Error switching camera: " + e.message);
+                }
+            });
+
+            // ==========================================
+            // ADD USER OVERLAY LOGIC
+            // ==========================================
+            const overlay = document.getElementById('addUserOverlay');
+            const openBtn = document.getElementById('openAddUser');
+            const closeBtn = document.getElementById('closeOverlay');
+            const btnStart = document.getElementById('btnStartRecord');
+            const btnValidate = document.getElementById('btnValidate');
+            const btnRetry = document.getElementById('btnRetry'); // Acts as cancel
+            const nameInput = document.getElementById('newUserName');
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
+            const countdownEl = document.getElementById('countdown');
+
+            function showStep(id) {
+                [step1, step2, step3].forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            }
+
+            function resetOverlay() {
+                nameInput.value = "";
+                showStep('step1');
+                countdownEl.textContent = "6";
+            }
+
+            function closeAndCancel() {
+                // Send cancel first, then close overlay immediately to prevent freeze
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "cancel_recording" }));
+                }
+                overlay.style.display = 'none';
+                resetOverlay();
+            }
+
+            openBtn.addEventListener('click', () => {
+                resetOverlay();
+                overlay.style.display = 'flex';
+            });
+
+            closeBtn.addEventListener('click', closeAndCancel);
+            btnRetry.addEventListener('click', closeAndCancel);
+
+            let countdownTimer = null;
+
+            btnStart.addEventListener('click', () => {
+                const name = nameInput.value.trim();
+                if (!name) {
+                    alert("Please enter a name.");
+                    return;
+                }
+                
+                // Clear any existing timer
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+                
+                // Send Start - wait for server confirmation before showing step 2
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "start_recording", name: name }));
+                } else {
+                    alert("WebSocket not connected. Please wait...");
+                    return;
+                }
+
+                // Don't show step 2 yet - wait for recording_started confirmation
+                // This prevents issues if server rejects (e.g., user exists)
+            });
+
+            btnValidate.addEventListener('click', () => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "validate_recording" }));
+                }
+                // Don't close overlay here - wait for server confirmation
+                // Server will send recording_validated message which will close it
+            });
+
+            // ==========================================
+
+            function sendFrame() {
+                if (ws.readyState === WebSocket.OPEN && !isProcessing) {
+                    // Check if video is ready to play/send
+                    if (localVideo.readyState >= 2) {
+                        isProcessing = true;
+                        if (localVideo.videoWidth > 0) {
+                            canvas.width = localVideo.videoWidth;
+                            canvas.height = localVideo.videoHeight;
+                            ctx.drawImage(localVideo, 0, 0);
+                            canvas.toBlob(blob => {
+                                if (blob) {
+                                    blob.arrayBuffer().then(buf => ws.send(buf));
+                                } else {
+                                    isProcessing = false;
+                                    requestAnimationFrame(sendFrame);
+                                }
+                            }, 'image/jpeg', 0.5);
+                        } else {
+                            isProcessing = false;
+                            requestAnimationFrame(sendFrame);
+                        }
+                    } else {
+                        // Video not ready yet (e.g. camera switching) - check again soon
+                        // This prevents the loop from dying when camera is toggled
+                        setTimeout(sendFrame, 100);
+                    }
+                }
+            }
+
+            ws.onopen = () => {
+                console.log("✅ WebSocket Connected");
+                statusText.textContent = "Connecté";
+                statusDot.style.backgroundColor = "orange";
+                
+                // SEND IP TO SERVER
+                if (clientIP) {
+                    ws.send(JSON.stringify({ type: "init_ip", ip: clientIP }));
+                }
+
+                // SEND INITIAL TOGGLE STATE
+                ws.send(JSON.stringify({
+                    type: "toggle_generation",
+                    enabled: learnToggle.checked
+                }));
+                
+                sendFrame();
+            };
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === "string") {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        
+                        if (msg.type === "geo") {
+                            console.log("📍 Location:", msg.closest_city);
+                            document.getElementById("locationName").textContent = msg.closest_city;
+                            // Ensure IP is updated from server confirmation
+                            document.getElementById("clientIp").textContent = msg.client_ip;
+                            
+                            if (msg.image_b64) {
+                                const img = document.getElementById("cityImage");
+                                img.src = "data:image/png;base64," + msg.image_b64;
+                                img.style.display = "block";
+                            }
+                            return; 
+                        }
+
+                        // HANDLING WEATHER DATA
+                        if (msg.type === "weather") {
+                            const weatherCard = document.getElementById("weatherCard");
+                            weatherCard.style.display = "flex";
+                            
+                            document.getElementById("tempMetric").textContent = msg.temp;
+                            document.getElementById("humidityMetric").textContent = msg.humidity;
+                            
+                            if (msg.icon_b64) {
+                                document.getElementById("weatherIcon").src = "data:image/svg+xml;base64," + msg.icon_b64;
+                            }
+                            if (msg.temp_icon_b64) {
+                                document.getElementById("tempIcon").src = "data:image/svg+xml;base64," + msg.temp_icon_b64;
+                            }
+                            return;
+                        }
+
+                        if (msg.type === "faces") {
+                            if (msg.names && msg.names.length > 0) {
+                                statusText.textContent = msg.names.join(", ");
+                                statusDot.style.backgroundColor = "#00ff00"; 
+                                statusText.style.color = "#00ff00";
+                            } else {
+                                statusText.textContent = "Aucun visage";
+                                statusDot.style.backgroundColor = "#888"; 
+                                statusText.style.color = "#ccc";
+                            }
+                        }
+
+                        if (msg.stats) {
+                            document.getElementById("ramMetric").textContent = msg.stats.osiris_mem + " MB";
+                            document.getElementById("loadMetric").textContent = msg.stats.cpu_global.toFixed(1) + "%";
+                        }
+
+                        // RECORDING FEEDBACK
+                        if (msg.type === "recording_stopped") {
+                            showStep('step3');
+                            const sSuccess = document.getElementById('resultSuccess');
+                            const sError = document.getElementById('resultError');
+                            
+                            sSuccess.style.display = 'none';
+                            sError.style.display = 'none';
+
+                            if (msg.status === "success") {
+                                sSuccess.style.display = 'block';
+                            } else {
+                                sError.style.display = 'block';
+                                if (msg.message) {
+                                    document.querySelector('#resultError p').textContent = msg.message;
+                                }
+                            }
+                        }
+
+                        // Handle recording started confirmation
+                        if (msg.type === "recording_started") {
+                            showStep('step2');
+                            
+                            // 6s Countdown
+                            let timeLeft = 6;
+                            countdownEl.textContent = timeLeft;
+                            
+                            countdownTimer = setInterval(() => {
+                                timeLeft--;
+                                countdownEl.textContent = timeLeft;
+                                if (timeLeft <= 0) {
+                                    clearInterval(countdownTimer);
+                                    countdownTimer = null;
+                                    // Send Stop
+                                    if (ws.readyState === WebSocket.OPEN) {
+                                        ws.send(JSON.stringify({ type: "stop_recording" }));
+                                    }
+                                }
+                            }, 1000);
+                        }
+
+                        // Handle recording errors (e.g., user already exists)
+                        if (msg.type === "recording_error") {
+                            alert(msg.message || "Recording error occurred");
+                            showStep('step1');
+                            if (countdownTimer) {
+                                clearInterval(countdownTimer);
+                                countdownTimer = null;
+                            }
+                        }
+
+                        // Handle recording validation (remove double alert)
+                        if (msg.type === "recording_validated") {
+                            overlay.style.display = 'none';
+                            resetOverlay();
+                            if (countdownTimer) {
+                                clearInterval(countdownTimer);
+                                countdownTimer = null;
+                            }
+                            // Show success message from server
+                            if (msg.message) {
+                                // Optional: show a brief success indicator instead of alert
+                                console.log("Success:", msg.message);
+                            }
+                        }
+
+                    } catch (e) { console.error("JSON Error", e); }
+                    
+                    isProcessing = false;
+                    frameCount++;
+                    requestAnimationFrame(sendFrame);
+                } else {
+                    const url = URL.createObjectURL(event.data);
+                    vpsStream.onload = () => URL.revokeObjectURL(url);
+                    vpsStream.src = url;
+                }
+            };
+
+            ws.onerror = () => {
+                statusText.textContent = "Erreur Connexion";
+                statusDot.style.backgroundColor = "red";
+                statusText.style.color = "red";
+            };
+
+        } catch (err) {
+            alert("Camera Error: " + err.name);
+        }
+    }
+
+    // startVideo(); moved to after auth
+    </script>
+
+    <script>
+        const accessCode = "7777";
+        const userCode = prompt("🔐 Entrez le code d’accès OSiris :");
+        if (userCode !== accessCode) {
+            document.body.innerHTML = "<h1>⛔ Accès refusé</h1>";
+            throw new Error("Access denied");
+        } else {
+            startVideo();
+        }
+    </script>
+</body>
+</html>

@@ -1,7 +1,20 @@
 .bash_history
 .cache/
 .cursor-server/
-.cursor/
+# Cursor: ignore IDE metadata but keep committed agent rules
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/*.mdc
+
+# OSiris Python service (venv is local; models are large binaries)
+osiris-service/venv/
+osiris-service/**/__pycache__/
+osiris-service/**/*.pyc
+osiris-service/pretrained_model/
+osiris-service/backups/
+osiris-service/server_output.txt
+osiris-service/public_html/
 .gitconfig
 .local/
 .ssh/

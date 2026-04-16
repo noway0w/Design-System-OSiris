@@ -1,0 +1,64 @@
+# Configuration nginx sécurisée pour OSiris
+# Utilise un répertoire public dédié au lieu du home directory
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name osiris.guillaumelassiat.com;
+
+    ssl_certificate     /etc/letsencrypt/live/osiris.guillaumelassiat.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/osiris.guillaumelassiat.com/privkey.pem;
+
+    # Répertoire public dédié - ne contient que les fichiers web publics
+    root /home/OSiris/public_html;
+    index index.html;
+
+    # Bloquer l'accès aux fichiers cachés et sensibles
+    location ~ /\. {
+        deny all;
+        return 404;
+    }
+
+    # Bloquer l'accès aux fichiers Python et autres fichiers sensibles
+    location ~ \.(py|log|backup|git|credentials|env|key|pem)$ {
+        deny all;
+        return 404;
+    }
+
+    # Servir les fichiers statiques
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy WebSocket pour le serveur OSiris
+    location /osiris-ws {
+        proxy_pass http://127.0.0.1:8878/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+    }
+
+    # Proxy WebSocket pour le Manager OSiris
+    location /osiris-manage-ws {
+        proxy_pass http://127.0.0.1:8880/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+    }
+}

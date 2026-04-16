@@ -1,0 +1,49 @@
+---
+description: OSiris web layout, iris face app, osiris-service backends, and nginx—reference for AI agents
+alwaysApply: true
+---
+
+# OSiris platform (agent reference)
+
+## Document root and apps
+
+- **Static + PHP** are served from [`public_html/`](/home/OSiris/public_html) (`root` in nginx is typically this path).
+- **Map / CAD / design system** share [`public_html/css/`](/home/OSiris/public_html/css) (e.g. `tailwind.css`, `variables.css`).
+- **PHP APIs** live under [`public_html/api/`](/home/OSiris/public_html/api). Prefer **same-origin** `../api/*.php` from one-level-deep apps.
+
+### `public_html/disable/` (3D CAD Explorer)
+
+- **Live app; treat as read-only** unless the user explicitly asks to change it. Do not drive-by edit.
+- Entry: `/disable/index.html`.
+
+### `public_html/iris/` (OSiris_Base face / video UI)
+
+- Entry: **`/iris/index.html`**. Manage UI: **`/iris/manage/`**.
+- **Shared CSS** (relative from `iris/`): `../css/tailwind.css`, `../css/variables.css`.
+- **WebSockets** (same host as the page):
+  - Main client: `wss://<host>/osiris-ws` (or `ws://` on plain HTTP).
+  - Manage dashboard: `wss://<host>/osiris-manage-ws`.
+- **`known_faces`**: [`public_html/iris/known_faces`](/home/OSiris/public_html/iris/known_faces) is a **symlink** to [`/home/OSiris/osiris-service/known_faces`](/home/OSiris/osiris-service/known_faces). New training images must land in that directory (or the symlink target) so the web UI and Python agree.
+
+## Backend: `osiris-service` (Python, not PHP)
+
+- **Directory**: [`/home/OSiris/osiris-service/`](/home/OSiris/osiris-service) — `osiris_server.py` (WebSocket **8878**, internal admin HTTP **8881**), `osiris_manager.py` (**8880**), `pretrained_model/`, `known_faces/`, `Locate/`, `Weather/`.
+- **Venv**: `/home/OSiris/osiris-service/venv/` — deps in [`osiris-service/requirements.txt`](/home/OSiris/osiris-service/requirements.txt).
+- **systemd (user, as `OSiris`)**: `~/.config/systemd/user/osiris-server.service`, `osiris-manager.service`.
+  - `systemctl --user status osiris-server osiris-manager`
+  - **Linger** (survive logout): `loginctl show-user OSiris -p Linger` should be `yes`.
+- **Optional system-wide units** (copy + enable with root): [`scripts/osiris-server.service`](/home/OSiris/scripts/osiris-server.service), [`scripts/osiris-manager.service`](/home/OSiris/scripts/osiris-manager.service); bootstrap: [`scripts/install-osiris-service.sh`](/home/OSiris/scripts/install-osiris-service.sh).
+
+## Nginx: WebSocket reverse proxy
+
+- Browser pages on **`app.guillaumelassiat.com`** must include **`location /osiris-ws`** and **`location /osiris-manage-ws`** in the **443** `server` block (and port **80** if used), proxying to `127.0.0.1:8878` and `127.0.0.1:8880` with `Upgrade` / `Connection "upgrade"`.
+- **Reference / deploy**: [`scripts/app-guillaumelassiat-nginx.conf`](/home/OSiris/scripts/app-guillaumelassiat-nginx.conf) (app host + WS), [`scripts/osiris-nginx.conf`](/home/OSiris/scripts/osiris-nginx.conf) (example port 80 + PHP + WS), [`scripts/osiris-nginx-websocket-snippet.conf`](/home/OSiris/scripts/osiris-nginx-websocket-snippet.conf) (snippet only).
+- **`osiris.guillaumelassiat.com`** may already define the same paths in `/etc/nginx/conf.d/osiris-osirisws-443.conf`; if users open **`/iris/` only on `app.`**, that vhost **must** also define those locations or WebSockets fail (“Erreur Connexion”, no video).
+
+## API / PHP conventions
+
+- **Do not modify** existing [`public_html/api/`](/home/OSiris/public_html/api) endpoints casually; for new iris-specific endpoints, add **`iris_*.php`** names to avoid collisions.
+
+## OSiris_Base source of truth
+
+- Upstream bundle may live at `Design-System-OSiris/Github-OSiris-Base/OSiris_Base-main.zip`. Prefer editing deployed copies under **`osiris-service`** and **`public_html/iris/`**, not re-unzipping over tracked state without checking diffs.

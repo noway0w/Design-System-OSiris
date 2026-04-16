@@ -1,0 +1,16 @@
+[Unit]
+Description=OSiris face recognition WebSocket server (port 8878, admin 8881)
+After=network.target
+
+[Service]
+Type=simple
+User=OSiris
+Group=OSiris
+WorkingDirectory=/home/OSiris/osiris-service
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/OSiris/osiris-service/venv/bin/python -u /home/OSiris/osiris-service/osiris_server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

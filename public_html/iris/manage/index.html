@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSiris Command Center</title>
+    <link href="../../css/tailwind.css" rel="stylesheet"/>
+    <link href="../../css/variables.css" rel="stylesheet"/>
+
+    <!-- Three.js & Globe.gl -->
+    <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/globe.gl"></script>
+    
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #000; 
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #globeViz {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
+        }
+        
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            padding: 20px;
+            pointer-events: none; /* Allow click through to globe */
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .panel {
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            pointer-events: auto;
+            margin-bottom: 20px;
+            max-width: 400px;
+        }
+        
+        h2 { margin: 0 0 15px 0; font-size: 1.2em; color: #4facfe; text-transform: uppercase; letter-spacing: 1px; }
+        h3 { margin: 15px 0 5px 0; font-size: 0.9em; color: #aaa; }
+        
+        .status-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .online { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        .offline { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 5px;
+            font-size: 0.85em;
+        }
+        button:hover { background: #444; border-color: #888; }
+        
+        .btn-kill { background: rgba(255, 0, 0, 0.2); border-color: #ff0000; color: #ffcccc; }
+        .btn-kill:hover { background: rgba(255, 0, 0, 0.4); }
+        
+        .btn-start { background: rgba(0, 255, 0, 0.2); border-color: #00ff00; color: #ccffcc; }
+        .btn-start:hover { background: rgba(0, 255, 0, 0.4); }
+        
+        .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .face-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .face-item {
+            position: relative;
+            text-align: center;
+        }
+        
+        .face-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        
+        .face-name {
+            font-size: 0.7em;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .bottom-bar {
+            display: flex;
+            gap: 20px;
+        }
+        
+        /* Auth Overlay */
+        #authOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="authOverlay">
+        <div class="panel" style="text-align: center;">
+            <h2>Secure Access</h2>
+            <input type="password" id="authCode" placeholder="Enter Access Code" style="padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white;">
+            <button onclick="checkAuth()">Login</button>
+        </div>
+    </div>
+
+    <div id="globeViz"></div>
+
+    <div class="ui-layer">
+        <div class="top-bar">
+            <!-- LEFT PANEL: SERVICE CONTROL -->
+            <div class="panel">
+                <h2>System Status</h2>
+                <div style="margin-bottom: 15px;">
+                    <span id="serviceStatusDot" class="status-dot offline"></span>
+                    <span id="serviceStatusText">Connecting...</span>
+                </div>
+                <div>
+                    <button onclick="controlService('start')" class="btn-start">Start</button>
+                    <button onclick="controlService('restart')">Restart</button>
+                    <button onclick="controlService('stop')" class="btn-kill">Stop</button>
+                </div>
+                <h3>Active Connections</h3>
+                <div id="connectionList" class="user-list">
+                    <div style="padding:10px; color:#666; font-style:italic;">No active users</div>
+                </div>
+            </div>
+            
+            <!-- RIGHT PANEL: STATS (Placeholder) -->
+            <div class="panel" style="text-align: right;">
+                <h2>OSiris Network</h2>
+                <div style="font-size: 2em; font-weight: bold; color: #4facfe;" id="userCount">0</div>
+                <div style="font-size: 0.8em; color: #aaa;">Active Agents</div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <!-- BOTTOM PANEL: FACES -->
+            <div class="panel" style="width: 100%; max-width: 800px;">
+                <h2>Face Database</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button onclick="filterFaces('all')" id="btnAll">All</button>
+                    <button onclick="filterFaces('known')" id="btnKnown">Known</button>
+                    <button onclick="filterFaces('unknown')" id="btnUnknown">Unknown</button>
+                </div>
+                <div id="faceGrid" class="face-grid">
+                    <!-- Faces loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ACCESS_CODE = "7777";
+        let ws = null;
+        let world;
+        let activeUsers = [];
+        let allFaces = { known: [], unknown: [] };
+
+        function checkAuth() {
+            const code = document.getElementById('authCode').value;
+            if (code === ACCESS_CODE) {
+                document.getElementById('authOverlay').style.display = 'none';
+                init();
+            } else {
+                alert("Access Denied");
+            }
+        }
+
+        function init() {
+            initGlobe();
+            connectWS();
+        }
+
+        // ==========================================
+        // 3D GLOBE
+        // ==========================================
+        function initGlobe() {
+            const elem = document.getElementById('globeViz');
+            world = Globe()
+                (elem)
+                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+                .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+                .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+                .atmosphereColor('#4facfe')
+                .atmosphereAltitude(0.15)
+                .pointAltitude(0.1)
+                .pointColor(() => '#ff0000') // Users are red dots
+                .pointRadius(0.5)
+                .pointsMerge(false) // Independent points
+                .pointLabel(d => `User: ${d.ip} (${d.city})`)
+                .onPointClick(d => {
+                    world.pointOfView({ lat: d.lat, lng: d.lng, altitude: 1.5 }, 1000);
+                });
+
+            // Auto-rotate
+            world.controls().autoRotate = true;
+            world.controls().autoRotateSpeed = 0.5;
+        }
+
+        function updateMap(users) {
+            // Transform user data for globe
+            // Expects users array with { lat, lon, ip, city }
+            const points = users
+                .filter(u => u.lat && u.lon)
+                .map(u => ({
+                    lat: u.lat,
+                    lng: u.lon,
+                    ip: u.ip,
+                    city: u.city
+                }));
+            
+            world.pointsData(points);
+            document.getElementById('userCount').textContent = points.length;
+        }
+
+        // ==========================================
+        // WEBSOCKET MANAGER
+        // ==========================================
+        function connectWS() {
+            const manageWsUrl = (location.protocol === "https:" ? "wss:" : "ws:") + "//" + location.host + "/osiris-manage-ws";
+            ws = new WebSocket(manageWsUrl);
+            
+            ws.onopen = () => {
+                console.log("Manager Connected");
+                // Initial fetch
+                send({ type: "get_status" });
+                send({ type: "get_users" });
+                send({ type: "get_faces" });
+                
+                // Poll loop
+                setInterval(() => {
+                    if(ws.readyState === 1) {
+                        send({ type: "get_status" });
+                        send({ type: "get_users" });
+                    }
+                }, 2000);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    
+                    if (msg.type === "get_status_response" || msg.type === "control_service_response") {
+                        const status = msg.data;
+                        const dot = document.getElementById("serviceStatusDot");
+                        const text = document.getElementById("serviceStatusText");
+                        
+                        if (status.running || status.status === "started") {
+                            dot.className = "status-dot online";
+                            text.textContent = "OSiris Running (PID: " + (status.pid || "Active") + ")";
+                        } else {
+                            dot.className = "status-dot offline";
+                            text.textContent = "OSiris Stopped";
+                        }
+                    }
+                    
+                    if (msg.type === "get_users_response") {
+                        if(msg.data && !msg.data.error) {
+                            activeUsers = msg.data.users;
+                            renderUserList(activeUsers);
+                            updateMap(activeUsers);
+                        }
+                    }
+                    
+                    if (msg.type === "get_faces_response") {
+                        if(msg.data) {
+                            allFaces = msg.data;
+                            filterFaces('all');
+                        }
+                    }
+                    
+                } catch(e) { console.error(e); }
+            };
+            
+            ws.onclose = () => {
+                console.log("Disconnected. Retrying...");
+                setTimeout(connectWS, 3000);
+            };
+        }
+
+        function send(data) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(data));
+            }
+        }
+
+        // ==========================================
+        // CONTROLS
+        // ==========================================
+        function controlService(action) {
+            if(confirm("Confirm " + action + " OSiris?")) {
+                send({ type: "control_service", action: action });
+            }
+        }
+
+        function killUser(id) {
+            if(confirm("Kick this user?")) {
+                send({ type: "kill_user", id: id });
+            }
+        }
+
+        function blockIp(ip) {
+            if(confirm("PERMANENTLY BLOCK IP " + ip + "?")) {
+                send({ type: "block_ip", ip: ip });
+            }
+        }
+
+        function renderUserList(users) {
+            const container = document.getElementById('connectionList');
+            container.innerHTML = "";
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div style="padding:10px; color:#666; font-style:italic;">No active users</div>';
+                return;
+            }
+            
+            users.forEach(u => {
+                const div = document.createElement('div');
+                div.className = "user-item";
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold; color:#fff;">${u.ip}</div>
+                        <div style="font-size:0.8em; color:#aaa;">${u.city || "Unknown"}</div>
+                    </div>
+                    <div>
+                        <button class="btn-kill" onclick="killUser(${u.id})" title="Kick">K</button>
+                        <button class="btn-kill" onclick="blockIp('${u.ip}')" title="Ban IP">B</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterFaces(type) {
+            const grid = document.getElementById('faceGrid');
+            grid.innerHTML = "";
+            
+            let list = [];
+            if (type === 'all') list = [...allFaces.known, ...allFaces.unknown];
+            else if (type === 'known') list = allFaces.known;
+            else if (type === 'unknown') list = allFaces.unknown;
+            
+            list.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'face-item';
+                div.innerHTML = `
+                    <img src="../known_faces/${f.filename}" loading="lazy">
+                    <div class="face-name">${f.name}</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+    </script>
+</body>
+</html>

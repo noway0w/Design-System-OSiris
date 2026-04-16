@@ -1,0 +1,14 @@
+.cache/
+.cursor-server/
+.cursor/
+.local/
+*.log
+server_output.txt
+server_debug.txt
+__pycache__/
+*.pyc
+*.backup*
+.DS_Store
+debug_frames/
+osiris_server.err
+manager.log
