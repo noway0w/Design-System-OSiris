@@ -1,0 +1,9 @@
+# Apache: block direct HTTP access to code, weights, and venv (defense in depth).
+# Nginx: use /home/OSiris/scripts/carscan-nginx-snippets.conf
+
+<IfModule mod_authz_core.c>
+  <FilesMatch "\.(py|pth|pt|pkl|onnx|so|sh|log)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+RedirectMatch 404 /\.git(/|$)

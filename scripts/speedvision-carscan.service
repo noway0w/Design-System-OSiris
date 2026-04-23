@@ -1,0 +1,20 @@
+# System install (optional): /etc/systemd/system/speedvision-carscan.service
+# Adjust User= and paths if different.
+
+[Unit]
+Description=CarScan realtime YOLO API (127.0.0.1:9001)
+After=network.target
+
+[Service]
+Type=simple
+User=OSiris
+Group=OSiris
+WorkingDirectory=/home/OSiris/speedvision-service
+Environment=PYTHONUNBUFFERED=1
+Environment=CARSCAN_WEIGHTS=/home/OSiris/public_html/carscan/yolov8n.pt
+ExecStart=/home/OSiris/speedvision-service/venv/bin/uvicorn server:app --host 127.0.0.1 --port 9001
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

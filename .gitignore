@@ -15,6 +15,11 @@ osiris-service/pretrained_model/
 osiris-service/backups/
 osiris-service/server_output.txt
 osiris-service/public_html/
+
+speedvision-service/venv/
+
+# Upstream SpeedVision git history kept beside carscan (optional); not tracked
+public_html/.carscan-upstream-vendor.git/
 .gitconfig
 .local/
 .ssh/

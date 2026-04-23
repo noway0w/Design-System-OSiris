@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#0f172a"/>
+  <title>CarScan — Camera</title>
+  <link href="../css/tailwind.css" rel="stylesheet"/>
+  <link href="../css/variables.css" rel="stylesheet"/>
+  <style>
+    html, body { height: 100%; margin: 0; background: var(--bg-app, #0f172a); color: #e2e8f0; }
+    .video-wrap { position: relative; width: 100%; max-width: min(100vw, 720px); margin: 0 auto; background: #000; border-radius: 0.75rem; overflow: hidden; aspect-ratio: 4/3; }
+    #camVideo { position: relative; z-index: 0; display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+    #ovCanvas { position: absolute; left: 0; top: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+    .toolbar { display: flex; gap: 0.75rem; justify-content: center; align-items: center; padding: 1rem; flex-wrap: wrap; }
+    .btn { padding: 0.75rem 1.25rem; border-radius: 0.5rem; font-weight: 600; border: none; cursor: pointer; background: rgba(59, 130, 246, 0.9); color: #fff; }
+    .btn:active { opacity: 0.9; }
+    .btn-secondary { background: rgba(71, 85, 105, 0.9); }
+    .btn.on { background: rgba(16, 185, 129, 0.9); }
+    .status { font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 0 1rem 1rem; max-width: 36rem; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="p-4">
+    <h1 class="text-lg font-semibold text-center mb-2">CarScan</h1>
+    <p class="text-sm text-slate-400 text-center mb-2">Enable analysis: boxes use <code class="text-slate-500">/api/carscan/</code> (HTTP) or WebSocket. If you see &quot;No API&quot;, add nginx per <code>scripts/carscan-nginx-snippets.conf</code>.</p>
+    <div class="video-wrap" id="wrap">
+      <video id="camVideo" autoplay muted playsinline></video>
+      <canvas id="ovCanvas" width="300" height="200"></canvas>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="btn" id="btnToggleCam">Switch camera</button>
+      <button type="button" class="btn btn-secondary" id="btnStart">Start camera</button>
+      <button type="button" class="btn btn-secondary" id="btnAnalysis">Analysis: off</button>
+    </div>
+    <p class="status" id="statusLine" role="status"></p>
+  </div>
+  <script>
+(function () {
+  const video = document.getElementById('camVideo');
+  const wrap = document.getElementById('wrap');
+  const canvas = document.getElementById('ovCanvas');
+  const ctx = canvas.getContext('2d');
+  const btnAnalysis = document.getElementById('btnAnalysis');
+  const statusLine = document.getElementById('statusLine');
+
+  let currentStream = null;
+  let facingMode = 'environment';
+  let analysisOn = false;
+  let ws = null;
+  let sendTimer = null;
+  const capCanvas = document.createElement('canvas');
+  const capCtx = capCanvas.getContext('2d');
+  const SEND_MS = 400;
+
+  /**
+   * Same-origin paths avoid WebKit "The string did not match the expected pattern" from bad URL() strings.
+   * Optional: window.CARSCAN_API = 'https://host/api/carscan' (no trailing slash)
+   */
+  function apiIngest() {
+    var c = (typeof window.CARSCAN_API === 'string' && String(window.CARSCAN_API).trim());
+    if (c) return c.replace(/\/$/, '') + '/ingest';
+    return '/api/carscan/ingest';
+  }
+  function apiHealth() {
+    var c = (typeof window.CARSCAN_API === 'string' && String(window.CARSCAN_API).trim());
+    if (c) return c.replace(/\/$/, '') + '/health';
+    return '/api/carscan/health';
+  }
+  function getWsUrl() {
+    if (typeof window.CARSCAN_WS === 'string' && window.CARSCAN_WS) return String(window.CARSCAN_WS);
+    if (!location.host) return null;
+    var p = (typeof window.CARSCAN_WS_PATH === 'string' && window.CARSCAN_WS_PATH) ? window.CARSCAN_WS_PATH : '/api/carscan/ws';
+    if (p.charAt(0) !== '/') p = '/' + p;
+    return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + p;
+  }
+  function setStatus(msg) { statusLine.textContent = msg; }
+
+  function resizeCanvas() {
+    const r = wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.floor(r.width * dpr));
+    const h = Math.max(1, Math.floor(r.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+
+  function drawDetections(dets) {
+    resizeCanvas();
+    const r = wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!vw || !vh) return;
+    const scale = Math.min(r.width / vw, r.height / vh);
+    const x0 = (r.width - vw * scale) / 2;
+    const y0 = (r.height - vh * scale) / 2;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!dets || !dets.length) return;
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    for (var i = 0; i < dets.length; i++) {
+      var d = dets[i], xy = d.xyxy;
+      if (!xy) continue;
+      var x1 = x0 + xy[0] * scale, y1 = y0 + xy[1] * scale, x2 = x0 + xy[2] * scale, y2 = y0 + xy[3] * scale;
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineJoin = 'round';
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      var label = (d.name || 'obj') + (d.conf != null ? ' ' + d.conf : '');
+      var ty = Math.max(14, y1 - 2);
+      ctx.save();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#14532d';
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      var tw = ctx.measureText(label).width;
+      ctx.fillRect(x1, ty - 16, tw + 8, 18);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText(label, x1 + 4, ty - 2);
+      ctx.restore();
+    }
+  }
+
+  function handleResult(msg) {
+    if (!msg || !msg.ok) return;
+    drawDetections(msg.detections);
+    var n = (msg.detections && msg.detections.length) || 0;
+    var sp = (msg.speed_px_s && msg.speed_px_s[0] && msg.speed_px_s[0].speed_px_s) ? ' · ~' + msg.speed_px_s[0].speed_px_s + ' px/s' : '';
+    setStatus('Inference ' + (msg.inference_ms != null ? msg.inference_ms : '?') + ' ms · ' + n + ' object(s)' + sp);
+  }
+
+  function sendFrameHttp() {
+    var pathOrUrl = apiIngest();
+    capCanvas.width = video.videoWidth;
+    capCanvas.height = video.videoHeight;
+    capCtx.drawImage(video, 0, 0, capCanvas.width, capCanvas.height);
+    capCanvas.toBlob(function (blob) {
+      if (!blob) return;
+      var req;
+      try {
+        req = fetch(pathOrUrl, {
+          method: 'POST',
+          body: blob,
+          headers: { 'Content-Type': 'image/jpeg' },
+          mode: 'same-origin',
+          credentials: 'same-origin'
+        });
+      } catch (err) {
+        setStatus('Request failed: ' + (err && err.name ? (err.name + ' ') : '') + (err && err.message ? err.message : String(err)) + ' — use same host or set window.CARSCAN_API');
+        return;
+      }
+      req
+        .then(function (r) {
+          return r.text().then(function (t) {
+            var j = null;
+            try { j = t ? JSON.parse(t) : null; } catch (x) { j = { _parseError: true, _body: t.slice(0, 120) }; }
+            return { ok: r.ok, st: r.status, j: j, raw: t };
+          });
+        })
+        .then(function (o) {
+          if (o.j && o.j._parseError) {
+            setStatus('API returned non-JSON (HTTP ' + o.st + '). Nginx /api/carscan/ → 127.0.0.1:9001? ' + o.j._body);
+            return;
+          }
+          if (!o.ok) throw new Error('HTTP ' + o.st);
+          handleResult(o.j);
+        })
+        .catch(function (e) {
+          setStatus('No API: ' + (e && e.message ? e.message : String(e)) + '. Proxy ' + pathOrUrl + ' → 127.0.0.1:9001 (see scripts/carscan-nginx-snippets.conf)');
+        });
+    }, 'image/jpeg', 0.72);
+  }
+
+  function sendFrame() {
+    if (!video.videoWidth) return;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      capCanvas.width = video.videoWidth;
+      capCanvas.height = video.videoHeight;
+      capCtx.drawImage(video, 0, 0, capCanvas.width, capCanvas.height);
+      capCanvas.toBlob(function (blob) {
+        if (blob && ws && ws.readyState === WebSocket.OPEN) {
+          blob.arrayBuffer().then(function (buf) { ws.send(buf); });
+        } else {
+          sendFrameHttp();
+        }
+      }, 'image/jpeg', 0.72);
+    } else {
+      sendFrameHttp();
+    }
+  }
+
+  function connectWs() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+    if (window.CARSCAN_NO_WS) return;
+    var wu = getWsUrl();
+    if (!wu) return;
+    try {
+      ws = new WebSocket(wu);
+    } catch (e) {
+      return;
+    }
+    ws.binaryType = 'arraybuffer';
+    ws.onmessage = function (ev) {
+      try { handleResult(JSON.parse(ev.data)); } catch (err) { /* ignore */ }
+    };
+    ws.onerror = function () { /* fall back to HTTP in sendFrame */ };
+    ws.onclose = function () { ws = null; };
+  }
+
+  function closeWs() {
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+  }
+
+  function setAnalysis(on) {
+    analysisOn = on;
+    btnAnalysis.textContent = on ? 'Analysis: on' : 'Analysis: off';
+    btnAnalysis.classList.toggle('on', on);
+    if (on) {
+      if (window.CARSCAN_USE_WS) connectWs();
+      if (sendTimer) clearInterval(sendTimer);
+      sendTimer = setInterval(sendFrame, SEND_MS);
+      fetch(apiHealth(), { method: 'GET', credentials: 'same-origin' })
+        .then(function (r) { return r.text().then(function (t) { return { r: r, t: t }; }); })
+        .then(function (o) {
+          var h;
+          try { h = o.t ? JSON.parse(o.t) : {}; } catch (e) { setStatus('Health: not JSON (HTTP ' + o.r.status + '). Is /api/carscan/ in nginx?'); return; }
+          if (o.r.ok) setStatus('API ' + (h.status || '') + (h.yolo_loaded ? ' · YOLO ready' : ''));
+          else setStatus('Health HTTP ' + o.r.status + ' — check nginx + speedvision service');
+        })
+        .catch(function () { setStatus('Health check failed — is nginx + speedvision on 9001?'); });
+      sendFrame();
+    } else {
+      if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
+      closeWs();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  document.getElementById('btnAnalysis').addEventListener('click', function () { setAnalysis(!analysisOn); });
+
+  function stopStream() {
+    if (currentStream) { currentStream.getTracks().forEach(function (t) { t.stop(); }); currentStream = null; }
+    video.pause();
+    video.srcObject = null;
+    setAnalysis(false);
+  }
+
+  async function getStreamForFacing(facing) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    } catch (e) {
+      var devices = await navigator.mediaDevices.enumerateDevices();
+      var vids = devices.filter(function (d) { return d.kind === 'videoinput' && d.deviceId; });
+      if (vids.length < 2) throw e;
+      var wantBack = facing === 'environment', idx = wantBack ? Math.min(1, vids.length - 1) : 0;
+      return await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: vids[idx].deviceId } }, audio: false });
+    }
+  }
+
+  async function startWithFacing(facing) {
+    stopStream();
+    await new Promise(function (r) { setTimeout(r, 150); });
+    const stream = await getStreamForFacing(facing);
+    currentStream = stream;
+    video.srcObject = stream;
+    try { await video.play(); } catch (err) { setStatus('Playback: ' + (err && err.message ? err.message : String(err))); }
+    facingMode = facing;
+    setStatus('Camera: ' + (facing === 'user' ? 'front' : 'rear'));
+    video.addEventListener('loadedmetadata', function () { resizeCanvas(); if (analysisOn) sendFrame(); }, { once: true });
+  }
+
+  document.getElementById('btnStart').addEventListener('click', function () {
+    startWithFacing(facingMode).catch(function (err) { setStatus('Permission / device: ' + (err && err.message ? err.message : String(err))); });
+  });
+  document.getElementById('btnToggleCam').addEventListener('click', async function () {
+    if (!currentStream) { document.getElementById('btnStart').click(); return; }
+    var next = facingMode === 'user' ? 'environment' : 'user';
+    var wasA = analysisOn;
+    if (wasA) setAnalysis(false);
+    try { await startWithFacing(next); } catch (err) { setStatus('Camera error: ' + (err && err.message ? err.message : String(err))); return; }
+    if (wasA) setAnalysis(true);
+  });
+
+  window.addEventListener('resize', function () { resizeCanvas(); if (analysisOn) drawDetections([]); });
+  video.addEventListener('play', function () { resizeCanvas(); if (analysisOn) sendFrame(); });
+})();
+  </script>
+</body>
+</html>
