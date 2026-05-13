@@ -2,7 +2,11 @@
 
 ### Overview
 
-This document captures how the web-based 3D CAD Explorer (`public_html/corintis/index.html`) integrates with LLMs and how the floating panels are structured. It is meant to make future agent and UI changes easier to reason about.
+This document captures how the web-based 3D CAD Explorer (`public_html/disable/index.html`) integrates with LLMs and how the floating panels are structured. It is meant to make future agent and UI changes easier to reason about.
+
+### Supported import formats (Loaded files panel)
+
+The **Import CAD** control accepts **IGES, STEP, DXF, IFC, 3DM, DWG**, and **GLB**. GLB files are parsed in the browser with **Three.js r147** `GLTFLoader` and **DRACOLoader** (Draco decoder from the same CDN tree). Parsed glTF scenes are not stored as live `Object3D` trees in IndexedDB; the buffer is kept and the model is re-parsed when the user selects the file again, consistent with DXF/IFC/3DM/DWG.
 
 ### Panels and Layout
 
@@ -14,7 +18,7 @@ This document captures how the web-based 3D CAD Explorer (`public_html/corintis/
     - Currently intentionally minimal (no CFD or Import controls; those live in floating panels).
 
 - **Floating panels (`corintis-floating-panel` elements)**
-  - Created and managed in the inline script in `corintis/index.html` via `createFloatingPanel(...)` and `initFloatingPanels()`.
+  - Created and managed in the inline script in `disable/index.html` via `createFloatingPanel(...)` and `initFloatingPanels()`.
   - Alignment:
     - `corintisPanelAlign` defaults to `'left'`.
     - `resetPanelsToInitial()` also sets `corintisPanelAlign = 'left'` and re-runs `layoutCorintisPanels()`.
@@ -60,7 +64,7 @@ This document captures how the web-based 3D CAD Explorer (`public_html/corintis/
 
 - The CAD explorer uses a top-right toast system exposed via `window.showToast(...)` (defined in the shared JS for the site).
 - To keep UX consistent:
-  - `showError(...)` in `corintis/index.html`:
+  - `showError(...)` in `disable/index.html`:
     - Still controls the in-page error overlay.
     - Now also calls `notifyToast('error', msg)` to emit a toast.
   - **CAD Import**:

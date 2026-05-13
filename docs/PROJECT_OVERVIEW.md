@@ -9,7 +9,7 @@ This document defines and explains the OSiris project for AI agents (e.g. Gemini
 **OSiris** is a web-based platform that combines:
 
 1. **Live Tracking Map Dashboard** – A Mapbox-powered map app with user presence, POIs, widgets, and map data layers.
-2. **Corintis 3D CAD Explorer** – A standalone Three.js SPA for viewing and inspecting CAD files (IGES, STEP, DXF, IFC).
+2. **Corintis 3D CAD Explorer** – A standalone Three.js SPA for viewing and inspecting CAD files (IGES, STEP, DXF, IFC, 3DM, DWG, GLB).
 
 Both share the same design system (OSiris Design System) and are served from `public_html/`. The 3D CAD Explorer is deployed under **`public_html/disable/`** (URL `/disable/index.html`). The map app shows a link to it when the feature flag `?corintis` is present (query name is historical; the on-disk folder is `disable`).
 
@@ -20,7 +20,7 @@ Both share the same design system (OSiris Design System) and are served from `pu
 | Component | Purpose |
 |-----------|---------|
 | **Map App** | Real-time map dashboard: show users on a globe, POIs, weather/stock widgets, map data tiles (buildings, topography, airports, etc.), with dark/light theme and i18n (en/fr). |
-| **Corintis** | Web-based 3D CAD viewer: import IGES, STEP, DXF, IFC files; inspect layers; toggle ghost/opacity; internal inspection; floating draggable panels; optional on-demand CFD (OpenFOAM) flow lines via local sidecar. |
+| **Corintis** | Web-based 3D CAD viewer: import IGES, STEP, DXF, IFC, 3DM, DWG, and GLB files; inspect layers; toggle ghost/opacity; internal inspection; floating draggable panels; optional on-demand CFD (OpenFOAM) flow lines via local sidecar. |
 | **Design System** | Shared CSS variables, Tailwind, neumorphic/glassmorphism styling, dark mode, typography. |
 
 ---
@@ -51,6 +51,7 @@ Both share the same design system (OSiris Design System) and are served from `pu
 │       ├── Three.js + OrbitControls                                           │
 │       ├── occt-import-js (IGES, STEP)                                        │
 │       ├── dxf-parser (DXF)                                                   │
+│       ├── Three.js GLTFLoader + DRACOLoader (GLB, CDN)                       │
 │       ├── web-ifc-three (IFC, local WASM at disable/wasm/web-ifc.wasm)       │
 │       ├── Floating panels: Layers, Loaded files, Internal Inspection, Visual  │
 │       └── IndexedDB: corintis-cad-repository (file storage)                  │
@@ -80,6 +81,7 @@ flowchart TB
       t["Three.js + OrbitControls"]
       occt["occt-import-js — IGES, STEP"]
       dxf["dxf-parser — DXF"]
+      glb["GLTFLoader + Draco — GLB"]
       ifc["web-ifc-three — IFC + wasm/web-ifc.wasm"]
       panels["Floating panels: Layers, Files, Inspection, Visual"]
       idb["IndexedDB: corintis-cad-repository"]
@@ -154,6 +156,7 @@ OSiris/
 | IFC | web-ifc-three | Local WASM at `disable/wasm/web-ifc.wasm` |
 | 3DM | rhino3dm | WASM from jsDelivr; mesh, extrusion, optional Brep tessellation if API available |
 | DWG | @mlightcad/libredwg-web | WASM from jsDelivr; lines, arcs, circles, polylines, 3DFACE |
+| GLB | Three.js GLTFLoader + DRACOLoader | Binary glTF; Draco meshes supported (decoder from jsDelivr, same Three r147 as the page) |
 
 ### 6.2 Floating Panels
 
@@ -167,7 +170,7 @@ Panels are draggable, collapsible, and re-align off-screen. "Reset panels" resto
 ### 6.3 File Loading Flow
 
 1. User clicks "Import CAD" (hidden file input).
-2. File picker opens; user selects IGES/STEP/DXF/IFC/3DM/DWG.
+2. File picker opens; user selects IGES/STEP/DXF/IFC/3DM/DWG/GLB.
 3. `change` event → `file.arrayBuffer()` → `addFileToLoadedList()`.
 4. `addFileToLoadedList()` parses file, pushes to `loadedFiles`, calls `updateLoadedFilesPanel()`.
 5. Loaded files panel auto-expands when a file is added.

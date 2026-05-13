@@ -2,6 +2,8 @@
 
 Documentation for the OSiris platform. For AI agents: follow [AGENT_RULES.md](AGENT_RULES.md) for all non-trivial work.
 
+**3D CAD Explorer:** Deployed at `public_html/disable/` (URL `/disable/index.html`). Import formats include IGES, STEP, DXF, IFC, 3DM, DWG, and **GLB** (binary glTF via Three.js `GLTFLoader`, including Draco-compressed meshes). Docs that say “Corintis” refer to the same app; `corintis-*` in code is legacy CSS/DOM naming.
+
 ---
 
 ## Structure
