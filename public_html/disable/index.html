@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link href="../css/tailwind.css" rel="stylesheet"/>
   <link href="../css/variables.css" rel="stylesheet"/>
+  <link href="../css/dashboard-shell.css" rel="stylesheet"/>
   <link href="../css/components/toast.css" rel="stylesheet"/>
   <style>
     .corintis-canvas-wrap { position: relative; min-height: 0; }
@@ -235,7 +236,7 @@
   </script>
   <div class="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
     <div class="flex items-center gap-3">
-      <a href="../map-app.html" class="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" title="Back to Map">
+      <a href="/map-app/" class="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" title="Back to Map">
         <span class="material-symbols-outlined">arrow_back</span>
       </a>
       <button type="button" id="corintis-reset-panels" class="flex items-center justify-center p-2 rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl border border-white/30 dark:border-white/10 hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer" title="Reset panels">
@@ -4123,5 +4124,6 @@
   animate();
 })();
   </script>
+  <script src="/js/platform-shell-topbar.js"></script>
 </body>
 </html>

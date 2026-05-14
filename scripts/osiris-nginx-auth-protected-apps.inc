@@ -42,6 +42,16 @@ location ^~ /disable/ {
     try_files $uri $uri/ /disable/index.html;
 }
 
+location = /3Dobjscan {
+    return 301 /3Dobjscan/;
+}
+
+location ^~ /3Dobjscan/ {
+    auth_request /_internal_platform_auth;
+    error_page 401 =302 /login/?next=$request_uri;
+    try_files $uri $uri/ /3Dobjscan/index.html;
+}
+
 # Dashboard HTML is a static shell; user/session checks run in /api/get_user_dashboard.php.
 # Skipping auth_request here avoids nginx→php-fpm auth subrequests that can miss the session
 # cookie right after OAuth (race with session_regenerate_id / SameSite).

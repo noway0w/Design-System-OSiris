@@ -16,7 +16,7 @@ Documentation for the OSiris platform. For AI agents: follow [AGENT_RULES.md](AG
 | [CORINTIS_FLOATING_PANELS_SPEC.md](CORINTIS_FLOATING_PANELS_SPEC.md) | Floating panel system: structure, functions, interactions. |
 | [CORINTIS_AI_PANEL_SPEC.md](CORINTIS_AI_PANEL_SPEC.md) | CAD AI Assistant panel: layout, styling, element IDs, behavior. |
 | [CORINTIS_FEEDBACK_AND_TOASTS.md](CORINTIS_FEEDBACK_AND_TOASTS.md) | Toast-only feedback: success, error, info; no error overlay. |
-| [PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md) | App host login, dashboard, PHP session, signed `OSIRIS_PLATFORM_AUTH` cookie, Google SSO, env file, nginx notes. |
+| [PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md) | App host login, dashboard, PHP session, signed `OSIRIS_PLATFORM_AUTH` cookie, Google SSO, env file, nginx; **shared top bar** (`public_html/js/platform-shell-topbar.js`, §8–9). |
 | [tasks/todo.md](tasks/todo.md) | Plans with checkable items. Write here before implementation. |
 | [tasks/lessons.md](tasks/lessons.md) | Lessons learned. Update after corrections. |
 

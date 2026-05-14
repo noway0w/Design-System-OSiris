@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="google" content="notranslate">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Live Tracking Map Dashboard</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin=""/>
+  <link href="https://api.mapbox.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet"/>
+  <link href="/css/tailwind.css" rel="stylesheet"/>
+  <link href="/css/neumorphic-menu.css" rel="stylesheet"/>
+  <link href="/css/variables.css" rel="stylesheet"/>
+  <link href="/css/dashboard-shell.css" rel="stylesheet"/>
+  <link href="/css/poi-content-panel.css" rel="stylesheet"/>
+  <link href="/css/recommendations.css" rel="stylesheet"/>
+  <link href="/css/mobile-bottom-sheet.css" rel="stylesheet"/>
+  <link href="/css/tooltip-bottom.css" rel="stylesheet"/>
+  <link href="/css/components/core-actions.css" rel="stylesheet"/>
+  <link href="/css/components/toast.css" rel="stylesheet"/>
+  <style>
+    .language-switcher { display: none; }
+    .map-marker-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      50% { opacity: 0.4; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes tile-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .tile-fade-in { animation: tile-fade-in 0.5s ease-in forwards; }
+    .bottom-section-tile { min-height: 12.5rem; }
+    @keyframes gate-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    #name-gate-overlay > div {
+      opacity: 0;
+      animation: gate-fade-in 0.5s ease-out forwards;
+    }
+    #gate-name-input {
+      border-radius: 8px !important;
+      min-height: 58px !important;
+      padding-top: 18px !important;
+      padding-bottom: 18px !important;
+    }
+    @media (min-width: 768px) {
+      #gate-name-input { width: 33vw; }
+    }
+    #gate-name-input:focus,
+    #gate-name-input:focus-visible,
+    #gate-name-input:active {
+      outline: none !important;
+      outline-width: 0 !important;
+      outline-offset: 0 !important;
+      box-shadow: none !important;
+      -webkit-appearance: none;
+      appearance: none;
+      border-color: rgb(203 213 225);
+      -webkit-tap-highlight-color: transparent;
+    }
+    html.dark #gate-name-input:focus,
+    html.dark #gate-name-input:focus-visible,
+    html.dark #gate-name-input:active {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    #map-container-wrap { background: #010b19; transition: background 0.3s ease; }
+    html.light #map-container-wrap { background: #d4dae5; }
+    .toggle-checkbox { top: 0; left: 0; right: auto; transition: left 0.2s, right 0.2s; }
+    .toggle-checkbox:checked { left: auto; right: 0; border-color: #1392ec !important; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #1392ec; }
+    .volumetric-altitude-range[orient="vertical"] {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      appearance: slider-vertical;
+      width: 16px;
+      vertical-align: middle;
+    }
+    .mapboxgl-ctrl-logo { display: none !important; }
+    @keyframes fade-in-right {
+      from { opacity: 0; transform: translateX(-24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate-fade-in-right {
+      animation: fade-in-right 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(100%); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fade-in-up 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes widget-skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .widget-skeleton {
+      background: linear-gradient(90deg, rgba(148,163,184,0.2) 25%, rgba(148,163,184,0.4) 50%, rgba(148,163,184,0.2) 75%);
+      background-size: 200% 100%;
+      animation: widget-skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+    html.dark .widget-skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+    }
+    /* Airport OACI floating markers (airports Map Data layer) */
+    .airport-oaci-marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      color: white;
+      padding: 4px 8px 4px 6px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+    .airport-oaci-marker .airport-oaci-icon {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .airport-oaci-marker .airport-oaci-text {
+      padding-left: 2px;
+    }
+    html.light .airport-oaci-marker {
+      background: rgba(255,255,255,0.95);
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+  </style>
+  <script src="/js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.0/i18next.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@2.6.0/i18nextHttpBackend.min.js"></script>
+  <script src="/js/i18n-service.js"></script>
+  <script src="/js/components/language-switcher.js"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden h-screen flex flex-col antialiased selection:bg-primary selection:text-white">
+  <div id="map-app-root" class="relative flex-1 min-h-0 overflow-hidden">
+    <!-- Map Container (always full screen) -->
+    <div id="map-container-wrap" class="absolute inset-0">
+      <div id="map-app-container" class="absolute inset-0 w-full h-full"></div>
+      <div id="map-gradient-overlay" class="absolute inset-0 bg-gradient-to-t from-background-light dark:from-background-dark via-transparent to-background-light/30 dark:to-background-dark/30 pointer-events-none transition-opacity duration-300"></div>
+
+    </div>
+    <!-- POI Editorial Panel (desktop: left 50%; mobile: bottom sheet) - hidden by default -->
+    <aside id="poi-content-panel" class="poi-content-panel z-10 w-full md:w-1/2 h-full glass-panel flex flex-col shadow-2xl overflow-hidden" aria-hidden="true">
+      <!-- Mobile drag handle (visible only on mobile, for swipe-to-close) -->
+      <div class="poi-panel-drag-handle mobile-bottom-sheet-handle md:hidden flex-shrink-0" aria-hidden="true"></div>
+      <!-- Header -->
+      <header class="flex items-center justify-between px-8 py-6 border-b border-white/5 shrink-0">
+        <div class="flex items-center gap-4">
+          <button type="button" class="poi-panel-close poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Close">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div class="flex items-center gap-3">
+            <div class="poi-panel-logo-wrap w-10 h-10 rounded-lg bg-contain bg-no-repeat bg-center border border-white/10 flex-shrink-0" style="background-image: url('')" data-alt="Logo"></div>
+            <div>
+              <h2 class="poi-panel-title text-sm font-bold text-white tracking-wide uppercase"></h2>
+              <span class="poi-panel-subtitle text-xs text-slate-400"></span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="poi-panel-prev poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Previous POI">
+            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+          </button>
+          <button type="button" class="poi-panel-next poi-btn-circle p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center flex-shrink-0" aria-label="Next POI">
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+          </button>
+          <a class="poi-panel-website ml-2 px-5 py-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold rounded-lg transition-colors shadow-[0_4px_12px_rgba(19,146,236,0.3)]" href="#" target="_blank" rel="noopener" data-i18n="map:visitWebsite">Visit Website</a>
+        </div>
+      </header>
+      <!-- Scrollable Editorial Content -->
+      <div class="editorial-scroll flex-1 overflow-y-auto overflow-x-hidden p-8 md:p-12 font-editorial relative">
+        <div id="poi-panel-loading" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-background-dark/80 backdrop-blur-sm">
+          <div class="flex flex-col items-center gap-3">
+            <span class="material-symbols-outlined text-4xl text-white animate-pulse">hourglass_empty</span>
+            <p class="text-slate-400 text-sm" data-i18n="map:loadingProject">Loading project…</p>
+          </div>
+        </div>
+        <!-- Hero Title & Tags -->
+        <div class="mb-12">
+          <div class="poi-panel-featured flex items-center gap-2 mb-6 text-primary text-sm font-bold tracking-widest uppercase">
+            <span class="w-2 h-2 rounded-lg bg-primary"></span>
+            <span class="poi-panel-featured-label" data-i18n="map:featuredProject">Featured Project</span>
+          </div>
+          <h1 class="poi-panel-hero-title text-6xl md:text-7xl font-bold text-white leading-[0.9] tracking-tighter mb-8">
+            <span class="poi-panel-hero-title-text"></span><span class="text-primary">.</span>
+          </h1>
+          <div class="poi-panel-tags flex flex-wrap gap-3"></div>
+        </div>
+        <!-- Hero Image -->
+        <div class="poi-panel-hero-wrap w-full h-64 md:h-80 rounded-lg overflow-hidden mb-12 relative group">
+          <div class="absolute inset-0 bg-gradient-to-t from-background-dark/80 to-transparent z-10"></div>
+          <div class="absolute bottom-6 left-6 z-20">
+            <p class="poi-panel-hero-caption text-white font-medium text-lg"></p>
+            <p class="poi-panel-hero-subcaption text-slate-400 text-sm"></p>
+          </div>
+          <div class="poi-panel-hero-media w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"></div>
+        </div>
+        <!-- Editorial Quote -->
+        <div class="mb-16 border-l-4 border-primary pl-8 py-2">
+          <p class="poi-panel-quote text-2xl md:text-3xl font-light text-slate-200 leading-relaxed italic"></p>
+          <div class="poi-panel-quote-attribution mt-6 flex items-center gap-4">
+            <div class="poi-panel-quote-avatar w-12 h-12 rounded-lg bg-slate-700 bg-cover bg-center flex-shrink-0" style="background-image: url('Guillaume_Lassiat.png')"></div>
+            <div>
+              <p class="poi-panel-quote-author text-white font-bold"></p>
+              <p class="poi-panel-quote-role text-primary text-sm"></p>
+            </div>
+          </div>
+        </div>
+        <!-- Mission & Key Facts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
+          <div class="space-y-6">
+            <h3 class="text-xl font-bold text-white flex items-center gap-3">
+              <span class="poi-mission-icon w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">light_mode</span></span>
+              <span data-i18n="map:ourMission">Our Mission</span>
+            </h3>
+            <div class="poi-panel-mission text-slate-400 leading-relaxed text-lg space-y-4"></div>
+          </div>
+          <div class="space-y-4">
+            <h3 class="text-xl font-bold text-white mb-6" data-i18n="map:keyFigures">Key Facts</h3>
+            <div class="poi-panel-key-figures space-y-4"></div>
+          </div>
+        </div>
+        <!-- Process -->
+        <div class="mb-16 space-y-6">
+          <h3 class="text-xl font-bold text-white flex items-center gap-3">
+            <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">account_tree</span></span>
+            <span data-i18n="map:process">Process</span>
+          </h3>
+          <div class="poi-panel-process text-slate-400 leading-relaxed text-lg space-y-4"></div>
+        </div>
+        <!-- KPI -->
+        <div class="mb-16 space-y-6">
+          <h3 class="text-xl font-bold text-white flex items-center gap-3">
+            <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-primary"><span class="material-symbols-outlined">insights</span></span>
+            <span data-i18n="map:kpi">KPI</span>
+          </h3>
+          <div class="poi-panel-kpi text-slate-400 leading-relaxed text-lg space-y-4"></div>
+        </div>
+        <!-- Masonry Gallery -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-8">
+            <h3 class="text-2xl font-bold text-white" data-i18n="map:pictureWorth">A picture worth a thousand words</h3>
+          </div>
+          <div class="poi-panel-gallery columns-1 md:columns-2 gap-4 space-y-4"></div>
+        </div>
+        <!-- Footer CTA -->
+        <div class="mt-8 pt-8 border-t border-white/5 flex justify-center">
+          <button type="button" class="poi-panel-cta w-1/3 min-w-[140px] py-2.5 text-sm rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold transition-colors flex items-center justify-center gap-2 border border-white/5 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">explore</span>
+            <span data-i18n="map:discoverMore">Discover more</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+    <!-- Image viewer overlay with prev/next navigation -->
+    <div id="poi-image-overlay" class="poi-media-overlay hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
+      <button type="button" class="poi-viewer-prev absolute left-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-lg transition-colors" aria-label="Previous"><span class="material-symbols-outlined text-3xl">arrow_back</span></button>
+      <div class="poi-media-viewer relative" onclick="event.stopPropagation()">
+        <div class="poi-media-viewer-content relative">
+          <button type="button" class="poi-media-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+          <img id="poi-image-viewer-img" class="poi-media-viewer-visual" alt=""/>
+          <div class="poi-media-viewer-caption">
+            <p class="poi-media-viewer-caption-text">Descriptive content placeholder</p>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="poi-viewer-next absolute right-4 top-1/2 -translate-y-1/2 z-[60] w-12 h-12 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-lg transition-colors" aria-label="Next"><span class="material-symbols-outlined text-3xl">arrow_forward</span></button>
+    </div>
+    <!-- Video overlay (70% width, close top-left) -->
+    <div id="poi-video-overlay" class="poi-media-overlay hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
+      <div class="poi-media-viewer relative" onclick="event.stopPropagation()">
+        <div class="poi-media-viewer-content relative">
+          <button type="button" class="poi-media-overlay-close poi-video-overlay-close absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors" aria-label="Close video"><span class="material-symbols-outlined">close</span></button>
+          <video id="poi-video-player" class="poi-media-viewer-visual" controls playsinline></video>
+          <div class="poi-media-viewer-caption poi-media-viewer-caption-video">
+            <p class="poi-media-viewer-caption-text">Descriptive content placeholder</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- LinkedIn Recommendations detail overlay -->
+    <div id="recommendations-overlay" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer">
+      <div class="recommendations-overlay-panel cursor-default" onclick="event.stopPropagation()">
+        <button type="button" class="recommendations-overlay-close" aria-label="Close"><span class="material-symbols-outlined">close</span></button>
+        <div class="recommendations-overlay-content">
+          <div class="recommendations-overlay-header">
+            <div class="recommendations-overlay-avatar" id="rec-overlay-avatar"></div>
+            <h3 class="recommendations-overlay-name" id="rec-overlay-name"></h3>
+            <p class="recommendations-overlay-role" id="rec-overlay-role"></p>
+            <p class="recommendations-overlay-context" id="rec-overlay-context"></p>
+          </div>
+          <div id="rec-overlay-translated-tag" class="recommendations-overlay-translated hidden"></div>
+          <div class="recommendations-overlay-body" id="rec-overlay-body"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Top Bar Overlay (behind POI panel when open) -->
+    <div id="top-bar-overlay" class="absolute top-0 left-0 right-0 z-20 pt-6 px-6 pb-4 flex items-center justify-between pointer-events-none">
+      <div class="pointer-events-auto">
+        <div id="general-menu-wrapper" class="relative">
+          <button id="btn-general-menu" type="button" class="flex items-center justify-center w-10 h-10 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+          <div id="general-menu-panel" class="general-menu-panel neumorphic-menu-panel" role="dialog" aria-label="General menu" aria-hidden="true">
+            <div class="neumorphic-menu-section mb-3 pb-3 border-b border-slate-200 dark:border-white/10">
+              <div class="language-switcher" data-component="language-switcher"></div>
+            </div>
+            <div class="neumorphic-menu-section">
+              <label for="theme-options" data-i18n="map:theme">Theme</label>
+              <div id="theme-options" class="neumorphic-theme-options" role="group" aria-label="Theme selection">
+                <button type="button" class="neumorphic-btn" data-theme="light" data-i18n="map:light">Light</button>
+                <button type="button" class="neumorphic-btn" data-theme="dark" data-i18n="map:dark">Dark</button>
+                <button type="button" class="neumorphic-btn" data-theme="system" data-i18n="map:system">System</button>
+              </div>
+            </div>
+            <button type="button" id="general-menu-resume" class="neumorphic-menu-resume w-full" aria-label="Guillaume's Resume">
+              <span class="material-symbols-outlined">description</span>
+              <span data-i18n="map:guillaumeResume">Guillaume's Resume</span>
+            </button>
+            <a href="https://app.guillaumelassiat.com/design-system.html" target="_blank" rel="noopener" class="neumorphic-menu-resume">
+              <span class="material-symbols-outlined">palette</span>
+              <span data-i18n="map:designSystem">Design System</span>
+            </a>
+            <a id="admin-city-processor-link" href="/city-image-processor.html" class="neumorphic-menu-resume admin-only hidden" style="display:none">
+              <span class="material-symbols-outlined">image</span>
+              <span data-i18n="map:cityImageProcessor">City Image Processor</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <button id="gps-status-btn" class="pointer-events-auto flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 shadow-lg">
+        <span class="material-symbols-outlined text-green-500 dark:text-green-400 text-[18px]">my_location</span>
+        <span class="text-xs font-semibold tracking-wide text-slate-700 dark:text-white" data-i18n="map:locationActive">Location Active</span>
+      </button>
+    </div>
+    <!-- Right Side Controls (z-index lowered on mobile so bottom sheets overlay) -->
+    <div id="map-controls-right" class="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-20">
+        <button id="map-zoom-in" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+        <button id="map-zoom-out" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined">remove</span>
+        </button>
+        <button id="map-rotate" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 mt-2 active:scale-95 transition-transform" aria-pressed="false" title="Rotate globe">
+          <span class="material-symbols-outlined">autorenew</span>
+        </button>
+        <button id="map-gps" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-primary shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform disabled:opacity-60 disabled:cursor-wait" title="Center on my accurate location (GPS)">
+          <span class="material-symbols-outlined transform rotate-45">navigation</span>
+        </button>
+        <button id="map-center-europe" type="button" class="w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg flex items-center justify-center text-slate-700 dark:text-white shadow-lg border border-white/30 dark:border-white/10 active:scale-95 transition-transform" title="Center on Europe" aria-label="Center on Europe">
+          <span class="material-symbols-outlined">center_focus_strong</span>
+        </button>
+      </div>
+    <!-- Bottom Panel (Discover my world) - trigger: mobile=top-left under menu, desktop=centered bottom -->
+    <div id="bottom-panel-wrapper" class="absolute bottom-6 left-0 right-0 z-30 pointer-events-none overflow-visible h-12 md:bottom-6 md:left-0 md:right-0">
+      <div class="pointer-events-auto relative w-full h-full">
+        <button id="bottom-panel-toggle" type="button" class="absolute bottom-0 left-0 flex items-center justify-center w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer md:left-1/2 md:-translate-x-1/2 md:bottom-0" aria-expanded="false" aria-label="Open Discover my world">
+          <span class="material-symbols-outlined transition-transform duration-200">keyboard_arrow_up</span>
+        </button>
+        <div id="bottom-panel" class="bottom-panel absolute bottom-full left-6 mb-2 w-[calc(100vw-48px)] max-w-[calc(100vw-48px)] max-h-[70vh] overflow-hidden flex flex-col rounded-lg border border-white/30 dark:border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:left-6 md:mb-2 md:w-[calc(100vw-48px)] md:max-h-[70vh]" aria-hidden="true">
+          <!-- Mobile drag handle (visible only on mobile) -->
+          <div id="bottom-panel-drag-handle" class="bottom-panel-drag-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0" aria-hidden="true"></div>
+          <div id="bottom-panel-content" class="overflow-y-auto overflow-x-hidden flex flex-col bg-background-light/15 dark:bg-background-dark/15 backdrop-blur-xl rounded-lg flex-1 min-h-0">
+      <div class="px-6 pt-6 pb-4 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-white" data-i18n="map:discoverMyWorld">Discover my world</h2>
+          <p id="nearby-friends-count" class="text-sm text-text-secondary" data-i18n="map:techEnthusiasts">Tech enthusiasts</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-resume" type="button" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg shadow-[0_4px_20px_rgba(19,164,236,0.3)] flex items-center gap-2 active:scale-95 transition-transform cursor-pointer">
+            <span class="material-symbols-outlined fill-current">description</span>
+            <span data-i18n="map:guillaumeResume">Guillaume's Resume</span>
+          </button>
+          <button id="bottom-panel-close" type="button" class="flex items-center justify-center w-10 h-10 rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Close panel">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+      <div id="bottom-panel-tabs" class="flex gap-2 px-6 pb-2 flex-shrink-0">
+        <button id="tab-poi" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-primary border border-primary/30" data-tab="poi" data-i18n="map:featuredProjects">Featured Projects</button>
+        <button id="tab-map-data" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="map-data" data-i18n="map:mapData">Map Data</button>
+        <button id="tab-widgets" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="widgets" data-i18n="map:widgets">Widgets</button>
+        <button id="tab-nearby" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="nearby" data-i18n="map:techEnthusiasts">Tech enthusiast</button>
+        <button id="tab-recommendations" type="button" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-background-light/70 dark:bg-background-dark/70 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20" data-tab="recommendations" data-i18n="map:linkedInRecommendations">LinkedIn Recommendations</button>
+      </div>
+      <div class="relative w-full flex-1 min-h-0 overflow-hidden">
+        <div id="bottom-panel-tiles-scroll" class="flex flex-nowrap w-full h-full overflow-x-auto no-scrollbar pb-6 pl-6 scroll-smooth cursor-grab active:cursor-grabbing" tabindex="0">
+        <div id="poi-tiles" class="flex flex-shrink-0 items-stretch gap-4 pr-16 w-max">
+          <!-- POI tiles rendered by map-app.js -->
+        </div>
+        <div id="nearby-friends-tiles" class="hidden flex flex-shrink-0 items-stretch gap-4 pr-16 w-max">
+          <!-- Tiles rendered by map-app.js -->
+        </div>
+        <div id="map-data-tiles" class="hidden flex flex-shrink-0 items-stretch gap-4 pr-16 w-max">
+          <!-- Map Data toggle tiles rendered by map-app.js -->
+        </div>
+        <div id="recommendations-tiles" class="hidden flex flex-shrink-0 items-stretch gap-4 pr-16 w-max">
+          <!-- Recommendation tiles rendered by map-app.js -->
+        </div>
+        <div id="widget-tiles" class="hidden flex flex-shrink-0 items-stretch gap-4 pr-16 w-max">
+          <button id="add-weather-widget" type="button" class="bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-2 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-1 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-xl text-primary">cloud</span>
+            <span class="text-primary text-xs font-medium" data-i18n="map:addWeatherWidget">Add weather Widget</span>
+          </button>
+          <button id="add-stock-widget" type="button" class="bottom-section-tile w-[12.5rem] min-w-[12.5rem] aspect-square flex-shrink-0 bg-card-light/70 dark:bg-card-dark/50 hover:bg-card-light dark:hover:bg-card-dark/80 p-2 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-1 items-center justify-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-xl text-amber-600 dark:text-amber-500">candlestick_chart</span>
+            <span class="text-amber-600 dark:text-amber-500 text-xs font-medium" data-i18n="map:addStockWidget">Add Stock Widget</span>
+          </button>
+        </div>
+        </div>
+        <div class="absolute right-0 top-0 bottom-0 w-28 pointer-events-none z-10 bg-gradient-to-r from-transparent via-background-light/20 to-background-light/15 dark:via-background-dark/20 dark:to-background-dark/15"></div>
+        <button id="bottom-panel-scroll-right" type="button" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-lg bg-card-light/60 dark:bg-card-dark/60 hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors cursor-pointer" aria-label="Scroll right">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip above bottom arrow - desktop only, shows on load -->
+    <div id="tooltip-bottom" class="tooltip-bottom" role="tooltip" aria-label="Scroll hint" aria-hidden="true">
+      <div class="tooltip-bottom-header">
+        <h3 class="tooltip-bottom-title" data-i18n="map:discoverMoreTooltip">Discover more</h3>
+        <button type="button" class="tooltip-bottom-close" id="tooltip-bottom-close" aria-label="Close tooltip"><span class="material-symbols-outlined text-[20px]">close</span></button>
+      </div>
+      <p class="tooltip-bottom-text" data-i18n="map:tooltipDesc">Discover 17 years of design logic and key facts behind global digital products. Click the arrow below to open your toolkit. This section holds all your essential features, including different map tiles, interactive widgets, and user management tools.</p>
+      <div class="tooltip-bottom-video-wrap" id="tooltip-video-wrap">
+        <div class="tooltip-video-skeleton" id="tooltip-video-skeleton" aria-hidden="false"></div>
+        <video id="tooltip-bottom-video" class="tooltip-video-el hidden" loop muted playsinline autoplay preload="auto" data-src="/assets/Tooltip_content/Tooltip_content_bottom.mp4"></video>
+        <p class="tooltip-video-fallback hidden text-white/80 text-sm p-4 text-center">Video not found. Add <code>Tooltip_content_bottom.mp4</code> to <code>assets/Tooltip_content/</code></p>
+      </div>
+      <div class="tooltip-bottom-arrow" aria-hidden="true"></div>
+    </div>
+
+    <!-- Floating User Profile Panels Container (multiple panels can be open) -->
+    <div id="user-profile-panels-container" class="fixed inset-0 pointer-events-none z-40">
+      <!-- Panels are appended here dynamically; each panel has pointer-events-auto -->
+    </div>
+
+    <!-- Add Stock Widget Config Panel -->
+    <div id="stock-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+      <div id="stock-widget-config-inner" class="config-overlay-inner relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-lg shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col">
+        <div class="config-overlay-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4" data-i18n="map:addStockWidgetTitle">Add Stock Widget</h3>
+          <div class="space-y-3">
+            <input id="stock-config-search" type="text" data-i18n="map:searchSymbolPlaceholder" data-i18n-attr="placeholder" placeholder="Search symbol (e.g. AAPL, MSFT)..." class="w-full px-4 py-2.5 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <div id="stock-config-results" class="max-h-40 overflow-y-auto space-y-1"></div>
+            <button id="stock-config-add" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg hidden" data-i18n="map:add">Add</button>
+          </div>
+          <div id="stock-widget-loading" class="hidden mt-3 p-3 rounded-lg bg-primary/10 text-primary text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            <span data-i18n="map:addingWidget">Adding widget...</span>
+          </div>
+        </div>
+        <button id="stock-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add Weather Widget Config Panel -->
+    <div id="weather-widget-config-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+      <div id="weather-widget-config-inner" class="config-overlay-inner relative w-full max-w-md bg-background-light dark:bg-background-dark rounded-lg shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col">
+        <div class="config-overlay-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>
+        <div class="p-5">
+          <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4" data-i18n="map:addWeatherWidgetTitle">Add Weather Widget</h3>
+          <div class="flex gap-2 mb-4">
+            <button id="weather-config-by-location" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-primary/20 text-primary border border-primary/30" data-i18n="map:byLocation">By location</button>
+            <button id="weather-config-by-city" type="button" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-transparent text-text-secondary border border-slate-200 dark:border-white/10" data-i18n="map:byCity">By city</button>
+          </div>
+          <div id="weather-config-location" class="space-y-3">
+            <p class="text-sm text-text-secondary" data-i18n="map:useCurrentLocation">Use your current GPS or IP location</p>
+            <button id="weather-config-validate-location" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg" data-i18n="map:validate">Validate</button>
+          </div>
+          <div id="weather-config-city" class="hidden space-y-3">
+            <input id="weather-config-city-input" type="text" data-i18n="map:searchCityPlaceholder" data-i18n-attr="placeholder" placeholder="Search city..." class="w-full px-4 py-2.5 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400">
+            <div id="weather-config-city-results" class="max-h-32 overflow-y-auto space-y-1"></div>
+            <button id="weather-config-validate-city" type="button" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-lg hidden" data-i18n="map:validate">Validate</button>
+          </div>
+          <div id="weather-widget-loading" class="hidden mt-3 p-3 rounded-lg bg-primary/10 text-primary text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            <span data-i18n="map:addingWidget">Adding widget...</span>
+          </div>
+        </div>
+        <button id="weather-widget-config-close" type="button" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Resume Embedded View (overlay on map) -->
+    <div id="resume-embed-overlay" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+      <div id="resume-embed-inner" class="config-overlay-inner relative w-full max-w-[720px] bg-background-light/20 dark:bg-background-dark/20 backdrop-blur-xl rounded-lg shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden flex flex-col" style="max-height: 90vh;">
+        <div class="config-overlay-handle mobile-bottom-sheet-handle flex md:hidden flex-shrink-0"></div>
+        <button id="resume-embed-close" type="button" class="absolute top-3 right-3 z-50 w-10 h-10 flex items-center justify-center rounded-lg bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl hover:bg-card-light/80 dark:hover:bg-card-dark/80 border border-white/30 dark:border-white/10 text-slate-700 dark:text-white transition-colors" aria-label="Close resume">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <iframe id="resume-embed-iframe" src="about:blank" class="w-full flex-1 min-h-[70vh] rounded-b-lg border-0" title="Resume"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container (toasts added dynamically) -->
+  <div id="toast-container" aria-live="polite" aria-label="Notifications"></div>
+
+  <!-- Name Gate Overlay (centered on globe when no osiris_user_name) -->
+  <div id="name-gate-overlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center p-6">
+    <div class="relative flex flex-col items-center w-full">
+      <input type="text" id="gate-name-input" class="gate-input-map w-full md:w-[33vw] px-4 py-4 rounded-[8px] bg-white/90 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-white/30" data-i18n="map:gatePlaceholder" data-i18n-attr="placeholder" placeholder="create your profile name here" autocomplete="name" maxlength="64">
+      <input type="text" id="gate-honeypot" name="website" tabindex="-1" autocomplete="off" class="absolute opacity-0 h-0 w-0 overflow-hidden" aria-hidden="true">
+      <p id="gate-error-map" class="mt-2 text-sm text-red-500 dark:text-red-400 min-h-[1.25em]" aria-live="polite"></p>
+      <button type="button" id="gate-validate-map" class="mt-3 py-2 px-4 rounded-[8px] bg-primary hover:bg-primary/90 text-white font-semibold transition-colors" style="border-radius: 8px;" data-i18n="map:continue">Continue</button>
+    </div>
+  </div>
+
+  <!-- Token Prompt Overlay (shown when no Mapbox token) -->
+  <div id="map-token-overlay" class="hidden fixed inset-0 z-50 bg-background-light/25 dark:bg-background-dark/25 flex items-center justify-center p-6">
+    <div class="bg-card-light dark:bg-card-dark rounded-lg p-8 max-w-md w-full border border-slate-200 dark:border-white/5">
+      <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2" data-i18n="map:mapboxTokenRequired">Mapbox Token Required</h3>
+      <p class="text-text-secondary text-sm mb-6" data-i18n="map:mapboxTokenDesc">Enter your Mapbox Access Token to view the map.</p>
+      <input type="text" id="mapbox-token-app" class="w-full px-4 py-3 rounded-lg bg-white/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/40 mb-4" data-i18n="map:mapboxTokenPlaceholder" data-i18n-attr="placeholder" placeholder="Paste your Mapbox Access Token (pk....)">
+      <button id="load-map-app" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-5 rounded-lg" data-i18n="map:loadMap">Load Map</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
+  <script src="/js/mapbox-config.js"></script>
+  <script src="/js/api-config.js"></script>
+  <script src="/js/location-service.js"></script>
+  <script src="/js/map-app.js"></script>
+  <script src="/js/platform-shell-topbar.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        if (window.OSirisPlatformReady) {
+          await window.OSirisPlatformReady;
+        }
+      } catch (e) {
+        if (e && e.message === 'unauthorized') return;
+      }
+      renderNearbyTiles([]);
+      initNotImplementedToast();
+      initGeneralMenu();
+      initCorintisEntryIfFlagged();
+      initMapApp({ showNameGate: false });
+      initBottomPanel();
+      initPOIContentPanel();
+      wireRecommendationsOverlay();
+      initUserProfilePanel();
+      initResumeEmbed();
+      initWeatherWidgetConfig();
+      initStockWidgetConfig();
+      initTooltipBottom();
+    });
+  </script>
+</body>
+</html>

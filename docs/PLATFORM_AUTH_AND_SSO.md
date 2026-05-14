@@ -1,5 +1,7 @@
 # Platform authentication and Google SSO
 
+<!-- Agent note: client-side shell is documented in §8; roadmap items in §9. -->
+
 This document describes the PHP-based login and SSO stack used on the OSiris **app** host (for example `app.guillaumelassiat.com`): `/login/`, `/dashboard/`, `auth_request` helpers for other apps, and Google OAuth.
 
 For nginx snippets and WebSocket rules for the iris stack, see the Cursor rule **OSiris platform** and `scripts/app-guillaumelassiat-nginx.conf`.
@@ -92,6 +94,23 @@ After deploying PHP changes on production, **`systemctl reload php-fpm`** (exact
 1. After SSO, the **`auth-sso-callback.php`** response should include **`Set-Cookie`** for the session and, when secrets are configured, for **`OSIRIS_PLATFORM_AUTH`**.
 2. The next **`GET /api/get_user_dashboard.php`** (or **`auth-verify.php`**) should send **`Cookie`** including at least one of those cookies; the API should return **200** with user payload, not **401**.
 3. **Logout** removes both cookies and subsequent API calls return **401**.
+
+---
+
+## 8. Shared app top bar (`platform-shell-topbar.js`)
+
+Sub-apps load `public_html/js/platform-shell-topbar.js`, which calls `GET /api/get_user_dashboard.php` and either hydrates `#platform-topbar-mount` (dashboard) or injects a fixed bar. The fixed wrapper is appended to **`document.documentElement`** (not `body`) so client-heavy pages (for example Modly) cannot accidentally remove it if they rewrite body content. The bar uses a high **z-index** so it stays above legacy in-page overlays (for example iris modal CSS).
+
+---
+
+## 9. Future improvements (UI and auth)
+
+Planned follow-ups (not implemented yet):
+
+- **Shell / header:** Rework the layout of the shared header across **multi-app** pages and the **dashboard** for clearer hierarchy (navigation vs. identity vs. actions), consistent spacing, and mobile behaviour.
+- **Login page:** Refresh the **sign-in** UI for consistency with the glass dashboard shell and clearer SSO vs. email paths.
+- **Registration:** Add a **self-service sign-up** flow (or invite-only registration) wired to the platform user store, with appropriate validation and admin controls.
+- **Forgotten password:** Add **password reset** (email token or magic link) for users who sign in with email and password (not required for SSO-only accounts).
 
 ---
 

@@ -49,27 +49,7 @@
     </nav>
 
     <main class="dash-main">
-      <header class="dash-topbar">
-        <div>
-          <h2 class="dash-welcome-title" id="welcome-title">Loading…</h2>
-          <p class="dash-welcome-email" id="user-email"></p>
-        </div>
-        <div class="dash-topbar-actions">
-          <div class="glass-panel rounded-full flex items-center px-3 py-2 shadow-sm max-w-xs hidden sm:flex">
-            <span class="material-symbols-outlined text-slate-500 mr-2 shrink-0" aria-hidden="true">search</span>
-            <input type="search" class="bg-transparent border-0 focus:ring-0 text-sm text-slate-800 w-40 lg:w-48 placeholder-slate-400" placeholder="Search…" disabled aria-disabled="true"/>
-          </div>
-          <button type="button" class="dash-icon-btn glass-panel hidden sm:flex" aria-label="Notifications" disabled>
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <button type="button" class="dash-icon-btn glass-panel hidden sm:flex" aria-label="Help" disabled>
-            <span class="material-symbols-outlined">help_outline</span>
-          </button>
-          <div class="dash-avatar" id="user-avatar" aria-hidden="true">
-            <span class="material-symbols-outlined text-slate-600" id="user-avatar-placeholder">person</span>
-          </div>
-        </div>
-      </header>
+      <div id="platform-topbar-mount" data-mode="hydrate"></div>
 
       <div class="dash-content" id="services">
         <div class="dash-section-head">
@@ -84,14 +64,11 @@
     </main>
   </div>
 
+  <script src="/js/platform-shell-topbar.js"></script>
   <script>
 (function () {
   const grid = document.getElementById('services-grid');
   const empty = document.getElementById('services-empty');
-  const welcomeTitle = document.getElementById('welcome-title');
-  const userEmail = document.getElementById('user-email');
-  const userAvatar = document.getElementById('user-avatar');
-  const avatarPlaceholder = document.getElementById('user-avatar-placeholder');
 
   const iconVariants = ['dash-service-icon--a', 'dash-service-icon--b', 'dash-service-icon--c'];
 
@@ -99,49 +76,6 @@
     const d = document.createElement('div');
     d.textContent = t;
     return d.innerHTML;
-  }
-
-  function firstName(u) {
-    var n = (u && u.name) ? String(u.name).trim() : '';
-    if (n) return n.split(/\s+/)[0];
-    var em = (u && u.email) ? String(u.email) : '';
-    var at = em.indexOf('@');
-    if (at > 0) return em.slice(0, at);
-    return 'there';
-  }
-
-  function initials(u) {
-    var a = (u && u.name) ? String(u.name).trim().charAt(0) : '';
-    var b = (u && u.surname) ? String(u.surname).trim().charAt(0) : '';
-    var s = (a + b).toUpperCase();
-    if (s) return s;
-    var em = (u && u.email) ? String(u.email) : '';
-    return em ? em.charAt(0).toUpperCase() : '?';
-  }
-
-  function setAvatar(u) {
-    userAvatar.innerHTML = '';
-    var url = u && u.avatar_url ? String(u.avatar_url).trim() : '';
-    if (url) {
-      var img = document.createElement('img');
-      img.src = url;
-      img.alt = '';
-      img.width = 40;
-      img.height = 40;
-      img.addEventListener('error', function () {
-        userAvatar.innerHTML = '';
-        var span = document.createElement('span');
-        span.className = 'dash-avatar-initials';
-        span.textContent = initials(u);
-        userAvatar.appendChild(span);
-      });
-      userAvatar.appendChild(img);
-      return;
-    }
-    var span = document.createElement('span');
-    span.className = 'dash-avatar-initials';
-    span.textContent = initials(u);
-    userAvatar.appendChild(span);
   }
 
   function card(s, idx) {
@@ -167,27 +101,15 @@
   }
 
   async function load() {
-    const res = await fetch('/api/get_user_dashboard.php', { credentials: 'same-origin', cache: 'no-store' });
-    if (res.status === 401) {
-      var returnPath = window.location.pathname + (window.location.search || '');
-      if (returnPath === '' || returnPath[0] !== '/') {
-        returnPath = '/dashboard/';
-      }
-      window.location.href = '/login/?next=' + encodeURIComponent(returnPath);
+    var data = null;
+    try {
+      data = await window.OSirisPlatformReady;
+    } catch (e) {
       return;
     }
-    const data = await res.json().catch(function () { return null; });
-    if (!data || !data.ok) {
-      welcomeTitle.textContent = 'Could not load dashboard';
-      userEmail.textContent = 'Try refreshing the page.';
-      if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
+    if (!data || !data.user || data.error) {
       return;
     }
-    const u = data.user;
-    welcomeTitle.textContent = 'Welcome back, ' + firstName(u);
-    userEmail.textContent = (u.email || '').trim();
-    setAvatar(u);
-
     const list = data.services || [];
     grid.innerHTML = '';
     if (!list.length) {

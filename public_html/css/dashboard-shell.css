@@ -483,3 +483,74 @@ html.light.dash-page body {
 .hidden {
   display: none !important;
 }
+
+/* --- Fixed platform top bar (injected on sub-apps by platform-shell-topbar.js) --- */
+:root {
+  --platform-topbar-height: 5rem;
+}
+
+.platform-app-topbar-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+  pointer-events: none;
+}
+
+.platform-app-topbar-wrap .platform-app-topbar-glass {
+  pointer-events: auto;
+  border-bottom: 1px solid var(--dash-white-50);
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.platform-app-topbar-inner {
+  margin: 0;
+  min-height: var(--platform-topbar-height);
+  background: rgba(248, 249, 251, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html.dark body.platform-shell--with-topbar .platform-app-topbar-inner {
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+}
+
+html.dark body.platform-shell--with-topbar .platform-app-topbar-inner .dash-welcome-title {
+  color: #f8fafc;
+}
+
+html.dark body.platform-shell--with-topbar .platform-app-topbar-inner .dash-welcome-email {
+  color: #94a3b8;
+}
+
+html.dark body.platform-shell--with-topbar .platform-app-topbar-inner .dash-icon-btn {
+  color: #94a3b8;
+}
+
+html.dark body.platform-shell--with-topbar .platform-app-topbar-inner .dash-topbar-dashboard-link {
+  color: #cbd5e1;
+}
+
+body.platform-shell--with-topbar {
+  padding-top: var(--platform-topbar-height);
+  box-sizing: border-box;
+}
+
+body.platform-shell--with-topbar:has(#map-app-root) {
+  padding-top: 0;
+}
+
+body.platform-shell--with-topbar #map-container-wrap {
+  top: var(--platform-topbar-height);
+}
+
+body.platform-shell--with-topbar #globeViz {
+  top: var(--platform-topbar-height);
+  bottom: 0;
+}
+
+body.platform-shell--with-topbar:has(#globeViz) .ui-layer {
+  padding-top: var(--platform-topbar-height);
+}

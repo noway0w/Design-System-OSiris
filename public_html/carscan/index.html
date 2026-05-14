@@ -6,8 +6,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="theme-color" content="#0f172a"/>
   <title>CarScan — Camera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link href="../css/tailwind.css" rel="stylesheet"/>
   <link href="../css/variables.css" rel="stylesheet"/>
+  <link href="../css/dashboard-shell.css" rel="stylesheet"/>
   <style>
     html, body { height: 100%; margin: 0; background: var(--bg-app, #0f172a); color: #e2e8f0; }
     .video-wrap { position: relative; width: 100%; max-width: min(100vw, 720px); margin: 0 auto; background: #000; border-radius: 0.75rem; overflow: hidden; aspect-ratio: 4/3; }
@@ -22,6 +25,7 @@
   </style>
 </head>
 <body>
+  <script src="/js/platform-shell-topbar.js"></script>
   <div class="p-4">
     <h1 class="text-lg font-semibold text-center mb-2">CarScan</h1>
     <p class="text-sm text-slate-400 text-center mb-2">Enable analysis: boxes use <code class="text-slate-500">/api/carscan/</code> (HTTP) or WebSocket. If you see &quot;No API&quot;, add nginx per <code>scripts/carscan-nginx-snippets.conf</code>.</p>
