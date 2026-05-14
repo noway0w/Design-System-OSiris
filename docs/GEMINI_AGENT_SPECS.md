@@ -84,6 +84,7 @@ User visits /app or map-app.html
 - **Mapbox token** – `localStorage.getItem('mapbox_access_token')` or `window.MAPBOX_DEFAULT_TOKEN`
 - **Session keys** – `osiris_user_name`, `osiris_authenticated` in sessionStorage
 - **Admin** – `isAdmin` from `users-me.php`; `ADMIN_IPS` in config.php
+- **Platform auth (app host)** – `/login/`, `/dashboard/`, Google SSO, PHP session `OSIRIS_PLATFORM_SID`, and signed fallback cookie `OSIRIS_PLATFORM_AUTH`: see [PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md)
 
 ---
 

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sign in — OSiris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="/css/tailwind.css" rel="stylesheet"/>
+  <link href="/css/variables.css" rel="stylesheet"/>
+  <script src="/js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+</head>
+<body class="min-h-screen font-sans text-slate-100 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_rgba_56,189,248,0.12),_transparent_55%)]">
+  <div class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-8 space-y-6">
+      <div class="text-center space-y-1">
+        <p class="text-xs uppercase tracking-widest text-sky-400/90 font-semibold">OSiris platform</p>
+        <h1 class="text-2xl font-bold text-white">Sign in</h1>
+        <p class="text-sm text-slate-400">Use SSO when configured, or your platform email and password.</p>
+      </div>
+
+      <p id="login-error" class="hidden text-sm text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2"></p>
+
+      <div id="sso-section" class="space-y-3">
+        <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Single sign-on</p>
+        <div id="sso-buttons" class="flex flex-col gap-2"></div>
+        <p id="sso-hint" class="hidden text-xs text-slate-500 leading-relaxed rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2"></p>
+      </div>
+
+      <div class="relative flex items-center gap-3">
+        <span class="h-px flex-1 bg-white/10"></span>
+        <span class="text-xs text-slate-500">or email</span>
+        <span class="h-px flex-1 bg-white/10"></span>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1" for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" required
+            class="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/60"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1" for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required
+            class="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/60"/>
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 text-sm shadow-lg shadow-sky-900/40 transition-colors">
+          Continue
+        </button>
+      </form>
+      <p class="text-center text-xs text-slate-500">After login you will be redirected to your dashboard or the app you opened.</p>
+    </div>
+  </div>
+  <script>
+(function () {
+  const ERR = {
+    sso_not_configured: 'SSO is not configured on this server (missing OAuth client env vars).',
+    sso_denied: 'Sign-in was cancelled at the identity provider.',
+    sso_state: 'Session expired or invalid. Please try SSO again.',
+    sso_token: 'Could not complete sign-in with the identity provider.',
+    sso_userinfo: 'Could not read your profile from the identity provider.',
+    sso_email: 'Your account did not return an email address (required for OSiris).',
+    sso_server: 'Sign-in hit a server error. Please try again or use email and password.'
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next') || '/dashboard/';
+  const form = document.getElementById('login-form');
+  const err = document.getElementById('login-error');
+  const ssoButtons = document.getElementById('sso-buttons');
+  const ssoHint = document.getElementById('sso-hint');
+
+  function showErr(msg) {
+    err.textContent = msg;
+    err.classList.remove('hidden');
+  }
+
+  const qErr = params.get('error');
+  if (qErr && ERR[qErr]) {
+    showErr(ERR[qErr]);
+  }
+
+  async function loadSso() {
+    try {
+      const res = await fetch('/api/auth-sso-meta.php?next=' + encodeURIComponent(next), { credentials: 'same-origin' });
+      const data = await res.json().catch(function () { return null; });
+      if (!data || !data.sso) return;
+      ssoButtons.innerHTML = '';
+      if (data.sso.providers && data.sso.providers.length) {
+        data.sso.providers.forEach(function (p) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/15 px-4 py-2.5 text-sm font-medium text-white transition-colors';
+          if (p.id === 'google') {
+            btn.innerHTML = '<span class="material-symbols-outlined text-lg">account_circle</span> Continue with Google';
+          } else {
+            btn.textContent = 'Continue with ' + (p.label || p.id);
+          }
+          btn.addEventListener('click', function () {
+            var url = p.startUrl || '';
+            if (!url || url[0] !== '/') {
+              return;
+            }
+            window.top.location.assign(url);
+          });
+          ssoButtons.appendChild(btn);
+        });
+        ssoHint.classList.add('hidden');
+      } else {
+        ssoHint.textContent = (data.sso.hint || '') + (data.sso.redirectUriExample ? ' ' + data.sso.redirectUriExample : '');
+        ssoHint.classList.remove('hidden');
+      }
+    } catch (e) {
+      ssoHint.textContent = 'Could not load SSO options. You can still sign in with email and password.';
+      ssoHint.classList.remove('hidden');
+    }
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    err.classList.add('hidden');
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch('/api/auth-login.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) {
+        showErr(data.error || 'Login failed');
+        return;
+      }
+      window.location.href = next.startsWith('/') ? next : '/dashboard/';
+    } catch (x) {
+      showErr(x && x.message ? x.message : 'Network error');
+    }
+  });
+
+  loadSso();
+})();
+  </script>
+</body>
+</html>

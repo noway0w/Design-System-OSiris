@@ -31,11 +31,15 @@ public_html/js/mapbox-config.js
 # API database
 api/users.db
 public_html/api/users.db
+public_html/api/platform.db
 public_html/api/cad-storage/
 public_html/api/points-of-interest.db
 
 # Gemini API key
 public_html/config.php
+
+# Google SSO (local file for php-fpm; prefer chmod 640 root:nginx)
+public_html/api/.platform-sso.env
 
 # User uploads
 public_html/uploads/

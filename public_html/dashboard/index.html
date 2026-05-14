@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="light dash-page" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard — OSiris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="/css/tailwind.css" rel="stylesheet"/>
+  <link href="/css/variables.css" rel="stylesheet"/>
+  <link href="/css/dashboard-shell.css" rel="stylesheet"/>
+</head>
+<body class="font-sans antialiased">
+  <div class="dash-root">
+    <div class="dash-blob-tl" aria-hidden="true"></div>
+    <div class="dash-blob-br" aria-hidden="true"></div>
+
+    <p class="dash-mobile-brand">OSiris</p>
+
+    <nav class="dash-nav glass-panel" aria-label="Main">
+      <div>
+        <h1 class="dash-brand-title">OSiris</h1>
+        <p class="dash-brand-sub">Platform</p>
+      </div>
+      <div class="dash-nav-links">
+        <a class="dash-nav-link" href="/dashboard/">
+          <span class="material-symbols-outlined" aria-hidden="true">home</span>
+          <span>Home</span>
+        </a>
+        <span class="dash-nav-link dash-nav-link--disabled" title="Coming soon">
+          <span class="material-symbols-outlined" aria-hidden="true">folder_shared</span>
+          <span>Projects</span>
+        </span>
+        <a class="dash-nav-link dash-nav-link--active" href="#services">
+          <span class="material-symbols-outlined filled" aria-hidden="true">design_services</span>
+          <span>Services</span>
+        </a>
+        <span class="dash-nav-link dash-nav-link--disabled" title="Coming soon">
+          <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+          <span>Finance</span>
+        </span>
+      </div>
+      <div class="dash-nav-footer">
+        <button type="button" class="dash-nav-btn" id="btn-logout" title="Sign out">
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </nav>
+
+    <main class="dash-main">
+      <header class="dash-topbar">
+        <div>
+          <h2 class="dash-welcome-title" id="welcome-title">Loading…</h2>
+          <p class="dash-welcome-email" id="user-email"></p>
+        </div>
+        <div class="dash-topbar-actions">
+          <div class="glass-panel rounded-full flex items-center px-3 py-2 shadow-sm max-w-xs hidden sm:flex">
+            <span class="material-symbols-outlined text-slate-500 mr-2 shrink-0" aria-hidden="true">search</span>
+            <input type="search" class="bg-transparent border-0 focus:ring-0 text-sm text-slate-800 w-40 lg:w-48 placeholder-slate-400" placeholder="Search…" disabled aria-disabled="true"/>
+          </div>
+          <button type="button" class="dash-icon-btn glass-panel hidden sm:flex" aria-label="Notifications" disabled>
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+          <button type="button" class="dash-icon-btn glass-panel hidden sm:flex" aria-label="Help" disabled>
+            <span class="material-symbols-outlined">help_outline</span>
+          </button>
+          <div class="dash-avatar" id="user-avatar" aria-hidden="true">
+            <span class="material-symbols-outlined text-slate-600" id="user-avatar-placeholder">person</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="dash-content" id="services">
+        <div class="dash-section-head">
+          <div>
+            <h3 class="dash-section-title">Active services</h3>
+            <p class="dash-section-desc">Open the applications assigned to your account.</p>
+          </div>
+        </div>
+        <p id="services-empty" class="dash-empty hidden mt-6">No applications are assigned to your account yet.</p>
+        <div id="services-grid" class="dash-services-grid mt-6"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+(function () {
+  const grid = document.getElementById('services-grid');
+  const empty = document.getElementById('services-empty');
+  const welcomeTitle = document.getElementById('welcome-title');
+  const userEmail = document.getElementById('user-email');
+  const userAvatar = document.getElementById('user-avatar');
+  const avatarPlaceholder = document.getElementById('user-avatar-placeholder');
+
+  const iconVariants = ['dash-service-icon--a', 'dash-service-icon--b', 'dash-service-icon--c'];
+
+  function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  function firstName(u) {
+    var n = (u && u.name) ? String(u.name).trim() : '';
+    if (n) return n.split(/\s+/)[0];
+    var em = (u && u.email) ? String(u.email) : '';
+    var at = em.indexOf('@');
+    if (at > 0) return em.slice(0, at);
+    return 'there';
+  }
+
+  function initials(u) {
+    var a = (u && u.name) ? String(u.name).trim().charAt(0) : '';
+    var b = (u && u.surname) ? String(u.surname).trim().charAt(0) : '';
+    var s = (a + b).toUpperCase();
+    if (s) return s;
+    var em = (u && u.email) ? String(u.email) : '';
+    return em ? em.charAt(0).toUpperCase() : '?';
+  }
+
+  function setAvatar(u) {
+    userAvatar.innerHTML = '';
+    var url = u && u.avatar_url ? String(u.avatar_url).trim() : '';
+    if (url) {
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      img.width = 40;
+      img.height = 40;
+      img.addEventListener('error', function () {
+        userAvatar.innerHTML = '';
+        var span = document.createElement('span');
+        span.className = 'dash-avatar-initials';
+        span.textContent = initials(u);
+        userAvatar.appendChild(span);
+      });
+      userAvatar.appendChild(img);
+      return;
+    }
+    var span = document.createElement('span');
+    span.className = 'dash-avatar-initials';
+    span.textContent = initials(u);
+    userAvatar.appendChild(span);
+  }
+
+  function card(s, idx) {
+    var wrap = document.createElement('a');
+    wrap.href = s.url;
+    wrap.className = 'dash-service-card glass-panel';
+    var iv = iconVariants[idx % iconVariants.length];
+    wrap.innerHTML =
+      '<div class="dash-service-card-top">' +
+        '<div class="dash-service-icon ' + iv + '">' +
+          '<span class="material-symbols-outlined text-2xl">' + escapeHtml(s.icon || 'apps') + '</span>' +
+        '</div>' +
+        '<span class="material-symbols-outlined text-slate-500" aria-hidden="true">arrow_outward</span>' +
+      '</div>' +
+      '<div>' +
+        '<h3>' + escapeHtml(s.title) + '</h3>' +
+        '<p>' + escapeHtml(s.subtitle || '') + '</p>' +
+      '</div>' +
+      '<div class="dash-service-card-footer">' +
+        '<span class="dash-service-badge">Open app</span>' +
+      '</div>';
+    return wrap;
+  }
+
+  async function load() {
+    const res = await fetch('/api/get_user_dashboard.php', { credentials: 'same-origin', cache: 'no-store' });
+    if (res.status === 401) {
+      var returnPath = window.location.pathname + (window.location.search || '');
+      if (returnPath === '' || returnPath[0] !== '/') {
+        returnPath = '/dashboard/';
+      }
+      window.location.href = '/login/?next=' + encodeURIComponent(returnPath);
+      return;
+    }
+    const data = await res.json().catch(function () { return null; });
+    if (!data || !data.ok) {
+      welcomeTitle.textContent = 'Could not load dashboard';
+      userEmail.textContent = 'Try refreshing the page.';
+      if (avatarPlaceholder) avatarPlaceholder.classList.remove('hidden');
+      return;
+    }
+    const u = data.user;
+    welcomeTitle.textContent = 'Welcome back, ' + firstName(u);
+    userEmail.textContent = (u.email || '').trim();
+    setAvatar(u);
+
+    const list = data.services || [];
+    grid.innerHTML = '';
+    if (!list.length) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    list.forEach(function (s, i) { grid.appendChild(card(s, i)); });
+  }
+
+  document.getElementById('btn-logout').addEventListener('click', async function () {
+    await fetch('/api/auth-logout.php', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    window.location.href = '/login/';
+  });
+
+  load();
+})();
+  </script>
+</body>
+</html>

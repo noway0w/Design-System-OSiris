@@ -101,6 +101,10 @@ flowchart TB
 | `/disable/index.html` | 3D CAD Explorer (standalone) |
 | `/design-system.html` | Design system documentation |
 | `/city-image-processor.html` | City image processor (Gemini API) |
+| `/login/` | Platform sign-in (email/password and Google SSO when configured) |
+| `/dashboard/` | Authenticated shell; loads user via `/api/get_user_dashboard.php` |
+
+Platform auth, cookies, `.platform-sso.env`, and SSO flow are documented in [PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md).
 
 ---
 
@@ -133,6 +137,7 @@ OSiris/
 ├── docs/
 │   ├── AGENT_RULES.md            # Agent rules (plan mode, tasks, lessons)
 │   ├── GEMINI_AGENT_SPECS.md     # Technical specs (map app, API, integration)
+│   ├── PLATFORM_AUTH_AND_SSO.md  # App login, SSO, session + auth cookie
 │   ├── PROJECT_OVERVIEW.md       # This file
 │   ├── README.md                 # Docs index and structure
 │   └── tasks/
@@ -231,6 +236,7 @@ npm run build       # Both
 | **docs/tasks/todo.md** | Plans with checkable items (per AGENT_RULES). |
 | **docs/tasks/lessons.md** | Lessons learned after corrections. |
 | **GEMINI_AGENT_SPECS.md** | API endpoints, database schema, integration patterns, code review guidelines. |
+| **PLATFORM_AUTH_AND_SSO.md** | App login, dashboard, PHP session, SSO, signed auth cookie, nginx and ops notes. |
 | **.cursor/plans/** | Implementation plans (e.g. Corintis 3D CAD Integration). |
 
 ---
