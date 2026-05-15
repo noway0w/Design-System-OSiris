@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="../../css/dashboard-shell.css" rel="stylesheet"/>
+    <script src="/js/theme-service.js"></script>
+    <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+    <script src="/js/platform-shell-topbar.js"></script>
 
     <!-- Three.js & Globe.gl -->
     <script src="//unpkg.com/three"></script>
@@ -153,7 +156,7 @@
         
     </style>
 </head>
-<body>
+<body class="platform-shell--with-topbar platform-shell--iris">
 
     <div id="authOverlay">
         <div class="panel" style="text-align: center;">
@@ -412,6 +415,5 @@
         }
 
     </script>
-    <script src="/js/platform-shell-topbar.js"></script>
 </body>
 </html>

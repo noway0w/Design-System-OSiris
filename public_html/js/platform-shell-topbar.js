@@ -1,10 +1,11 @@
 /**
  * Shared dashboard top bar for platform apps: loads session via get_user_dashboard.php,
  * redirects on 401, injects fixed bar or hydrates #platform-topbar-mount (dashboard).
- * Exposes window.OSirisPlatformReady (Promise) and window.__OSirisPlatformUser.
+ * Exposes window.OSirisPlatformReady (Promise), window.__OSirisPlatformUser,
+ * and window.OSirisPlatformTopbar (mountLeading, appendLeading, clearLeading).
  */
 (function () {
-  var TOPBAR_HEIGHT = '5rem';
+  var TOPBAR_HEIGHT = '3rem';
 
   function loginRedirect() {
     var p = window.location.pathname + (window.location.search || '');
@@ -57,22 +58,37 @@
     container.appendChild(span);
   }
 
-  function fillTopbar(root, u, opts) {
+  function syncLeadingSlotState() {
+    var leading = document.getElementById('platform-topbar-leading');
+    if (!leading) return;
+    var hasChildren = leading.childElementCount > 0;
+    leading.classList.toggle('dash-topbar-leading--empty', !hasChildren);
+    if (hasChildren) {
+      leading.removeAttribute('aria-hidden');
+    } else {
+      leading.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function fillTopbar(u, opts) {
     opts = opts || {};
-    var welcomeTitle = root.querySelector('#welcome-title');
-    var userEmail = root.querySelector('#user-email');
-    var userAvatar = root.querySelector('#user-avatar');
+    var welcomeTitle = document.getElementById('welcome-title');
+    var userEmail = document.getElementById('user-email');
+    var userAvatar = document.getElementById('user-avatar');
     if (welcomeTitle) {
-      welcomeTitle.textContent = 'Welcome back, ' + firstName(u);
+      welcomeTitle.textContent = u
+        ? 'Welcome back, ' + firstName(u)
+        : opts.errorTitle || 'Welcome back, there';
     }
     if (userEmail) {
-      userEmail.textContent = (u.email || '').trim();
+      userEmail.textContent = u ? (u.email || '').trim() : opts.errorEmail || '';
     }
-    if (userAvatar) {
+    if (userAvatar && u) {
       userAvatar.setAttribute('aria-hidden', 'true');
       setAvatar(userAvatar, u);
     }
-    var dashLink = root.querySelector('#platform-topbar-dashboard-link');
+    syncLeadingSlotState();
+    var dashLink = document.getElementById('platform-topbar-dashboard-link');
     if (dashLink) {
       dashLink.classList.toggle('hidden', !!opts.hideDashboardLink);
     }
@@ -81,14 +97,17 @@
   function topbarInnerHTML(includeDashboardLink, headerExtraClass) {
     headerExtraClass = headerExtraClass || '';
     var dashBtn =
-      '<a id="platform-topbar-dashboard-link" href="/dashboard/" class="dash-topbar-dashboard-link hidden sm:inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-colors">' +
-      '<span class="material-symbols-outlined text-lg mr-1" aria-hidden="true">dashboard</span>Dashboard</a>';
+      '<a id="platform-topbar-dashboard-link" href="/dashboard/" class="dash-topbar-dashboard-link hidden sm:inline-flex rounded-full px-3 py-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-colors">' +
+      '<span class="material-symbols-outlined" aria-hidden="true">dashboard</span>' +
+      '<span class="dash-topbar-dashboard-label">Dashboard</span></a>';
     if (!includeDashboardLink) {
       dashBtn = '<span id="platform-topbar-dashboard-link" class="hidden"></span>';
     }
     return (
       '<header class="dash-topbar ' + headerExtraClass + '">' +
-      '<div>' +
+      '<div class="dash-topbar-row">' +
+      '<div id="platform-topbar-leading" class="dash-topbar-leading dash-topbar-leading--empty" aria-hidden="true"></div>' +
+      '<div class="dash-topbar-identity">' +
       '<h2 class="dash-welcome-title" id="welcome-title">Loading…</h2>' +
       '<p class="dash-welcome-email" id="user-email"></p>' +
       '</div>' +
@@ -103,8 +122,69 @@
       '<button type="button" class="dash-icon-btn glass-panel hidden sm:flex" aria-label="Help" disabled>' +
       '<span class="material-symbols-outlined">help_outline</span></button>' +
       '<div class="dash-avatar" id="user-avatar" aria-hidden="true"></div>' +
-      '</div></header>'
+      '</div></div></header>'
     );
+  }
+
+  function getFixedWrap() {
+    return document.getElementById('platform-fixed-topbar-wrap');
+  }
+
+  function syncPlatformTheme() {
+    if (typeof ThemeService !== 'undefined') {
+      ThemeService.applyTheme(ThemeService.getTheme());
+      return;
+    }
+    try {
+      var stored = localStorage.getItem('osiris_theme');
+      var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+      var dark =
+        mode === 'dark' ||
+        (mode === 'system' &&
+          typeof window.matchMedia !== 'undefined' &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(dark ? 'dark' : 'light');
+      root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) {
+      document.documentElement.classList.add('dark');
+    }
+  }
+
+  function applyShellClass() {
+    syncPlatformTheme();
+    if (document.body) {
+      document.body.classList.add('platform-shell--with-topbar');
+      var path = window.location.pathname;
+      if (/\/iris(\/|$)/.test(path)) {
+        document.body.classList.add('platform-shell--iris');
+      }
+      if (/\/carscan(\/|$)/.test(path)) {
+        document.body.classList.add('platform-shell--carscan');
+      }
+    }
+    document.documentElement.style.setProperty('--platform-topbar-height', TOPBAR_HEIGHT);
+  }
+
+  function injectFixedSkeleton() {
+    var existing = document.getElementById('platform-fixed-topbar-wrap');
+    if (existing) {
+      applyShellClass();
+      return existing;
+    }
+    var wrap = document.createElement('div');
+    wrap.id = 'platform-fixed-topbar-wrap';
+    wrap.className = 'platform-app-topbar-wrap';
+    wrap.innerHTML =
+      '<div class="platform-app-topbar-glass">' + topbarInnerHTML(true, 'platform-app-topbar-inner') + '</div>';
+    if (document.body) {
+      document.body.insertBefore(wrap, document.body.firstChild);
+    } else {
+      document.documentElement.appendChild(wrap);
+    }
+    applyShellClass();
+    return wrap;
   }
 
   function seedMapAppSession(user) {
@@ -118,8 +198,58 @@
     window.sessionStorage.setItem('osiris_authenticated', '1');
   }
 
+  window.OSirisPlatformTopbar = {
+    clearLeading: function () {
+      var slot = document.getElementById('platform-topbar-leading');
+      if (!slot) return;
+      slot.innerHTML = '';
+      syncLeadingSlotState();
+    },
+    appendLeading: function (node) {
+      if (!node) return;
+      var slot = document.getElementById('platform-topbar-leading');
+      if (!slot) return;
+      slot.appendChild(node);
+      syncLeadingSlotState();
+    },
+    mountLeading: function (node) {
+      if (!node) return;
+      var slot = document.getElementById('platform-topbar-leading');
+      if (!slot) return;
+      slot.innerHTML = '';
+      slot.appendChild(node);
+      syncLeadingSlotState();
+    },
+    getLeadingSlot: function () {
+      return document.getElementById('platform-topbar-leading');
+    },
+  };
+
   var mount = document.getElementById('platform-topbar-mount');
   var hydrate = !!(mount && mount.getAttribute('data-mode') === 'hydrate');
+
+  function ensureSkeleton() {
+    if (hydrate && mount) {
+      mount.innerHTML = topbarInnerHTML(false, '');
+      return mount;
+    }
+    return injectFixedSkeleton();
+  }
+
+  function bootSkeleton() {
+    if (!hydrate) {
+      ensureSkeleton();
+    }
+  }
+
+  bootSkeleton();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootSkeleton);
+  }
+  window.addEventListener('load', bootSkeleton);
+  document.addEventListener('osiris-theme-change', function () {
+    syncPlatformTheme();
+  });
 
   window.OSirisPlatformReady = fetch('/api/get_user_dashboard.php', {
     credentials: 'same-origin',
@@ -135,17 +265,10 @@
     .then(function (data) {
       if (!data || !data.ok) {
         window.__OSirisPlatformUser = null;
-        if (hydrate && mount) {
-          mount.innerHTML = topbarInnerHTML(false, '');
-          var wt0 = mount.querySelector('#welcome-title');
-          var em0 = mount.querySelector('#user-email');
-          if (wt0) {
-            wt0.textContent = 'Could not load dashboard';
-          }
-          if (em0) {
-            em0.textContent = 'Try refreshing the page.';
-          }
-        }
+        ensureSkeleton();
+        fillTopbar(null, hydrate
+          ? { hideDashboardLink: true, errorTitle: 'Could not load dashboard', errorEmail: 'Try refreshing the page.' }
+          : { errorTitle: 'Could not load profile', errorEmail: 'Try refreshing the page.' });
         return { user: null, services: [], error: true };
       }
 
@@ -153,23 +276,8 @@
       window.__OSirisPlatformUser = user;
       seedMapAppSession(user);
 
-      if (hydrate && mount) {
-        mount.innerHTML = topbarInnerHTML(false, '');
-        fillTopbar(mount, user, { hideDashboardLink: true });
-      } else {
-        var wrap = document.createElement('div');
-        wrap.id = 'platform-fixed-topbar-wrap';
-        wrap.className = 'platform-app-topbar-wrap';
-        wrap.innerHTML =
-          '<div class="platform-app-topbar-glass">' + topbarInnerHTML(true, 'platform-app-topbar-inner') + '</div>';
-        // Append to <html> so SPAs that replace body contents (e.g. Modly) cannot remove the bar.
-        if (!document.getElementById('platform-fixed-topbar-wrap')) {
-          document.documentElement.appendChild(wrap);
-        }
-        fillTopbar(wrap, user, { hideDashboardLink: false });
-        document.body.classList.add('platform-shell--with-topbar');
-        document.documentElement.style.setProperty('--platform-topbar-height', TOPBAR_HEIGHT);
-      }
+      ensureSkeleton();
+      fillTopbar(user, { hideDashboardLink: !!hydrate });
 
       try {
         window.dispatchEvent(
@@ -186,6 +294,11 @@
         return Promise.reject(err);
       }
       window.__OSirisPlatformUser = null;
+      ensureSkeleton();
+      fillTopbar(null, {
+        errorTitle: 'Could not load profile',
+        errorEmail: 'Check your connection and refresh.',
+      });
       return { user: null, services: [], error: true };
     });
 })();

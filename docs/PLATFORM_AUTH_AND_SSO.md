@@ -82,6 +82,9 @@ The `state` parameter is signed (see `platform_sso_*` in `platform-db.php`) so t
 ## 6. Nginx
 
 - Reference configs: `scripts/app-guillaumelassiat-nginx.conf`, `scripts/osiris-nginx-auth-protected-apps.inc`.
+- **`index index.php index.html`** in the app vhost so `/iris/` and `/carscan/` run `index.php` (platform top bar injection) before static `index.html`.
+- Protected app paths (`/map-app/`, `/iris/`, `/carscan/`, `/disable/`, `/3Dobjscan/`, `/dashboard/`) live in **`osiris-nginx-auth-protected-apps.inc` only**. Do **not** duplicate those `location` blocks in `app-guillaumelassiat-nginx.conf` — nginx will fail with `duplicate location "/3Dobjscan"` (or similar).
+- Deploy: `sudo cp /home/OSiris/scripts/app-guillaumelassiat-nginx.conf /etc/nginx/conf.d/app-guillaumelassiat-nginx.conf` then `sudo nginx -t && sudo systemctl reload nginx`.
 - Internal auth subrequest locations should set **`HTTPS`** and **`HTTP_X_FORWARDED_PROTO`** before `fastcgi_pass`, and pass **`HTTP_COOKIE`** so PHP sees session and auth cookies.
 - **Warning:** `conflicting server name "…" on 0.0.0.0:80, ignored` means two `server` blocks share the same `server_name` on port 80; nginx uses one and ignores the other. Clean up duplicate `:80` server blocks to avoid confusion.
 
@@ -99,7 +102,23 @@ After deploying PHP changes on production, **`systemctl reload php-fpm`** (exact
 
 ## 8. Shared app top bar (`platform-shell-topbar.js`)
 
-Sub-apps load `public_html/js/platform-shell-topbar.js`, which calls `GET /api/get_user_dashboard.php` and either hydrates `#platform-topbar-mount` (dashboard) or injects a fixed bar. The fixed wrapper is appended to **`document.documentElement`** (not `body`) so client-heavy pages (for example Modly) cannot accidentally remove it if they rewrite body content. The bar uses a high **z-index** so it stays above legacy in-page overlays (for example iris modal CSS).
+Sub-apps load `public_html/css/dashboard-shell.css` and `public_html/js/platform-shell-topbar.js`, which calls `GET /api/get_user_dashboard.php` and either hydrates `#platform-topbar-mount` (dashboard) or shows a fixed bar (`#platform-fixed-topbar-wrap`).
+
+| Piece | Path | Role |
+|--------|------|------|
+| Shell script | `public_html/js/platform-shell-topbar.js` | Skeleton bar, fetch user, `OSirisPlatformTopbar.mountLeading()` for app controls (Map menu + Discover) |
+| Styles | `public_html/css/dashboard-shell.css` | 3-zone layout, `--platform-topbar-*` theme vars (`html.light` / `html.dark`), leading 48×48 slot |
+| Static HTML fragment | `public_html/includes/platform-topbar-static.html` | Markup injected by PHP entry points |
+| Iris entry | `public_html/iris/index.php` | Strips any embedded bar from `index.html`, injects fragment after `<body>` |
+| CarScan entry | `public_html/carscan/index.php` | Same as Iris |
+
+**Iris / CarScan:** `index.html` must not embed the bar (avoids duplicate ids). Nginx serves `index.php` first; scripts at end of body: `theme-service.js` → `ThemeService.init()` → `platform-shell-topbar.js`.
+
+**Other apps:** Map moves `#general-menu-wrapper` and `#bottom-panel-toggle` into `#platform-topbar-leading`. Disable and 3Dobjscan use `theme-service.js` + the shell script; the bar is injected on `body` when missing, or kept when present.
+
+**Theme:** Top bar background and text follow `html.light` / `html.dark` (same as Map via `ThemeService`). `syncPlatformTheme()` in the shell script runs on load and on `osiris-theme-change`.
+
+**Z-index:** `.platform-app-topbar-wrap` uses a high stacking value so the bar stays above legacy in-page overlays (for example Iris modals).
 
 ---
 
@@ -107,7 +126,7 @@ Sub-apps load `public_html/js/platform-shell-topbar.js`, which calls `GET /api/g
 
 Planned follow-ups (not implemented yet):
 
-- **Shell / header:** Rework the layout of the shared header across **multi-app** pages and the **dashboard** for clearer hierarchy (navigation vs. identity vs. actions), consistent spacing, and mobile behaviour.
+- **Shell / header:** Further polish (mobile actions, optional search) beyond the current 3-zone bar and Map leading controls.
 - **Login page:** Refresh the **sign-in** UI for consistency with the glass dashboard shell and clearer SSO vs. email paths.
 - **Registration:** Add a **self-service sign-up** flow (or invite-only registration) wired to the platform user store, with appropriate validation and admin controls.
 - **Forgotten password:** Add **password reset** (email token or magic link) for users who sign in with email and password (not required for SSO-only accounts).

@@ -95,20 +95,14 @@
     z-index: 35 !important;
   }
 
-  /* Bottom panel wrapper - on mobile, position at top-left under general menu (pt-6 + 40px button + 8px gap = 88px) */
+  /* Bottom panel wrapper - panel only (toggle lives in platform top bar) */
   #bottom-panel-wrapper {
-    top: 88px;
-    bottom: auto;
-    left: 24px;
-    right: auto;
-    height: 48px;
-  }
-
-  /* Toggle button - top-left under menu on mobile */
-  #bottom-panel-toggle {
-    top: 0;
-    bottom: auto;
+    top: auto;
+    bottom: 0;
     left: 0;
+    right: 0;
+    height: 0;
+    overflow: visible;
   }
 
   /* Discover panel (#bottom-panel) - mobile bottom sheet, 100% width, anchored at bottom */
@@ -143,8 +137,8 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* When Discover panel is open on mobile, hide the toggle (user closes via handle swipe or close button) */
-  #bottom-panel-wrapper:has(#bottom-panel.visible) #bottom-panel-toggle {
+  /* When Discover panel is open on mobile, hide the toggle in the top bar */
+  body:has(#bottom-panel.visible) #platform-topbar-leading #bottom-panel-toggle {
     opacity: 0;
     pointer-events: none;
   }

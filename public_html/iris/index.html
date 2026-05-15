@@ -16,7 +16,7 @@
             background: #1a1a1a;
             color: #f0f0f0;
             margin: 0;
-            padding: 20px;
+            padding: 0 20px 20px;
         }
 
         .container {
@@ -357,9 +357,7 @@
 
     </style>
 </head>
-<body>
-    <script src="/js/platform-shell-topbar.js"></script>
-
+<body class="platform-shell--with-topbar platform-shell--iris">
     <div class="container">
         <h1>OSiris Live Feed</h1>
         
@@ -947,7 +945,9 @@
         } else {
             const userCode = prompt("🔐 Entrez le code d’accès OSiris :");
             if (userCode !== accessCode) {
+                var topbar = document.getElementById('platform-fixed-topbar-wrap');
                 document.body.innerHTML = "<h1>⛔ Accès refusé</h1>";
+                if (topbar) document.body.insertBefore(topbar, document.body.firstChild);
                 throw new Error("Access denied");
             } else {
                 localStorage.setItem('osiris_auth', accessCode);
@@ -955,5 +955,8 @@
             }
         }
     </script>
+    <script src="/js/theme-service.js"></script>
+    <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+    <script src="/js/platform-shell-topbar.js"></script>
 </body>
 </html>

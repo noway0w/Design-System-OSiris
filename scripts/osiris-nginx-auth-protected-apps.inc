@@ -27,13 +27,13 @@ location ^~ /map-app/ {
 location ^~ /iris/ {
     auth_request /_internal_platform_auth;
     error_page 401 =302 /login/?next=$request_uri;
-    try_files $uri $uri/ /iris/index.html;
+    try_files $uri $uri/ /iris/index.php /iris/index.html;
 }
 
 location ^~ /carscan/ {
     auth_request /_internal_platform_auth;
     error_page 401 =302 /login/?next=$request_uri;
-    try_files $uri $uri/ /carscan/index.html;
+    try_files $uri $uri/ /carscan/index.php /carscan/index.html;
 }
 
 location ^~ /disable/ {

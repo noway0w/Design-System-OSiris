@@ -24,9 +24,8 @@
     .status { font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 0 1rem 1rem; max-width: 36rem; margin: 0 auto; }
   </style>
 </head>
-<body>
-  <script src="/js/platform-shell-topbar.js"></script>
-  <div class="p-4">
+<body class="platform-shell--with-topbar platform-shell--carscan">
+    <div class="p-4">
     <h1 class="text-lg font-semibold text-center mb-2">CarScan</h1>
     <p class="text-sm text-slate-400 text-center mb-2">Enable analysis: boxes use <code class="text-slate-500">/api/carscan/</code> (HTTP) or WebSocket. If you see &quot;No API&quot;, add nginx per <code>scripts/carscan-nginx-snippets.conf</code>.</p>
     <div class="video-wrap" id="wrap">
@@ -293,5 +292,8 @@
   video.addEventListener('play', function () { resizeCanvas(); if (analysisOn) sendFrame(); });
 })();
   </script>
+  <script src="/js/theme-service.js"></script>
+  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+  <script src="/js/platform-shell-topbar.js"></script>
 </body>
 </html>

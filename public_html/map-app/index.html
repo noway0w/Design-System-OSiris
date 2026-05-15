@@ -309,11 +309,9 @@
         </div>
       </div>
     </div>
-    <!-- Top Bar Overlay (behind POI panel when open) -->
-    <div id="top-bar-overlay" class="absolute top-0 left-0 right-0 z-20 pt-6 px-6 pb-4 flex items-center justify-between pointer-events-none">
-      <div class="pointer-events-auto">
-        <div id="general-menu-wrapper" class="relative">
-          <button id="btn-general-menu" type="button" class="flex items-center justify-center w-10 h-10 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer">
+    <!-- General menu (mounted into platform top bar by JS) -->
+    <div id="general-menu-wrapper" class="relative">
+          <button id="btn-general-menu" type="button" class="platform-topbar-btn" aria-label="General menu">
             <span class="material-symbols-outlined">menu</span>
           </button>
           <div id="general-menu-panel" class="general-menu-panel neumorphic-menu-panel" role="dialog" aria-label="General menu" aria-hidden="true">
@@ -341,8 +339,9 @@
               <span data-i18n="map:cityImageProcessor">City Image Processor</span>
             </a>
           </div>
-        </div>
-      </div>
+    </div>
+    <!-- Top bar overlay: GPS only (menu lives in platform top bar) -->
+    <div id="top-bar-overlay" class="absolute top-0 left-0 right-0 z-20 px-6 pb-4 flex items-center justify-end pointer-events-none">
       <button id="gps-status-btn" class="pointer-events-auto flex items-center gap-2 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl px-3 py-1.5 rounded-lg border border-white/30 dark:border-white/10 shadow-lg">
         <span class="material-symbols-outlined text-green-500 dark:text-green-400 text-[18px]">my_location</span>
         <span class="text-xs font-semibold tracking-wide text-slate-700 dark:text-white" data-i18n="map:locationActive">Location Active</span>
@@ -369,7 +368,7 @@
     <!-- Bottom Panel (Discover my world) - trigger: mobile=top-left under menu, desktop=centered bottom -->
     <div id="bottom-panel-wrapper" class="absolute bottom-6 left-0 right-0 z-30 pointer-events-none overflow-visible h-12 md:bottom-6 md:left-0 md:right-0">
       <div class="pointer-events-auto relative w-full h-full">
-        <button id="bottom-panel-toggle" type="button" class="absolute bottom-0 left-0 flex items-center justify-center w-12 h-12 bg-card-light/60 dark:bg-card-dark/60 backdrop-blur-xl rounded-lg border border-white/30 dark:border-white/10 shadow-lg text-slate-700 dark:text-white hover:bg-card-light/80 dark:hover:bg-card-dark/80 transition-colors cursor-pointer md:left-1/2 md:-translate-x-1/2 md:bottom-0" aria-expanded="false" aria-label="Open Discover my world">
+        <button id="bottom-panel-toggle" type="button" class="platform-topbar-btn" aria-expanded="false" aria-label="Open Discover my world">
           <span class="material-symbols-outlined transition-transform duration-200">keyboard_arrow_up</span>
         </button>
         <div id="bottom-panel" class="bottom-panel absolute bottom-full left-6 mb-2 w-[calc(100vw-48px)] max-w-[calc(100vw-48px)] max-h-[70vh] overflow-hidden flex flex-col rounded-lg border border-white/30 dark:border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:left-6 md:mb-2 md:w-[calc(100vw-48px)] md:max-h-[70vh]" aria-hidden="true">
@@ -548,6 +547,25 @@
   <script src="/js/map-app.js"></script>
   <script src="/js/platform-shell-topbar.js"></script>
   <script>
+    function mountMapTopbarLeading() {
+      if (!window.OSirisPlatformTopbar) return;
+      var group = document.createElement('div');
+      group.className = 'dash-topbar-leading-group';
+      var menuWrap = document.getElementById('general-menu-wrapper');
+      var toggle = document.getElementById('bottom-panel-toggle');
+      if (menuWrap) {
+        var menuBtn = document.getElementById('btn-general-menu');
+        if (menuBtn) menuBtn.classList.add('platform-topbar-btn');
+        group.appendChild(menuWrap);
+      }
+      if (toggle) {
+        toggle.classList.add('platform-topbar-btn');
+        group.appendChild(toggle);
+      }
+      if (!group.childElementCount) return;
+      window.OSirisPlatformTopbar.mountLeading(group);
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (window.OSirisPlatformReady) {
@@ -556,6 +574,7 @@
       } catch (e) {
         if (e && e.message === 'unauthorized') return;
       }
+      mountMapTopbarLeading();
       renderNearbyTiles([]);
       initNotImplementedToast();
       initGeneralMenu();

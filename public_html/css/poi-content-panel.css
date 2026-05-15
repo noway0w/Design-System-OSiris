@@ -367,7 +367,8 @@ html:not(.dark) .poi-content-panel .glass-card-overlay .text-white {
     pointer-events: none;
   }
 
-  #bottom-panel-wrapper.poi-panel-blocking #bottom-panel-toggle {
+  #map-app-root.poi-panel-open #platform-topbar-leading #bottom-panel-toggle {
     opacity: 0.3;
+    pointer-events: none;
   }
 }
