@@ -98,29 +98,49 @@ function getApiBase() {
   return base || '';
 }
 
+/** Site-root URL for static files (works when the app is served from /map-app/). */
+function assetUrl(path) {
+  if (!path || typeof path !== 'string') return '';
+  if (typeof window.resolvePublicAssetUrl === 'function') return window.resolvePublicAssetUrl(path);
+  if (typeof window.resolveCityImageUrl === 'function') return window.resolveCityImageUrl(path);
+  if (/^https?:\/\//i.test(path)) return path;
+  return path.startsWith('/') ? path : '/' + path.replace(/^\//, '');
+}
+
+/** Strip origin / leading slash so paths match API storage (pict/…, uploads/…). */
+function storedAssetPath(path) {
+  if (!path || typeof path !== 'string') return '';
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      return decodeURIComponent(new URL(path).pathname.replace(/^\//, ''));
+    } catch (_) {}
+  }
+  return path.replace(/^\//, '');
+}
+
 function getUsersListUrl() {
   const b = getApiBase();
-  return b ? `${b}/api/users` : 'api/users.php';
+  return b ? `${b}/api/users` : '/api/users.php';
 }
 
 function getUsersRegisterUrl() {
   const b = getApiBase();
-  return b ? `${b}/api/users` : 'api/users-register.php';
+  return b ? `${b}/api/users` : '/api/users-register.php';
 }
 
 function getUsersClearUrl() {
   const b = getApiBase();
-  return b ? `${b}/api/users` : 'api/users-clear.php';
+  return b ? `${b}/api/users` : '/api/users-clear.php';
 }
 
 function getUsersDeleteUrl(id) {
   const b = getApiBase();
-  return b ? `${b}/api/users/${id}` : `api/users-delete.php?id=${id}`;
+  return b ? `${b}/api/users/${id}` : `/api/users-delete.php?id=${id}`;
 }
 
 function getUsersMeUrl() {
   const b = getApiBase();
-  return b ? `${b}/api/users/me` : 'api/users-me.php';
+  return b ? `${b}/api/users/me` : '/api/users-me.php';
 }
 
 function updateAdminMenuVisibility() {
@@ -275,7 +295,7 @@ async function fetchPointsOfInterest() {
 async function fetchPointsOfInterestFallback() {
   try {
     const base = typeof window.OSIRIS_API_URL === 'string' ? window.OSIRIS_API_URL : '';
-    const url = (base ? base.replace(/\/$/, '') + '/' : '') + 'points-of-interest.json?_=' + Date.now();
+    const url = (base ? base.replace(/\/$/, '') + '/' : '/') + 'points-of-interest.json?_=' + Date.now();
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
@@ -354,10 +374,10 @@ function renderNearbyTiles(tiles) {
     const deleteBtn = canDelete ? `<button type="button" class="user-tile-delete p-1.5 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors z-10" data-user-id="${tile.id}" data-user-name="${tile.name}" aria-label="Delete ${tile.name}"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : '';
     const avatarHtml = canEditProfile
       ? `<button type="button" class="user-tile-avatar-edit relative w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass} flex-shrink-0 overflow-hidden cursor-pointer group/avatar transition-all" data-user-tile="${tile.name}" aria-label="Change profile picture">
-          <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/>
+          <img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${escapeHtml(assetUrl(tile.avatar))}"/>
           <span class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none rounded-lg"><span class="material-symbols-outlined text-white text-2xl">edit</span></span>
         </button>`
-      : `<div class="w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass}"><img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${tile.avatar}"/></div>`;
+      : `<div class="w-14 h-14 rounded-lg border-2 ${imgBorder} p-0.5 ${imgClass}"><img alt="${tile.name}" class="w-full h-full object-cover rounded-lg" src="${escapeHtml(assetUrl(tile.avatar))}"/></div>`;
     html += `
       <div ${dataAttr} ${dataId} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border ${borderClass} flex flex-col gap-3 relative overflow-hidden group ${cardClass}${fadeClass}">
         <div class="absolute top-0 right-0 p-2 flex items-center gap-1">
@@ -668,7 +688,7 @@ function addUserTileMarkers(tiles = []) {
     const status = getStatusFromLastSeen(tile.lastSeen);
     avatar.style.cssText = `width:${MARKER_SIZE}px;height:${MARKER_SIZE}px;border-radius:50%;border:2px solid ${status === 'connected' ? '#13a4ec' : 'rgba(255,255,255,0.2)'};overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d`;
     const img = document.createElement('img');
-    img.src = tile.avatar;
+    img.src = assetUrl(tile.avatar);
     img.alt = tile.name;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
     avatar.appendChild(img);
@@ -745,7 +765,7 @@ function addPOIMarkers(pois) {
     const icon = document.createElement('div');
     icon.style.cssText = `width:${MARKER_SIZE}px;height:${MARKER_SIZE}px;border-radius:50%;overflow:hidden;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);background:#1c262d;border:2px solid rgba(255,255,255,0.2)`;
     const img = document.createElement('img');
-    img.src = poi.icon || 'brand/placeholder.png';
+    img.src = assetUrl(poi.icon || 'brand/placeholder.png');
     img.alt = poi.brand;
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;pointer-events:none';
     icon.appendChild(img);
@@ -786,7 +806,7 @@ function renderPOITiles(pois) {
       html += `
         <div ${dataAttr} class="bottom-section-tile w-48 flex-shrink-0 bg-card-light dark:bg-card-dark p-3 rounded border border-slate-200 dark:border-white/5 flex flex-col gap-3 overflow-hidden group ${cardClass}">
           <div class="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-white/10 p-0.5 overflow-hidden">
-            <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${poi.icon || 'brand/placeholder.png'}"/>
+            <img alt="${poi.brand || ''}" class="w-full h-full object-cover rounded-lg" src="${escapeHtml(assetUrl(poi.icon || 'brand/placeholder.png'))}"/>
           </div>
           <div>
             <h3 class="text-slate-800 dark:text-white font-bold text-base leading-tight">${poi.brand || ''}</h3>
@@ -848,7 +868,7 @@ async function renderRecommendationsTiles() {
       tile.setAttribute('data-rec-id', rec.id);
       const roleTruncated = (rec.role || '').length > 50 ? (rec.role || '').slice(0, 47) + '...' : (rec.role || '');
       const avatarHtml = rec.avatar
-        ? `<img src="${escapeHtml(rec.avatar)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+        ? `<img src="${escapeHtml(assetUrl(rec.avatar))}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
            <span class="rec-tile-avatar" style="display:none">${escapeHtml(getInitials(rec.name))}</span>`
         : `<span class="rec-tile-avatar">${escapeHtml(getInitials(rec.name))}</span>`;
       tile.innerHTML = `
@@ -883,7 +903,7 @@ function openRecommendationFloatingPanel(rec) {
 
   const initials = getInitials(rec.name);
   const avatarHtml = rec.avatar
-    ? `<img src="${escapeHtml(rec.avatar)}" alt="" class="w-12 h-12 rounded-lg object-cover border-2 border-primary/30" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+    ? `<img src="${escapeHtml(assetUrl(rec.avatar))}" alt="" class="w-12 h-12 rounded-lg object-cover border-2 border-primary/30" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
        <span style="display:none" class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-lg border-2 border-primary/30">${escapeHtml(initials)}</span>`
     : `<span class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-lg border-2 border-primary/30">${escapeHtml(initials)}</span>`;
 
@@ -1735,24 +1755,24 @@ function renderMapDataTiles(state) {
   const container = document.getElementById('map-data-tiles');
   if (!container) return;
   const thumbLight = {
-    buildings: 'assets/map-data/3D-Building.png',
-    topography: 'assets/map-data/Topography.png',
-    names: 'assets/map-data/Local-Information.png',
-    propertyBoundaries: 'assets/map-data/Road-Boundaries.png',
-    volumetricWeather: 'assets/map-data/Live-wind-coverage.png',
-    liveCloudCoverage: 'assets/map-data/Live-rain-coverage.png',
-    auroraNorthernLights: 'assets/map-data/Aurora.png',
-    airports: 'assets/map-data/Airport.png'
+    buildings: '/assets/map-data/3D-Building.png',
+    topography: '/assets/map-data/Topography.png',
+    names: '/assets/map-data/Local-Information.png',
+    propertyBoundaries: '/assets/map-data/Road-Boundaries.png',
+    volumetricWeather: '/assets/map-data/Live-wind-coverage.png',
+    liveCloudCoverage: '/assets/map-data/Live-rain-coverage.png',
+    auroraNorthernLights: '/assets/map-data/Aurora.png',
+    airports: '/assets/map-data/Airport.png'
   };
   const thumbDark = {
-    buildings: 'assets/map-data/3D-Building-Dark-Mode.png',
-    topography: 'assets/map-data/Topography-Dark-Mode.png',
-    names: 'assets/map-data/Local-Information-Dark-Mode.png',
-    propertyBoundaries: 'assets/map-data/Road-Boundaries-Dark-Mode.png',
-    volumetricWeather: 'assets/map-data/Live-wind-coverage-dark-mode.png',
-    liveCloudCoverage: 'assets/map-data/Live-rain-coverage-dark-mode.png',
-    auroraNorthernLights: 'assets/map-data/Aurora-Dark-Mode.png',
-    airports: 'assets/map-data/Airport-Dark-Mode.png'
+    buildings: '/assets/map-data/3D-Building-Dark-Mode.png',
+    topography: '/assets/map-data/Topography-Dark-Mode.png',
+    names: '/assets/map-data/Local-Information-Dark-Mode.png',
+    propertyBoundaries: '/assets/map-data/Road-Boundaries-Dark-Mode.png',
+    volumetricWeather: '/assets/map-data/Live-wind-coverage-dark-mode.png',
+    liveCloudCoverage: '/assets/map-data/Live-rain-coverage-dark-mode.png',
+    auroraNorthernLights: '/assets/map-data/Aurora-Dark-Mode.png',
+    airports: '/assets/map-data/Airport-Dark-Mode.png'
   };
   const icons = { buildings: 'apartment', topography: 'terrain', names: 'label', propertyBoundaries: 'route', volumetricWeather: 'cloud', liveCloudCoverage: 'cloud_queue', auroraNorthernLights: 'nights_stay', airports: 'flight' };
   const labels = { buildings: 'Buildings', topography: 'Topography', names: 'Local informations', propertyBoundaries: 'Road boundaries', volumetricWeather: 'Live wind coverage', liveCloudCoverage: 'Live rain coverage', auroraNorthernLights: 'Live Aurora', airports: 'Airports' };
@@ -2232,7 +2252,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
     profilePickerPanel = null;
   }
 
-  const currentAvatar = tile.avatar || getUserImage(tile.name);
+  const currentAvatar = storedAssetPath(tile.avatar || getUserImage(tile.name));
   let selectedPath = currentAvatar.startsWith('uploads/profile-pictures/') ? currentAvatar : null;
   let selectedRandomIndex = currentAvatar.startsWith('uploads/') ? -1 : USER_PICT_IMAGES.indexOf(currentAvatar);
   if (selectedRandomIndex < 0 && !selectedPath) selectedRandomIndex = 0;
@@ -2276,7 +2296,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
       </div>
       ${USER_PICT_IMAGES.map((src, i) => `
         <button type="button" class="profile-pick-option flex flex-col items-center p-2 rounded-lg border-2 border-slate-200 dark:border-slate-700 transition-all hover:border-primary/50 ${selectedRandomIndex === i && !selectedPath ? 'ring-2 ring-primary ring-offset-2' : ''}" data-pick="random" data-index="${i}">
-          <img src="${src}" alt="" class="w-14 h-14 rounded-lg object-cover"/>
+          <img src="${escapeHtml(assetUrl(src))}" alt="" class="w-14 h-14 rounded-lg object-cover"/>
         </button>
       `).join('')}
     </div>
@@ -2300,7 +2320,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
     const preview = addEl?.querySelector('.profile-pick-add-preview');
     if (selectedPath && preview) {
       preview.classList.remove('hidden');
-      preview.querySelector('img').src = selectedPath;
+      preview.querySelector('img').src = assetUrl(selectedPath);
       inner?.classList.add('hidden');
       addEl.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
     } else {
@@ -2375,7 +2395,7 @@ async function openProfilePicturePicker(tile, parentPanel) {
         return;
       }
       const img = parentPanel?.querySelector('.user-profile-avatar');
-      if (img) img.src = path;
+      if (img) img.src = assetUrl(path);
       const oldName = tile.name;
       tile.avatar = path;
       const nt = currentTiles.find((t) => t.name === oldName);
@@ -2507,7 +2527,7 @@ async function openUserProfilePanel(tile) {
     <div class="user-profile-drag-handle flex-shrink-0 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing select-none bg-card-light/50 dark:bg-card-dark/50 border-b border-slate-200/50 dark:border-white/5">
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <div class="relative flex-shrink-0 group/avatar rounded-lg transition-all hover:ring-2 hover:ring-primary/50">
-          <img class="user-profile-avatar w-12 h-12 rounded-lg object-cover border-2 border-primary/30" src="${(tile.avatar || '').replace(/"/g, '&quot;')}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
+          <img class="user-profile-avatar w-12 h-12 rounded-lg object-cover border-2 border-primary/30" src="${escapeHtml(assetUrl(tile.avatar || ''))}" alt="${(tile.name || '').replace(/"/g, '&quot;')}"/>
           ${avatarEditBtn}
         </div>
         <div class="min-w-0">
@@ -2757,7 +2777,7 @@ function initCorintisEntryIfFlagged() {
   const panel = document.getElementById('general-menu-panel');
   if (!panel) return;
   const link = document.createElement('a');
-  link.href = '/corintis/index.html';
+  link.href = '/disable/index.html';
   link.className = 'neumorphic-menu-resume';
   link.innerHTML = '<span class="material-symbols-outlined">precision_manufacturing</span><span>Corintis 3D</span>';
   panel.appendChild(link);
@@ -3015,7 +3035,7 @@ function flyToPOI(poi, opts = {}) {
 }
 
 function getPOIAssets(poi) {
-  const logo = poi.icon || 'brand/placeholder.png';
+  const logo = assetUrl(poi.icon || 'brand/placeholder.png');
   const hashtags = [`#${(poi.type || 'ProductWork').replace(/\s+/g, '')}`, `#${(poi.brand || '').replace(/\s+/g, '')}`].filter(Boolean);
   return { logo, hashtags };
 }
@@ -3092,7 +3112,7 @@ function openPOIImageViewer(src, caption, items, index) {
   if (!overlay || !img) return;
   poiViewerGallery = { items: items && items.length ? items : [{ url: src, caption: caption || 'Image' }], index: index >= 0 ? index : 0 };
   const cur = poiViewerGallery.items[poiViewerGallery.index];
-  img.src = cur.url;
+  img.src = assetUrl(cur.url);
   if (capEl) capEl.textContent = cur.caption;
   overlay.classList.remove('hidden');
   updatePOIViewerNavVisibility();
@@ -3112,7 +3132,7 @@ function poiViewerGoPrev() {
   const cur = poiViewerGallery.items[poiViewerGallery.index];
   const img = document.getElementById('poi-image-viewer-img');
   const capEl = document.querySelector('#poi-image-overlay .poi-media-viewer-caption-text');
-  if (img) img.src = cur.url;
+  if (img) img.src = assetUrl(cur.url);
   if (capEl) capEl.textContent = cur.caption;
   updatePOIViewerNavVisibility();
 }
@@ -3124,7 +3144,7 @@ function poiViewerGoNext() {
   const cur = poiViewerGallery.items[poiViewerGallery.index];
   const img = document.getElementById('poi-image-viewer-img');
   const capEl = document.querySelector('#poi-image-overlay .poi-media-viewer-caption-text');
-  if (img) img.src = cur.url;
+  if (img) img.src = assetUrl(cur.url);
   if (capEl) capEl.textContent = cur.caption;
   updatePOIViewerNavVisibility();
 }
@@ -3229,9 +3249,9 @@ async function openPOIContentPanel(poi) {
   if (heroMediaEl) {
     if (useVideoHero) {
       heroMediaEl.style.backgroundImage = '';
-      heroMediaEl.innerHTML = `<video src="${escapeHtml(firstVideo)}" autoplay muted loop playsinline class="w-full h-full object-cover"></video>`;
+      heroMediaEl.innerHTML = `<video src="${escapeHtml(assetUrl(firstVideo))}" autoplay muted loop playsinline class="w-full h-full object-cover"></video>`;
     } else if (heroMedia) {
-      heroMediaEl.style.backgroundImage = `url('${escapeHtml(heroMedia)}')`;
+      heroMediaEl.style.backgroundImage = `url('${escapeHtml(assetUrl(heroMedia))}')`;
       heroMediaEl.innerHTML = '';
     } else {
       heroMediaEl.style.backgroundImage = '';
@@ -3249,7 +3269,7 @@ async function openPOIContentPanel(poi) {
   const quoteRoleEl = panel.querySelector('.poi-panel-quote-role');
   if (quoteRoleEl) quoteRoleEl.textContent = 'Tech Enthusiast';
   const quoteAvatarEl = panel.querySelector('.poi-panel-quote-avatar');
-  if (quoteAvatarEl) quoteAvatarEl.style.backgroundImage = `url('Guillaume_Lassiat.png')`;
+  if (quoteAvatarEl) quoteAvatarEl.style.backgroundImage = `url('${escapeHtml(assetUrl('Guillaume_Lassiat.png'))}')`;
 
   const missionEl = panel.querySelector('.poi-panel-mission');
   if (missionEl) {
@@ -3322,27 +3342,29 @@ async function openPOIContentPanel(poi) {
   const galleryLimit = poi.brand === 'Renault' ? 12 : 6;
   galleryImages.slice(0, galleryLimit).forEach((url, idx) => {
     const caption = getCaptionForUrl(url);
-    viewerImageItems.push({ url, caption });
+    const resolvedUrl = assetUrl(url);
+    viewerImageItems.push({ url: resolvedUrl, caption });
     const div = document.createElement('div');
     div.className = 'poi-gallery-item';
     div.innerHTML = `
-      <img src="${escapeHtml(url)}" alt="" loading="lazy"/>
+      <img src="${escapeHtml(resolvedUrl)}" alt="" loading="lazy"/>
       <div class="glass-card-overlay">
         <span class="text-primary text-xs font-bold uppercase mb-1">${escapeHtml(type)}</span>
         <p class="text-white font-bold text-lg">${escapeHtml(getItemLabel(url))}</p>
       </div>`;
-    div.addEventListener('click', () => openPOIImageViewer(url, caption, viewerImageItems, idx));
+    div.addEventListener('click', () => openPOIImageViewer(resolvedUrl, caption, viewerImageItems, idx));
     galleryEl.appendChild(div);
   });
   allVideos.slice(0, 2).forEach((url) => {
+    const resolvedVideo = assetUrl(url);
     const div = document.createElement('div');
     div.className = 'poi-gallery-item poi-gallery-video relative';
     div.innerHTML = `
-      <video src="${escapeHtml(url)}" preload="metadata" muted playsinline class="w-full min-h-[12rem] object-cover" crossorigin="anonymous"></video>
+      <video src="${escapeHtml(resolvedVideo)}" preload="metadata" muted playsinline class="w-full min-h-[12rem] object-cover" crossorigin="anonymous"></video>
       <span class="poi-play-icon material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="font-variation-settings:'FILL' 1">play_circle</span>`;
     const vid = div.querySelector('video');
     vid.addEventListener('loadeddata', () => { vid.currentTime = 0.1; });
-    div.addEventListener('click', () => openPOIVideoPlayer(url));
+    div.addEventListener('click', () => openPOIVideoPlayer(resolvedVideo));
     galleryEl.appendChild(div);
   });
 
@@ -3359,7 +3381,7 @@ function openPOIVideoPlayer(src) {
   const overlay = document.getElementById('poi-video-overlay');
   const video = document.getElementById('poi-video-player');
   if (!overlay || !video) return;
-  video.src = src;
+  video.src = assetUrl(src);
   overlay.classList.remove('hidden');
   video.play().catch(() => {});
 }
@@ -3591,11 +3613,14 @@ const WMO_TO_ICON = {
   99: 'weather_icons/thunderstorm_24dp_E3E3E3_FILL0_wght200_GRAD0_opsz24.svg'
 };
 function getWeatherIcon(code) {
-  if (WMO_TO_ICON[code]) return WMO_TO_ICON[code];
-  if (code >= 4 && code <= 9) return WMO_TO_ICON[3];
-  if (code >= 56 && code <= 67) return WMO_TO_ICON[61];
-  if (code >= 77 && code <= 82) return WMO_TO_ICON[80];
-  return WMO_TO_ICON[0];
+  let path = WMO_TO_ICON[code];
+  if (!path) {
+    if (code >= 4 && code <= 9) path = WMO_TO_ICON[3];
+    else if (code >= 56 && code <= 67) path = WMO_TO_ICON[61];
+    else if (code >= 77 && code <= 82) path = WMO_TO_ICON[80];
+    else path = WMO_TO_ICON[0];
+  }
+  return assetUrl(path);
 }
 
 function initWeatherWidgetConfig() {
@@ -4060,7 +4085,7 @@ function initResumeEmbed() {
     if (overlay && iframe) {
       document.getElementById('general-menu-panel')?.classList.remove('visible');
       document.getElementById('general-menu-panel')?.setAttribute('aria-hidden', 'true');
-      iframe.src = 'resume.html?v=' + Date.now() + '&embed=1';
+      iframe.src = '/resume.html?v=' + Date.now() + '&embed=1';
       overlay.classList.remove('hidden');
     }
   }
@@ -4092,7 +4117,7 @@ function initTooltipBottom() {
     const wrap = video.parentElement;
     const skeleton = wrap?.querySelector('.tooltip-video-skeleton');
     const fallback = wrap?.querySelector('.tooltip-video-fallback');
-    const rawPath = video.getAttribute('data-src') || 'assets/Tooltip_content/Tooltip_content_bottom.mp4';
+    const rawPath = video.getAttribute('data-src') || '/assets/Tooltip_content/Tooltip_content_bottom.mp4';
     const src = rawPath + (rawPath.includes('?') ? '&' : '?') + '_=' + Date.now();
     video.src = src;
 

@@ -677,7 +677,11 @@ body.platform-shell--with-topbar.platform-shell--carscan {
 
 body.platform-shell--with-topbar #top-bar-overlay {
   top: var(--platform-topbar-height);
-  padding-top: 0.5rem;
+  padding-top: 1.25rem;
+}
+
+body.platform-shell--with-topbar #corintis-app-toolbar {
+  margin-top: 1.25rem;
 }
 
 

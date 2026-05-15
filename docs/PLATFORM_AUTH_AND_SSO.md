@@ -120,6 +120,17 @@ Sub-apps load `public_html/css/dashboard-shell.css` and `public_html/js/platform
 
 **Z-index:** `.platform-app-topbar-wrap` uses a high stacking value so the bar stays above legacy in-page overlays (for example Iris modals).
 
+**Layout offsets (below the fixed bar):** In `dashboard-shell.css`, when `body.platform-shell--with-topbar` is set:
+
+| App | Selector | Offset |
+|-----|----------|--------|
+| Map | `#top-bar-overlay` | `top: var(--platform-topbar-height)`; `padding-top: 1.25rem` (GPS “Location Active” chip) |
+| 3D CAD Explorer (`/disable/`) | `#corintis-app-toolbar` | `margin-top: 1.25rem` (back / reset panels / theme row) |
+
+Map uses `body:has(#map-app-root) { padding-top: 0 }` so only the overlay is offset, not the full viewport.
+
+**Map static assets under `/map-app/`:** POI logos (`projects/…`), avatars (`pict/`, `uploads/…`), and gallery media must use root-absolute URLs. `public_html/js/api-config.js` exposes `resolvePublicAssetUrl()`; `map-app.js` uses `assetUrl()` when setting `src` / marker images so paths resolve to `/projects/…` not `/map-app/projects/…`.
+
 ---
 
 ## 9. Future improvements (UI and auth)
