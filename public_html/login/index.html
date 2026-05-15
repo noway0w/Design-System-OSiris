@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" translate="no" class="dark">
+<html lang="en" translate="no" class="light login-page">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -8,140 +8,202 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link href="/css/tailwind.css" rel="stylesheet"/>
   <link href="/css/variables.css" rel="stylesheet"/>
-  <script src="/js/theme-service.js"></script>
-  <script>if (typeof ThemeService !== 'undefined') ThemeService.init();</script>
+  <link href="/css/login-shell.css" rel="stylesheet"/>
 </head>
-<body class="min-h-screen font-sans text-slate-100 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_rgba_56,189,248,0.12),_transparent_55%)]">
-  <div class="min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-8 space-y-6">
-      <div class="text-center space-y-1">
-        <p class="text-xs uppercase tracking-widest text-sky-400/90 font-semibold">OSiris platform</p>
-        <h1 class="text-2xl font-bold text-white">Sign in</h1>
-        <p class="text-sm text-slate-400">Use SSO when configured, or your platform email and password.</p>
+<body class="font-display antialiased">
+  <div class="login-shell">
+    <aside class="login-visual" aria-hidden="true">
+      <div class="login-visual__bg">
+        <img
+          src="/login/assets/login-hero.png"
+          alt="Abstract glass sphere on a light surface with soft grey atmosphere and fine contour lines."
+          width="1200"
+          height="1200"
+          decoding="async"
+        />
       </div>
+      <div class="login-visual__overlay"></div>
+    </aside>
 
-      <p id="login-error" class="hidden text-sm text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2"></p>
-
-      <div id="sso-section" class="space-y-3">
-        <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Single sign-on</p>
-        <div id="sso-buttons" class="flex flex-col gap-2"></div>
-        <p id="sso-hint" class="hidden text-xs text-slate-500 leading-relaxed rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2"></p>
+    <div class="login-auth">
+      <div class="login-mobile-brand">
+        <span class="text-sm font-semibold uppercase tracking-widest text-slate-500">OSiris</span>
       </div>
+      <div class="login-auth__inner">
+        <div class="glass-panel login-card">
+          <p id="login-error" class="login-alert login-alert--error hidden" role="alert"></p>
+          <p id="login-success" class="login-alert login-alert--ok hidden" role="status"></p>
+          <p id="login-verify-link-box" class="login-verify-link-box hidden"></p>
 
-      <div class="relative flex items-center gap-3">
-        <span class="h-px flex-1 bg-white/10"></span>
-        <span class="text-xs text-slate-500">or email</span>
-        <span class="h-px flex-1 bg-white/10"></span>
-      </div>
+          <div data-login-panel="signin">
+            <div class="mb-6 text-center">
+              <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">Sign In</h1>
+              <p class="mt-1 text-base text-slate-600">Continue to OSiris</p>
+            </div>
 
-      <form id="login-form" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1" for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="username" required
-            class="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/60"/>
+            <div id="sso-section" class="mb-6 flex flex-col gap-2">
+              <div id="sso-buttons" class="flex flex-col gap-2"></div>
+              <p id="sso-hint" class="hidden rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600"></p>
+            </div>
+
+            <div class="login-divider mb-6">
+              <span>Or</span>
+            </div>
+
+            <form id="login-form" class="flex flex-col gap-4">
+              <div>
+                <label class="sr-only" for="email">Email address</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                  </span>
+                  <input id="email" name="email" type="email" autocomplete="username" required class="login-input" placeholder="Email address"/>
+                </div>
+              </div>
+              <div>
+                <label class="sr-only" for="password">Password</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">lock</span>
+                  </span>
+                  <input id="password" name="password" type="password" autocomplete="current-password" required class="login-input" placeholder="Password"/>
+                </div>
+              </div>
+              <div class="flex items-center justify-end px-1">
+                <a class="login-link-muted" href="#" data-show-panel="forgot">Forgot password?</a>
+              </div>
+              <button type="submit" class="login-btn-primary">
+                <span>Login</span>
+                <span class="material-symbols-outlined text-[18px] text-white" aria-hidden="true">arrow_forward</span>
+              </button>
+            </form>
+          </div>
+
+          <div data-login-panel="register" hidden>
+            <button type="button" class="login-panel-close" data-show-panel="signin" aria-label="Close and return to sign in">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="mb-6 text-center">
+              <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">Create an account</h1>
+              <p class="mt-1 text-base text-slate-600">Continue to OSiris</p>
+            </div>
+
+            <form id="register-form" class="flex flex-col gap-4">
+              <div class="login-grid-2">
+                <div>
+                  <label class="sr-only" for="reg-first-name">First name</label>
+                  <div class="login-field">
+                    <span class="login-input-icon" aria-hidden="true">
+                      <span class="material-symbols-outlined text-[20px]">person</span>
+                    </span>
+                    <input id="reg-first-name" name="first-name" type="text" required class="login-input" placeholder="First name"/>
+                  </div>
+                </div>
+                <div>
+                  <label class="sr-only" for="reg-last-name">Last name</label>
+                  <input id="reg-last-name" name="last-name" type="text" required class="login-input login-input--plain" placeholder="Last name"/>
+                </div>
+              </div>
+              <div>
+                <label class="sr-only" for="reg-email">Email address</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                  </span>
+                  <input id="reg-email" name="email" type="email" autocomplete="email" required class="login-input" placeholder="Email address"/>
+                </div>
+              </div>
+              <div>
+                <label class="sr-only" for="reg-phone">Phone number (optional)</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">call</span>
+                  </span>
+                  <input id="reg-phone" name="phone" type="tel" autocomplete="tel" class="login-input" placeholder="Phone number (optional)"/>
+                </div>
+              </div>
+              <div>
+                <label class="sr-only" for="reg-password">Password</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">lock</span>
+                  </span>
+                  <input id="reg-password" name="password" type="password" autocomplete="new-password" required class="login-input" placeholder="Password"/>
+                </div>
+                <div class="login-password-hint">
+                  <p>At least 8 characters, one number, and one symbol.</p>
+                  <div class="login-strength-bars" aria-hidden="true">
+                    <span class="login-strength-bar" data-strength-bar></span>
+                    <span class="login-strength-bar" data-strength-bar></span>
+                    <span class="login-strength-bar" data-strength-bar></span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="sr-only" for="reg-confirm-password">Confirm password</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">lock_reset</span>
+                  </span>
+                  <input id="reg-confirm-password" name="confirm-password" type="password" autocomplete="new-password" required class="login-input" placeholder="Confirm password"/>
+                </div>
+              </div>
+              <div class="login-terms">
+                <input id="reg-terms" name="terms" type="checkbox" required/>
+                <label for="reg-terms">
+                  I agree to the <a href="#" class="login-footer-link">Terms of Service</a> and
+                  <a href="#" class="login-footer-link">Privacy Policy</a>.
+                </label>
+              </div>
+              <button type="submit" class="login-btn-primary">
+                <span>Create account</span>
+                <span class="material-symbols-outlined text-[18px] text-white" aria-hidden="true">arrow_forward</span>
+              </button>
+            </form>
+          </div>
+
+          <div data-login-panel="forgot" hidden>
+            <button type="button" class="login-panel-close" data-show-panel="signin" aria-label="Close and return to sign in">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="mb-6 text-center">
+              <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">Forgot password</h1>
+              <p class="mt-1 text-base text-slate-600">Enter your email and we will send a reset link.</p>
+            </div>
+            <form id="forgot-form" class="flex flex-col gap-4">
+              <div>
+                <label class="sr-only" for="forgot-email">Email address</label>
+                <div class="login-field">
+                  <span class="login-input-icon" aria-hidden="true">
+                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                  </span>
+                  <input id="forgot-email" name="email" type="email" autocomplete="email" required class="login-input" placeholder="Email address"/>
+                </div>
+              </div>
+              <button type="submit" class="login-btn-primary">
+                <span>Send reset link</span>
+                <span class="material-symbols-outlined text-[18px] text-white" aria-hidden="true">arrow_forward</span>
+              </button>
+            </form>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1" for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" required
-            class="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/60"/>
+
+        <div id="footer-signin" class="mt-6 text-center">
+          <p class="text-sm font-semibold text-slate-600">
+            Don&apos;t have an account?
+            <a class="login-footer-link" href="#" data-show-panel="register">Create an account</a>
+          </p>
         </div>
-        <button type="submit" class="w-full rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 text-sm shadow-lg shadow-sky-900/40 transition-colors">
-          Continue
-        </button>
-      </form>
-      <p class="text-center text-xs text-slate-500">After login you will be redirected to your dashboard or the app you opened.</p>
+        <div id="footer-register" class="mt-6 text-center hidden">
+          <p class="text-sm font-semibold text-slate-600">
+            Already have an account?
+            <a class="login-footer-link" href="#" data-show-panel="signin">Sign in</a>
+          </p>
+        </div>
+        <p class="mt-4 text-center text-xs text-slate-500">After login you will be redirected to your dashboard or the app you opened.</p>
+      </div>
     </div>
   </div>
-  <script>
-(function () {
-  const ERR = {
-    sso_not_configured: 'SSO is not configured on this server (missing OAuth client env vars).',
-    sso_denied: 'Sign-in was cancelled at the identity provider.',
-    sso_state: 'Session expired or invalid. Please try SSO again.',
-    sso_token: 'Could not complete sign-in with the identity provider.',
-    sso_userinfo: 'Could not read your profile from the identity provider.',
-    sso_email: 'Your account did not return an email address (required for OSiris).',
-    sso_server: 'Sign-in hit a server error. Please try again or use email and password.'
-  };
-
-  const params = new URLSearchParams(window.location.search);
-  const next = params.get('next') || '/dashboard/';
-  const form = document.getElementById('login-form');
-  const err = document.getElementById('login-error');
-  const ssoButtons = document.getElementById('sso-buttons');
-  const ssoHint = document.getElementById('sso-hint');
-
-  function showErr(msg) {
-    err.textContent = msg;
-    err.classList.remove('hidden');
-  }
-
-  const qErr = params.get('error');
-  if (qErr && ERR[qErr]) {
-    showErr(ERR[qErr]);
-  }
-
-  async function loadSso() {
-    try {
-      const res = await fetch('/api/auth-sso-meta.php?next=' + encodeURIComponent(next), { credentials: 'same-origin' });
-      const data = await res.json().catch(function () { return null; });
-      if (!data || !data.sso) return;
-      ssoButtons.innerHTML = '';
-      if (data.sso.providers && data.sso.providers.length) {
-        data.sso.providers.forEach(function (p) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/15 px-4 py-2.5 text-sm font-medium text-white transition-colors';
-          if (p.id === 'google') {
-            btn.innerHTML = '<span class="material-symbols-outlined text-lg">account_circle</span> Continue with Google';
-          } else {
-            btn.textContent = 'Continue with ' + (p.label || p.id);
-          }
-          btn.addEventListener('click', function () {
-            var url = p.startUrl || '';
-            if (!url || url[0] !== '/') {
-              return;
-            }
-            window.top.location.assign(url);
-          });
-          ssoButtons.appendChild(btn);
-        });
-        ssoHint.classList.add('hidden');
-      } else {
-        ssoHint.textContent = (data.sso.hint || '') + (data.sso.redirectUriExample ? ' ' + data.sso.redirectUriExample : '');
-        ssoHint.classList.remove('hidden');
-      }
-    } catch (e) {
-      ssoHint.textContent = 'Could not load SSO options. You can still sign in with email and password.';
-      ssoHint.classList.remove('hidden');
-    }
-  }
-
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    err.classList.add('hidden');
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    try {
-      const res = await fetch('/api/auth-login.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json().catch(function () { return {}; });
-      if (!res.ok || !data.ok) {
-        showErr(data.error || 'Login failed');
-        return;
-      }
-      window.location.href = next.startsWith('/') ? next : '/dashboard/';
-    } catch (x) {
-      showErr(x && x.message ? x.message : 'Network error');
-    }
-  });
-
-  loadSso();
-})();
-  </script>
+  <script src="/login/login-auth.js"></script>
 </body>
 </html>

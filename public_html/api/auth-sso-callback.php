@@ -149,10 +149,14 @@ if (!$row) {
 
 if ($row) {
     $uid = (int) $row['id'];
-    $up = $pdo->prepare('UPDATE users SET sso_provider_id = ?, name = ?, surname = ?, avatar_url = COALESCE(NULLIF(?, \'\'), avatar_url), updated_at = strftime(\'%s\',\'now\') WHERE id = ?');
-    $up->execute([$ssoId, $given, $family, $avatar, $uid]);
+    $now = time();
+    $up = $pdo->prepare('UPDATE users SET sso_provider_id = ?, name = ?, surname = ?, avatar_url = COALESCE(NULLIF(?, \'\'), avatar_url), account_status = ?, email_verified_at = COALESCE(email_verified_at, ?), updated_at = ? WHERE id = ?');
+    $up->execute([$ssoId, $given, $family, $avatar, 'active', $now, $now, $uid]);
     platform_grant_default_permissions($pdo, $uid);
     platform_session_set_user_id($uid);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     header('Location: ' . $next, true, 302);
     exit;
 }
@@ -161,11 +165,15 @@ $randomPw = password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT);
 if ($randomPw === false) {
     sso_redirect_login('sso_token', $next);
 }
-$ins = $pdo->prepare('INSERT INTO users (name, surname, email, password_hash, ip, location, avatar_url, sso_provider_id) VALUES (?,?,?,?,?,?,?,?)');
-$ins->execute([$given, $family, $email, $randomPw, $_SERVER['REMOTE_ADDR'] ?? '', 'google-oauth', $avatar !== '' ? $avatar : null, $ssoId]);
+$now = time();
+$ins = $pdo->prepare('INSERT INTO users (name, surname, email, password_hash, ip, location, avatar_url, sso_provider_id, account_status, email_verified_at) VALUES (?,?,?,?,?,?,?,?,?,?)');
+$ins->execute([$given, $family, $email, $randomPw, $_SERVER['REMOTE_ADDR'] ?? '', 'google-oauth', $avatar !== '' ? $avatar : null, $ssoId, 'active', $now]);
 $uid = (int) $pdo->lastInsertId();
 platform_grant_default_permissions($pdo, $uid);
 platform_session_set_user_id($uid);
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 header('Location: ' . $next, true, 302);
 exit;
 } catch (Throwable $e) {

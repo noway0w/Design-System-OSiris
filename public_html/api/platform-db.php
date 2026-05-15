@@ -29,6 +29,16 @@ function platform_bootstrap_local_env_file(): void
         'PLATFORM_SSO_STATE_SECRET' => true,
         'PLATFORM_PUBLIC_BASE_URL' => true,
         'PLATFORM_AUTH_COOKIE_SECRET' => true,
+        'PLATFORM_MAIL_FROM' => true,
+        'PLATFORM_SMTP_HOST' => true,
+        'PLATFORM_SMTP_PORT' => true,
+        'PLATFORM_SMTP_USER' => true,
+        'PLATFORM_SMTP_PASS' => true,
+        'PLATFORM_SMTP_TLS' => true,
+        'PLATFORM_MAIL_DEV_EXPOSE_LINK' => true,
+        'PLATFORM_MAIL_DEV_LOG' => true,
+        'PLATFORM_RESEND_API_KEY' => true,
+        'PLATFORM_MAIL_PROVIDER' => true,
     ];
     $raw = @file_get_contents($path);
     if (!is_string($raw) || $raw === '') {
@@ -56,6 +66,10 @@ function platform_bootstrap_local_env_file(): void
         }
         putenv($key . '=' . $val);
         $_ENV[$key] = $val;
+    }
+    if (is_readable(__DIR__ . '/platform-mail-secrets.php')) {
+        require_once __DIR__ . '/platform-mail-secrets.php';
+        platform_mail_bootstrap_secrets();
     }
 }
 
@@ -121,6 +135,27 @@ CREATE TABLE IF NOT EXISTS service_permissions (
     } catch (PDOException $e) {
         // Older SQLite without partial unique: ignore
     }
+    $db->exec("
+CREATE TABLE IF NOT EXISTS platform_auth_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_platform_auth_tokens_user ON platform_auth_tokens(user_id);');
+    $db->exec("
+CREATE TABLE IF NOT EXISTS platform_rate_limits (
+  ip TEXT NOT NULL,
+  action TEXT NOT NULL,
+  window_start INTEGER NOT NULL,
+  hit_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (ip, action, window_start)
+);
+");
 }
 
 /**
@@ -146,6 +181,9 @@ function platform_ensure_users_columns(PDO $db): void
         'sso_provider_id' => 'TEXT',
         'created_at' => 'INTEGER',
         'updated_at' => 'INTEGER',
+        'account_status' => 'TEXT',
+        'phone' => 'TEXT',
+        'email_verified_at' => 'INTEGER',
     ];
     foreach ($add as $col => $typeSql) {
         if (isset($have[$col])) {
@@ -163,6 +201,7 @@ function platform_ensure_users_columns(PDO $db): void
     try {
         $db->exec("UPDATE users SET created_at = strftime('%s','now') WHERE created_at IS NULL");
         $db->exec("UPDATE users SET updated_at = strftime('%s','now') WHERE updated_at IS NULL");
+        $db->exec("UPDATE users SET account_status = 'active' WHERE account_status IS NULL OR account_status = ''");
     } catch (PDOException $e) {
         // columns may not exist on exotic schemas
     }
@@ -177,8 +216,9 @@ function platform_seed_if_empty(PDO $db): void
     $email = getenv('PLATFORM_SEED_EMAIL') ?: 'admin@localhost';
     $plain = getenv('PLATFORM_SEED_PASSWORD') ?: 'Changeme!1';
     $hash = password_hash($plain, PASSWORD_DEFAULT);
-    $stmt = $db->prepare('INSERT INTO users (name, surname, email, password_hash, ip, location) VALUES (?,?,?,?,?,?)');
-    $stmt->execute(['Admin', 'User', $email, $hash, '127.0.0.1', 'seed']);
+    $stmt = $db->prepare('INSERT INTO users (name, surname, email, password_hash, ip, location, account_status, email_verified_at) VALUES (?,?,?,?,?,?,?,?)');
+    $now = time();
+    $stmt->execute(['Admin', 'User', $email, $hash, '127.0.0.1', 'seed', 'active', $now]);
     $uid = (int) $db->lastInsertId();
     platform_grant_default_permissions($db, $uid);
 }

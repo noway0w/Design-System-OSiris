@@ -40,6 +40,10 @@ public_html/config.php
 
 # Google SSO (local file for php-fpm; prefer chmod 640 root:nginx)
 public_html/api/.platform-sso.env
+public_html/api/.mail-outbox/
+public_html/api/.platform-mail.secret
+public_html/api/.platform-smtp.secret
+public_html/api/.platform-gmail-mail.json
 
 # User uploads
 public_html/uploads/

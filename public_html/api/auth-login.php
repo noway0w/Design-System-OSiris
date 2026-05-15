@@ -33,12 +33,17 @@ if ($email === '' || $password === '') {
 }
 
 $pdo = platform_pdo();
-$st = $pdo->prepare('SELECT id, name, surname, email, password_hash FROM users WHERE email = ? LIMIT 1');
+$st = $pdo->prepare('SELECT id, name, surname, email, password_hash, account_status FROM users WHERE email = ? LIMIT 1');
 $st->execute([$email]);
 $row = $st->fetch(PDO::FETCH_ASSOC);
 if (!$row || empty($row['password_hash']) || !password_verify($password, $row['password_hash'])) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'Invalid credentials']);
+    exit;
+}
+if (($row['account_status'] ?? 'active') === 'pending') {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'Please verify your email before signing in.']);
     exit;
 }
 

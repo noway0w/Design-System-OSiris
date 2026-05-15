@@ -157,16 +157,46 @@ function platform_session_user_id(): ?int
     platform_session_start();
     $id = $_SESSION['platform_user_id'] ?? null;
     if (is_numeric($id)) {
-        return (int) $id;
+        $uid = (int) $id;
+        if (!platform_session_user_is_active($uid)) {
+            return null;
+        }
+
+        return $uid;
     }
     $fromCookie = platform_auth_cookie_user_id();
     if ($fromCookie !== null) {
+        if (!platform_session_user_is_active($fromCookie)) {
+            return null;
+        }
         $_SESSION['platform_user_id'] = $fromCookie;
 
         return $fromCookie;
     }
 
     return null;
+}
+
+function platform_session_user_is_active(int $userId): bool
+{
+    static $cache = [];
+    if (isset($cache[$userId])) {
+        return $cache[$userId];
+    }
+    if (!function_exists('platform_pdo')) {
+        require_once __DIR__ . '/platform-db.php';
+    }
+    try {
+        $pdo = platform_pdo();
+        $st = $pdo->prepare('SELECT account_status FROM users WHERE id = ? LIMIT 1');
+        $st->execute([$userId]);
+        $status = (string) ($st->fetchColumn() ?: 'active');
+        $cache[$userId] = $status === 'active';
+    } catch (Throwable $e) {
+        $cache[$userId] = true;
+    }
+
+    return $cache[$userId];
 }
 
 function platform_session_set_user_id(int $userId): void

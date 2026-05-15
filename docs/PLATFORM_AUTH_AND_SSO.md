@@ -1,5 +1,7 @@
 # Platform authentication and Google SSO
 
+**Stopping work and picking up later:** follow the markdown reading order in [PLATFORM_AUTH_MAIL_RESUME.md](PLATFORM_AUTH_MAIL_RESUME.md).
+
 <!-- Agent note: client-side shell is documented in §8; roadmap items in §9. -->
 
 This document describes the PHP-based login and SSO stack used on the OSiris **app** host (for example `app.guillaumelassiat.com`): `/login/`, `/dashboard/`, `auth_request` helpers for other apps, and Google OAuth.
@@ -15,6 +17,11 @@ For nginx snippets and WebSocket rules for the iris stack, see the Cursor rule *
 | Env bootstrap | `public_html/api/platform-db.php` | Loads `.platform-sso.env`, SQLite helpers, `platform_public_base_url()`, OAuth `state` sign/verify |
 | Session + fallback cookie | `public_html/api/platform-session.php` | PHP session `OSIRIS_PLATFORM_SID`; signed HttpOnly `OSIRIS_PLATFORM_AUTH` |
 | Password login | `public_html/api/auth-login.php` | Validates credentials, calls `platform_session_set_user_id()` |
+| Registration | `public_html/api/auth-register.php` | Creates `pending` user, sends email verification link |
+| Email verify | `public_html/api/auth-verify-email.php` | GET `?token=` — activates account, grants default permissions |
+| Forgot password | `public_html/api/auth-forgot-password.php` | POST email — sends reset link (generic response) |
+| Reset password | `public_html/api/auth-reset-password.php` | POST token + new password |
+| Mail helper | `public_html/api/platform-mail.php` | SMTP or dev log for verification / reset emails |
 | Logout | `public_html/api/auth-logout.php` | Calls `platform_session_logout()` |
 | SSO start | `public_html/api/auth-sso-start.php` | Redirects to Google with signed `state` |
 | SSO callback | `public_html/api/auth-sso-callback.php` | Exchanges code, upserts user, `platform_session_set_user_id()`, redirects to `next` |
@@ -40,6 +47,17 @@ Typical keys:
 | `PLATFORM_SSO_STATE_SECRET` | Recommended | HMAC secret for OAuth `state` (avoids relying on session for the Google round-trip) |
 | `PLATFORM_PUBLIC_BASE_URL` | Optional | Canonical site URL for OAuth `redirect_uri` if auto-detection is wrong behind proxies |
 | `PLATFORM_AUTH_COOKIE_SECRET` | Optional | Dedicated secret for `OSIRIS_PLATFORM_AUTH`; if empty, key is derived from `PLATFORM_SSO_GOOGLE_CLIENT_SECRET` |
+| `PLATFORM_MAIL_FROM` | Optional | From address for verification / reset mail |
+| `PLATFORM_SMTP_HOST` | Optional | SMTP host (enables SMTP sending when set) |
+| `PLATFORM_SMTP_PORT` | Optional | SMTP port (default `587`) |
+| `PLATFORM_SMTP_USER` / `PLATFORM_SMTP_PASS` | Optional | SMTP credentials |
+| `PLATFORM_SMTP_TLS` | Optional | `1` / `true` for STARTTLS (default on) |
+| `PLATFORM_MAIL_DEV_LOG` | Optional | `1` — log mail bodies to PHP `error_log` when SMTP is not configured |
+| `PLATFORM_MAIL_DEV_EXPOSE_LINK` | Optional | `1` — always return `verifyUrl` in register API when email fails (default: on when SMTP is unset) |
+
+When **SMTP is not configured**, verification links are also written to `public_html/api/.mail-outbox/YYYY-MM-DD.log` and the register API returns a **Verify my account** button on the login page.
+
+**Setup guide:** [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md) — IONOS SMTP, Resend, or optional Gmail API (separate OAuth, not login SSO).
 
 **Permissions:** The file must be readable by the php-fpm user (often `nginx`). If you use POSIX ACLs, ensure the **mask** still allows that user to read after `chmod` (ordering: set ACL for `nginx`, then `chmod 600` if needed, or set mask explicitly).
 
@@ -133,14 +151,37 @@ Map uses `body:has(#map-app-root) { padding-top: 0 }` so only the overlay is off
 
 ---
 
-## 9. Future improvements (UI and auth)
+## 9. Registration and password reset
 
-Planned follow-ups (not implemented yet):
+**Login UI:** [`public_html/login/index.html`](/home/OSiris/public_html/login/index.html) — glass split layout with in-page panels: **Sign in**, **Create account**, **Forgot password** ([`login-auth.js`](/home/OSiris/public_html/login/login-auth.js)).
 
-- **Shell / header:** Further polish (mobile actions, optional search) beyond the current 3-zone bar and Map leading controls.
-- **Login page:** Refresh the **sign-in** UI for consistency with the glass dashboard shell and clearer SSO vs. email paths.
-- **Registration:** Add a **self-service sign-up** flow (or invite-only registration) wired to the platform user store, with appropriate validation and admin controls.
-- **Forgotten password:** Add **password reset** (email token or magic link) for users who sign in with email and password (not required for SSO-only accounts).
+**Reset UI:** [`public_html/login/reset/`](/home/OSiris/public_html/login/reset/) — two password fields; opened from email link `/login/reset/?token=...`.
+
+### Registration flow
+
+1. User submits register form → `POST /api/auth-register.php`.
+2. Row inserted with `account_status = pending` (no session).
+3. Verification email with link to `/api/auth-verify-email.php?token=...` (48h TTL).
+4. On verify: `account_status = active`, `email_verified_at` set, `platform_grant_default_permissions`, redirect `/login/?verified=1`.
+5. `POST /api/auth-login.php` returns **403** until verified.
+
+Google SSO users are created as **active** with `email_verified_at` set in [`auth-sso-callback.php`](/home/OSiris/public_html/api/auth-sso-callback.php).
+
+### Password reset flow
+
+1. Forgot panel → `POST /api/auth-forgot-password.php` (always generic success message).
+2. Email link → `/login/reset/?token=...` → `POST /api/auth-reset-password.php` (1h TTL).
+3. Success → `/login/?reset=ok`.
+
+### Topbar identity (compact)
+
+Shared bar [`.dash-topbar-identity`](/home/OSiris/public_html/css/dashboard-shell.css): smaller title, truncated email, email hidden below `640px` to fit the **3rem** fixed bar.
+
+### Future improvements
+
+- **Shell / header:** Further polish (mobile actions, optional search).
+- **reCAPTCHA** on registration (placeholder UI only today).
+- **Invite-only** or admin-approved registration if required later.
 
 ---
 

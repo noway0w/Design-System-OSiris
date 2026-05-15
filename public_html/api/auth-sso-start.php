@@ -1,6 +1,7 @@
 <?php
 /**
  * GET: begin OAuth2/OIDC flow (Google). Requires env client id + secret.
+ * Scopes: sign-in only (openid email profile). Mail uses IONOS SMTP / Resend separately.
  */
 declare(strict_types=1);
 
@@ -41,7 +42,6 @@ try {
         'state' => $state,
         'access_type' => 'online',
         'include_granted_scopes' => 'true',
-        // Always show Google account picker (avoids silent/hidden return when a Google session exists).
         'prompt' => 'select_account',
     ];
     $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);

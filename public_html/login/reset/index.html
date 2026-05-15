@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="light login-page">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Reset password — OSiris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link href="/css/tailwind.css" rel="stylesheet"/>
+  <link href="/css/variables.css" rel="stylesheet"/>
+  <link href="/css/login-shell.css" rel="stylesheet"/>
+</head>
+<body class="font-display antialiased">
+  <div class="login-shell">
+    <aside class="login-visual" aria-hidden="true">
+      <div class="login-visual__bg">
+        <img
+          src="/login/assets/login-hero.png"
+          alt="Abstract glass sphere on a light surface with soft grey atmosphere and fine contour lines."
+          width="1200"
+          height="1200"
+          decoding="async"
+        />
+      </div>
+      <div class="login-visual__overlay"></div>
+    </aside>
+
+    <div class="login-auth">
+      <div class="login-mobile-brand">
+        <span class="text-sm font-semibold uppercase tracking-widest text-slate-500">OSiris</span>
+      </div>
+      <div class="login-auth__inner">
+        <div class="glass-panel login-card">
+          <div class="mb-6 text-center">
+            <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">Set a new password</h1>
+            <p class="mt-1 text-base text-slate-600">Choose a strong password for your account.</p>
+          </div>
+
+          <p id="reset-error" class="login-alert login-alert--error hidden" role="alert"></p>
+          <p id="reset-success" class="login-alert login-alert--ok hidden" role="status"></p>
+
+          <form id="reset-form" class="flex flex-col gap-4">
+            <div>
+              <label class="sr-only" for="reset-password">New password</label>
+              <div class="login-field">
+                <span class="login-input-icon" aria-hidden="true">
+                  <span class="material-symbols-outlined text-[20px]">lock</span>
+                </span>
+                <input id="reset-password" name="password" type="password" autocomplete="new-password" required class="login-input" placeholder="New password"/>
+              </div>
+              <div class="login-password-hint">
+                <p>At least 8 characters, one number, and one symbol.</p>
+              </div>
+            </div>
+            <div>
+              <label class="sr-only" for="reset-confirm-password">Confirm new password</label>
+              <div class="login-field">
+                <span class="login-input-icon" aria-hidden="true">
+                  <span class="material-symbols-outlined text-[20px]">lock_reset</span>
+                </span>
+                <input id="reset-confirm-password" name="confirm-password" type="password" autocomplete="new-password" required class="login-input" placeholder="Confirm new password"/>
+              </div>
+            </div>
+            <button type="submit" class="login-btn-primary" id="reset-submit">
+              <span>Update password</span>
+              <span class="material-symbols-outlined text-[18px] text-white" aria-hidden="true">arrow_forward</span>
+            </button>
+          </form>
+        </div>
+
+        <p class="mt-6 text-center text-sm font-semibold text-slate-600">
+          <a class="login-footer-link" href="/login/">Back to sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  <script src="/login/reset/reset-auth.js"></script>
+</body>
+</html>
