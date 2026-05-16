@@ -39,7 +39,7 @@ Proves the subscriber **owns the inbox** they typed (works for any real address 
 3. **Sign-in** is blocked until active (`auth-login.php` returns `code: pending_verify`).
 4. **Resend** → POST `auth-resend-verify.php` or the “Resend verification email” control on `/login/`.
 
-The on-screen verification link is shown **only** when `PLATFORM_MAIL_DEV_EXPOSE_LINK=1` (local dev). Production must deliver mail (Resend recommended — see [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md)).
+The on-screen verification link is shown **only** when `PLATFORM_MAIL_DEV_EXPOSE_LINK=1` (local dev). Production delivers mail via **IONOS SMTP** (`noreply@guillaumelassiat.com` / `smtp.ionos.fr`) — see [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md).
 
 ---
 
@@ -64,11 +64,12 @@ Typical keys:
 | `PLATFORM_SMTP_USER` / `PLATFORM_SMTP_PASS` | Optional | SMTP credentials |
 | `PLATFORM_SMTP_TLS` | Optional | `1` / `true` for STARTTLS (default on) |
 | `PLATFORM_MAIL_DEV_LOG` | Optional | `1` — log mail bodies to PHP `error_log` when SMTP is not configured |
-| `PLATFORM_MAIL_DEV_EXPOSE_LINK` | Optional | `1` — always return `verifyUrl` in register API when email fails (default: on when SMTP is unset) |
+| `PLATFORM_MAIL_DEV_EXPOSE_LINK` | Optional | `1` — return `verifyUrl` in API when email fails (production: `0`) |
+| `PLATFORM_MAIL_PROVIDER` | Optional | `smtp` (IONOS), `resend`, or `gmail` |
 
-When **SMTP is not configured**, verification links are also written to `public_html/api/.mail-outbox/YYYY-MM-DD.log` and the register API returns a **Verify my account** button on the login page.
+When **SMTP is not configured**, failed sends are logged to `public_html/api/.mail-outbox/YYYY-MM-DD.log`. The login UI shows a **Verify your email** panel and **Resend verification email**; no admin/SMTP hints in user-facing copy.
 
-**Setup guide:** [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md) — IONOS SMTP, Resend, or optional Gmail API (separate OAuth, not login SSO).
+**Setup guide:** [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md) — **IONOS SMTP (production)**, Resend alternative, optional Gmail API (separate OAuth, not login SSO).
 
 **Permissions:** The file must be readable by the php-fpm user (often `nginx`). If you use POSIX ACLs, ensure the **mask** still allows that user to read after `chmod` (ordering: set ACL for `nginx`, then `chmod 600` if needed, or set mask explicitly).
 
@@ -170,11 +171,12 @@ Map uses `body:has(#map-app-root) { padding-top: 0 }` so only the overlay is off
 
 ### Registration flow
 
-1. User submits register form → `POST /api/auth-register.php`.
+1. User submits register form → `POST /api/auth-register.php` (email syntax + domain MX/A check).
 2. Row inserted with `account_status = pending` (no session).
-3. Verification email with link to `/api/auth-verify-email.php?token=...` (48h TTL).
-4. On verify: `account_status = active`, `email_verified_at` set, `platform_grant_default_permissions`, redirect `/login/?verified=1`.
-5. `POST /api/auth-login.php` returns **403** until verified.
+3. Verification email from **`noreply@guillaumelassiat.com`** (IONOS SMTP) with link to `/api/auth-verify-email.php?token=...` (48h TTL).
+4. UI shows **Verify your email** panel; user must open the link in that inbox.
+5. On verify: `account_status = active`, `email_verified_at` set, `platform_grant_default_permissions`, redirect `/login/?verified=1`.
+6. `POST /api/auth-login.php` returns **403** with `code: pending_verify` until verified.
 
 Google SSO users are created as **active** with `email_verified_at` set in [`auth-sso-callback.php`](/home/OSiris/public_html/api/auth-sso-callback.php).
 

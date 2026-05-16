@@ -1,64 +1,58 @@
 # Resume here — platform login, SSO, mail
 
-Use this checklist when picking up **after a break** or when verification emails do not arrive.
+Quick reference when working on **email/password registration** or outbound mail.
 
 ---
 
 ## Markdown reading order
 
-1. **[PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md)** — **Resend (recommended)**, IONOS legacy, diagnostics.
-2. **[PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md)** — Email/password, SQLite, Google SSO (do not change SSO scopes for mail).
+1. **[PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md)** — IONOS SMTP (production), Resend alternative, diagnostics.
+2. **[PLATFORM_AUTH_AND_SSO.md](PLATFORM_AUTH_AND_SSO.md)** — APIs, SQLite, Google SSO (do not change SSO scopes for mail).
 3. **`public_html/api/platform-sso.env.example`** — Env template; secrets in `.platform-mail.secret`.
 
 **SSO:** Sign-in only (`openid email profile`). Do **not** add `gmail.send` to `auth-sso-start.php`.
 
 ---
 
-## Product: email ownership verification
+## Production status (verified)
 
-Password sign-up does **not** activate the account until the user clicks the link sent to the address they entered. Google SSO is separate and does not use this flow.
+| Item | Value |
+|------|--------|
+| Provider | `smtp` (IONOS) |
+| From | `OSiris <noreply@guillaumelassiat.com>` |
+| Host | `smtp.ionos.fr` (587 STARTTLS, 465 SSL) |
+| User | `noreply@guillaumelassiat.com` |
+| Password | `public_html/api/.platform-mail.secret` |
+| Test | `php scripts/test-platform-mail.php idea080912@yopmail.com` → `"ok": true, "mode": "smtp"` |
 
-| Step | What happens |
-|------|----------------|
-| Register | Account `pending`; verification email sent to that address |
-| Click link in inbox | `auth-verify-email.php` → account `active` |
-| Sign in before verify | Blocked with “verify your email” |
-| Resend | `/login/` → “Resend verification email” or `auth-resend-verify.php` |
-
-Mail must actually be delivered (Resend). Without an API key, registration still creates a pending user but email is not sent.
-
-## Current production path: Resend
-
-Outbound mail is configured via **Resend**, not IONOS SMTP.
-
-```bash
-# Option A — one-time key file (gitignored):
-printf '%s' 're_YOUR_API_KEY' > /home/OSiris/.resend-api-key
-chmod 600 /home/OSiris/.resend-api-key
-/home/OSiris/scripts/apply-resend-key.sh
-
-# Option B — temp file:
-printf '%s' 're_YOUR_API_KEY' > /tmp/resend-key.txt
-/home/OSiris/scripts/setup-platform-mail.sh resend --file /tmp/resend-key.txt
-rm -f /tmp/resend-key.txt
-sudo systemctl reload php-fpm
-php /home/OSiris/scripts/platform-mail-status.php
-php /home/OSiris/scripts/test-platform-mail.php idea080912@yopmail.com
-```
-
-Expect: `provider: resend`, `resend_key: yes`, test JSON `"ok": true, "mode": "resend"`.
-
-Register at `/login/` should return `"emailSent": true` and **no** `verifyUrl` when mail works.
-
-**Domain:** `noreply@guillaumelassiat.com` requires `guillaumelassiat.com` verified in Resend. Until then: `setup-platform-mail.sh resend-test` uses `onboarding@resend.dev`.
+Registration at `/login/` sends a verification link; user must click it before sign-in.
 
 ---
 
-## Known pitfalls (fixed in setup script)
+## Email ownership verification (product flow)
 
-- **Empty `.platform-mail.secret`** (`PLATFORM_SMTP_PASS=` with no value) → all SMTP auth fails; UI still shows verification link from outbox fallback.
-- **Old `append_env`** did not overwrite `PLATFORM_MAIL_PROVIDER=smtp` when switching to Resend — use current `setup-platform-mail.sh` (`set_env_key`).
-- **Wrong IONOS host** (`smtp.ionos.com` vs FR `smtp.ionos.fr`) — only relevant if you return to IONOS SMTP.
+| Step | What happens |
+|------|----------------|
+| Register | Account `pending`; verification email to the address entered |
+| Click link in inbox | `auth-verify-email.php` → account `active` |
+| Sign in before verify | Blocked (`code: pending_verify`) |
+| Resend | `/login/` → “Resend verification email” or `auth-resend-verify.php` |
+
+Works for any deliverable address (Gmail, corporate domain, YOPmail for tests). Domain must have MX/A records at register time.
+
+---
+
+## IONOS setup (refresh password)
+
+```bash
+printf '%s' 'IONOS_MAILBOX_PASSWORD' > /tmp/ionos-pass.txt
+/home/OSiris/scripts/setup-platform-mail.sh ionos --file /tmp/ionos-pass.txt
+rm -f /tmp/ionos-pass.txt
+php /home/OSiris/scripts/platform-smtp-diagnose.php idea080912@yopmail.com
+sudo systemctl reload php-fpm
+```
+
+Register should return `"emailSent": true` and **no** on-screen `verifyUrl` when mail works.
 
 ---
 
@@ -66,10 +60,19 @@ Register at `/login/` should return `"emailSent": true` and **no** `verifyUrl` w
 
 ```bash
 php /home/OSiris/scripts/platform-mail-status.php
+php /home/OSiris/scripts/platform-smtp-diagnose.php idea080912@yopmail.com
 php /home/OSiris/scripts/test-platform-mail.php idea080912@yopmail.com
 php /home/OSiris/scripts/platform-resend-verify.php idea080912@yopmail.com
-sudo systemctl reload php-fpm
 ```
+
+---
+
+## Pitfalls (already fixed in code)
+
+- **`setup-platform-mail.sh ionos --file`** — use script from repo (`orig_arg3` for path; password files without newline).
+- **Wrong diagnose target** — `example.com` → IONOS 556; use a real test inbox.
+- **Empty secret** — `PLATFORM_SMTP_PASS=` with no value.
+- **On-screen verify link** — only when `PLATFORM_MAIL_DEV_EXPOSE_LINK=1` or send failed.
 
 ---
 
