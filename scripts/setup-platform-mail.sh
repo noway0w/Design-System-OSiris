@@ -42,9 +42,12 @@ append_env() {
 
 read_secret_from_arg() {
   if [[ "$val" == "--file" ]]; then
-    local pwdfile="${3:?secret file path}"
-    IFS= read -r val < "$pwdfile" || val=""
-    val="${val//$'\r'/}"
+    local pwdfile="${orig_arg3:-}"
+    if [[ -z "$pwdfile" || ! -f "$pwdfile" ]]; then
+      echo "Error: password file required: $0 ${mode:-MODE} --file /path/to/password.txt" >&2
+      exit 1
+    fi
+    val="$(tr -d '\r\n' < "$pwdfile")"
   fi
   val="$(printf '%s' "$val" | tr -d '\r\n')"
 }
@@ -176,9 +179,11 @@ chmod 770 "$API_DIR/.mail-outbox" 2>/dev/null || true
 chgrp nginx "$API_DIR/.mail-outbox" 2>/dev/null || true
 
 TEST_TO="idea080912@yopmail.com"
-if [[ "$orig_arg2" == "--file" && -n "$orig_arg4" ]]; then
-  TEST_TO="$orig_arg4"
-elif [[ -n "$orig_arg3" && "$orig_arg3" != "--file" ]]; then
+if [[ "$orig_arg2" == "--file" ]]; then
+  if [[ -n "$orig_arg4" ]]; then
+    TEST_TO="$orig_arg4"
+  fi
+elif [[ -n "$orig_arg3" ]]; then
   TEST_TO="$orig_arg3"
 fi
 
