@@ -2,6 +2,37 @@
 
 **Stopping work and picking up later:** read markdown in order from [PLATFORM_AUTH_MAIL_RESUME.md](PLATFORM_AUTH_MAIL_RESUME.md).
 
+## Resend (recommended — production)
+
+Transactional mail for registration / password reset. **Does not use Google SSO.**
+
+1. Create an API key at [resend.com](https://resend.com) (`re_…`).
+2. **Verify domain** `guillaumelassiat.com` in Resend (DNS records they provide) so you can send as `noreply@guillaumelassiat.com`.
+3. On the app server:
+
+```bash
+printf '%s' 're_YOUR_API_KEY' > /tmp/resend-key.txt
+/home/OSiris/scripts/setup-platform-mail.sh resend --file /tmp/resend-key.txt
+rm -f /tmp/resend-key.txt
+sudo systemctl reload php-fpm
+php /home/OSiris/scripts/platform-mail-status.php
+php /home/OSiris/scripts/test-platform-mail.php idea080912@yopmail.com
+```
+
+The setup script **overwrites** `PLATFORM_MAIL_PROVIDER` and `PLATFORM_MAIL_FROM` in `.platform-sso.env` (older `append_env` behavior left `smtp` stuck).
+
+**Smoke test without domain verification** (sends from Resend’s test address only):
+
+```bash
+/home/OSiris/scripts/setup-platform-mail.sh resend-test --file /tmp/resend-key.txt
+```
+
+Then switch to `resend` once the domain is verified.
+
+**Secret file:** `public_html/api/.platform-mail.secret` must contain `PLATFORM_RESEND_API_KEY=re_…` (non-empty). php-fpm runs as `nginx` — the setup script sets `chgrp nginx` and ACL `u:nginx:r`.
+
+---
+
 ## Gmail API send (optional, separate from login)
 
 **Do not add `gmail.send` to the login SSO flow** — Google blocks it with `403 access_denied` until the app is verified.
@@ -21,15 +52,11 @@ Optional one-time setup (separate OAuth):
 
 Create an app password: https://myaccount.google.com/apppasswords
 
-## IONOS mailbox (noreply@guillaumelassiat.com)
+## IONOS mailbox (legacy / optional)
 
-**FR / IONOS Europe:** use outgoing server **`smtp.ionos.fr`** (port **465** SSL or **587** STARTTLS), matching [IONOS assistance — Outlook / serveur sortant](https://www.ionos.fr/assistance/email/microsoftr-outlook/configurer-manuellement-un-compte-de-messagerie-dans-microsoft-outlook-2016/) (incoming IMAP is `imap.ionos.fr`; we only need SMTP for the app).
+**FR / IONOS Europe:** outgoing **`smtp.ionos.fr`** — [IONOS assistance](https://www.ionos.fr/assistance/email/microsoftr-outlook/configurer-manuellement-un-compte-de-messagerie-dans-microsoft-outlook-2016/).
 
-**Other IONOS regions** sometimes use **`smtp.ionos.com`**. The setup script defaults to `.fr` for `ionos`; use `ionos-com` for `.com` (see script help).
-
-**Important:** SMTP only works with a **real IONOS mailbox**, not a pure forwarder/alias. If IONOS only forwards `noreply@` to another inbox, you cannot send mail as that address — use Resend below or a full mailbox like `contact@guillaumelassiat.com`.
-
-If you see `535 Authentication credentials invalid` on both port 587 and 465, the password does not match IONOS or the address cannot send. Reset the password in the IONOS control panel, then:
+**Important:** SMTP only works with a **real IONOS mailbox**, not a forwarder-only alias.
 
 ```bash
 printf '%s' 'EXACT_PASSWORD_FROM_IONOS' > /tmp/ionos-pass.txt
@@ -38,20 +65,25 @@ rm -f /tmp/ionos-pass.txt
 php /home/OSiris/scripts/platform-smtp-diagnose.php
 ```
 
-Do **not** pass the password on the command line without quotes if it contains `!` or `@` — bash will corrupt it.
+Do **not** pass passwords on the command line unquoted if they contain `!` or `@`.
 
-After `setup-platform-mail.sh ionos`, check `public_html/api/.platform-sso.env`: **`PLATFORM_SMTP_HOST`** should be `smtp.ionos.fr` (FR) or `smtp.ionos.com` if you used `ionos-com`. Ports **587** (STARTTLS) and **465** (SSL) are both tried by `platform-smtp-diagnose.php`. User: full email `noreply@guillaumelassiat.com`. Password: `public_html/api/.platform-mail.secret`.
+---
 
-If you already had `PLATFORM_SMTP_HOST` in `.platform-sso.env`, the script does not overwrite it — edit the line to `smtp.ionos.fr` (or re-add after removing the old line) and reload PHP-FPM.
-
-## Alternative: Resend.com (fastest if IONOS keeps failing)
+## Diagnostics
 
 ```bash
-/home/OSiris/scripts/setup-platform-mail.sh resend re_YOUR_API_KEY
+php /home/OSiris/scripts/platform-mail-status.php
+php /home/OSiris/scripts/platform-smtp-diagnose.php   # SMTP only
+php /home/OSiris/scripts/test-platform-mail.php you@example.com
+php /home/OSiris/scripts/platform-resend-verify.php pending@example.com
 ```
 
 ## Troubleshooting
 
-- Links still on screen only → SMTP/Gmail not configured; check `api/.mail-outbox/` logs or PHP error log.
-- Gmail API 403 → enable Gmail API in Cloud Console.
-- SMTP auth failed → wrong password or need App Password (not normal Gmail password).
+| Symptom | Cause | Fix |
+|--------|--------|-----|
+| Verification link on screen, no email | Send failed → `verifyUrl` fallback in [`auth-register.php`](../public_html/api/auth-register.php) | Check `platform-mail-status.php`; fix Resend key / domain |
+| `outbox_fallback_lines` growing | Failed sends logged to `api/.mail-outbox/` | Fix provider; successful sends do not append |
+| `PLATFORM_SMTP_PASS=` empty in secret | Bad setup or empty `--file` | Re-run setup with non-empty secret |
+| Resend HTTP 403/422 | Unverified `From` domain | Verify domain or use `resend-test` temporarily |
+| Gmail API 403 on login | `gmail.send` on SSO | Keep SSO scopes to openid/email/profile only |
