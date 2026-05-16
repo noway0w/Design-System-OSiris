@@ -115,19 +115,19 @@ function platform_send_mail(string $to, string $subject, string $htmlBody, strin
     }
 
     $provider = strtolower((string) (getenv('PLATFORM_MAIL_PROVIDER') ?: ''));
-    if ($provider === 'resend' || ($provider === '' && platform_resend_configured())) {
+    if ($provider === 'smtp' || ($provider === '' && platform_smtp_configured())) {
+        if (platform_send_mail_smtp($to, $subject, $htmlBody, $textBody)) {
+            return ['ok' => true, 'mode' => 'smtp'];
+        }
+    }
+    if (($provider === 'resend' || $provider === '') && platform_resend_configured()) {
         if (platform_send_mail_resend($to, $subject, $htmlBody, $textBody)) {
             return ['ok' => true, 'mode' => 'resend'];
         }
     }
-    if ($provider === 'gmail' || ($provider === '' && platform_gmail_mail_configured())) {
+    if (($provider === 'gmail' || $provider === '') && platform_gmail_mail_configured()) {
         if (platform_send_mail_gmail_api($to, $subject, $htmlBody, $textBody)) {
             return ['ok' => true, 'mode' => 'gmail_api'];
-        }
-    }
-    if ($provider === 'smtp' || ($provider === '' && platform_smtp_configured())) {
-        if (platform_send_mail_smtp($to, $subject, $htmlBody, $textBody)) {
-            return ['ok' => true, 'mode' => 'smtp'];
         }
     }
 

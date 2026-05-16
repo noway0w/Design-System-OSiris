@@ -279,7 +279,9 @@
         }
         showVerifyEmailPanel(pendingVerifyEmail);
         if (data.emailSent === false) {
-          showErr('We could not send the verification email. Try Resend verification or contact support.');
+          showErr(data.message || 'We could not send the verification email. Tap "Resend verification email" below.');
+        } else if (data.message) {
+          showOk(data.message);
         }
       } catch (x) {
         showErr(x && x.message ? x.message : 'Network error');

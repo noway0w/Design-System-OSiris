@@ -66,7 +66,7 @@ $response = [
     'emailSent' => $emailSent,
     'message' => $emailSent
         ? 'Verification email sent. Open the link in that inbox to activate your account.'
-        : 'Could not send the verification email. Mail is not configured on the server.',
+        : 'We could not send the verification email. Please try again in a few minutes.',
 ];
 if (!$emailSent && platform_mail_expose_verify_link() && !empty($mail['verifyUrl'])) {
     $response['verifyUrl'] = $mail['verifyUrl'];

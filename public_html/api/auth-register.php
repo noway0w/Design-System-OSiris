@@ -121,7 +121,7 @@ $response = [
     'emailSent' => $emailSent,
     'message' => $emailSent
         ? 'We sent a verification link to your email. Open it to activate your account before signing in.'
-        : 'Your account was created but we could not send the verification email. Use Resend verification below or contact support.',
+        : 'Your account was created, but we could not send the verification email. Tap "Resend verification email" below.',
 ];
 
 if (!$emailSent && platform_mail_expose_verify_link() && !empty($mail['verifyUrl'])) {
