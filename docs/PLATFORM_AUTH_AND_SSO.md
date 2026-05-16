@@ -30,6 +30,17 @@ For nginx snippets and WebSocket rules for the iris stack, see the Cursor rule *
 
 Login and dashboard UIs: `public_html/login/index.html`, `public_html/dashboard/index.html`.
 
+### Email verification (password registration)
+
+Proves the subscriber **owns the inbox** they typed (works for any real address — YOPmail is only for testing).
+
+1. **Register** → `auth-register.php` creates user with `account_status = pending`, checks domain has MX/A records, sends link via `platform_send_verify_email()`.
+2. **User opens link** in that inbox → `auth-verify-email.php?token=…` sets account **active** and `email_verified_at`.
+3. **Sign-in** is blocked until active (`auth-login.php` returns `code: pending_verify`).
+4. **Resend** → POST `auth-resend-verify.php` or the “Resend verification email” control on `/login/`.
+
+The on-screen verification link is shown **only** when `PLATFORM_MAIL_DEV_EXPOSE_LINK=1` (local dev). Production must deliver mail (Resend recommended — see [PLATFORM_MAIL_SETUP.md](PLATFORM_MAIL_SETUP.md)).
+
 ---
 
 ## 2. Environment file

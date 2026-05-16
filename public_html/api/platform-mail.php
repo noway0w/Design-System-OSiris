@@ -51,11 +51,8 @@ function platform_mail_dev_log_enabled(): bool
 function platform_mail_expose_verify_link(): bool
 {
     $v = getenv('PLATFORM_MAIL_DEV_EXPOSE_LINK');
-    if (is_string($v) && in_array(strtolower($v), ['1', 'true', 'yes'], true)) {
-        return true;
-    }
 
-    return !platform_smtp_configured() && !platform_resend_configured() && !platform_gmail_mail_configured();
+    return is_string($v) && in_array(strtolower($v), ['1', 'true', 'yes'], true);
 }
 
 function platform_mail_outbox_append(string $to, string $subject, string $textBody): void

@@ -14,6 +14,19 @@ Use this checklist when picking up **after a break** or when verification emails
 
 ---
 
+## Product: email ownership verification
+
+Password sign-up does **not** activate the account until the user clicks the link sent to the address they entered. Google SSO is separate and does not use this flow.
+
+| Step | What happens |
+|------|----------------|
+| Register | Account `pending`; verification email sent to that address |
+| Click link in inbox | `auth-verify-email.php` → account `active` |
+| Sign in before verify | Blocked with “verify your email” |
+| Resend | `/login/` → “Resend verification email” or `auth-resend-verify.php` |
+
+Mail must actually be delivered (Resend). Without an API key, registration still creates a pending user but email is not sent.
+
 ## Current production path: Resend
 
 Outbound mail is configured via **Resend**, not IONOS SMTP.

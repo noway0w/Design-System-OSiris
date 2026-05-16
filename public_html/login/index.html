@@ -69,8 +69,9 @@
                   <input id="password" name="password" type="password" autocomplete="current-password" required class="login-input" placeholder="Password"/>
                 </div>
               </div>
-              <div class="flex items-center justify-end px-1">
+              <div class="flex flex-col items-end gap-1 px-1">
                 <a class="login-link-muted" href="#" data-show-panel="forgot">Forgot password?</a>
+                <a class="login-link-muted text-xs" href="#" id="link-pending-verify">Resend verification email</a>
               </div>
               <button type="submit" class="login-btn-primary">
                 <span>Login</span>
@@ -160,6 +161,32 @@
                 <span class="material-symbols-outlined text-[18px] text-white" aria-hidden="true">arrow_forward</span>
               </button>
             </form>
+          </div>
+
+          <div data-login-panel="verify-email" hidden>
+            <button type="button" class="login-panel-close" data-show-panel="signin" aria-label="Close and return to sign in">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="mb-6 text-center">
+              <div class="login-verify-icon" aria-hidden="true">
+                <span class="material-symbols-outlined text-[40px]">mark_email_unread</span>
+              </div>
+              <h1 class="text-2xl font-semibold text-slate-900 md:text-3xl">Verify your email</h1>
+              <p class="mt-2 text-base text-slate-600">
+                We sent an activation link to
+                <strong id="verify-email-display" class="text-slate-900"></strong>.
+                Open that message and click the button to confirm you own this address.
+              </p>
+            </div>
+            <p class="login-verify-hint text-sm text-slate-500">
+              The link expires in 48 hours. You cannot sign in until your email is verified.
+            </p>
+            <button type="button" id="verify-resend-btn" class="login-btn-primary mt-6 w-full">
+              <span>Resend verification email</span>
+            </button>
+            <button type="button" class="login-btn-secondary mt-3 w-full" data-show-panel="signin">
+              Back to sign in
+            </button>
           </div>
 
           <div data-login-panel="forgot" hidden>

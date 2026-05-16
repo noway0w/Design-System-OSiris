@@ -43,7 +43,12 @@ if (!$row || empty($row['password_hash']) || !password_verify($password, $row['p
 }
 if (($row['account_status'] ?? 'active') === 'pending') {
     http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'Please verify your email before signing in.']);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Please verify your email before signing in. Check your inbox for the activation link.',
+        'code' => 'pending_verify',
+        'email' => $row['email'],
+    ]);
     exit;
 }
 

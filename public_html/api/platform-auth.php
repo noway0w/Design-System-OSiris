@@ -36,6 +36,28 @@ function platform_password_valid(string $password): array
     return ['ok' => true];
 }
 
+/**
+ * Basic deliverability check: domain has MX or A records (not proof of inbox ownership).
+ *
+ * @return array{ok: bool, error?: string}
+ */
+function platform_email_domain_accepts_mail(string $email): array
+{
+    $at = strrpos($email, '@');
+    if ($at === false || $at === strlen($email) - 1) {
+        return ['ok' => false, 'error' => 'Invalid email address.'];
+    }
+    $domain = strtolower(substr($email, $at + 1));
+    if ($domain === '' || !preg_match('/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i', $domain)) {
+        return ['ok' => false, 'error' => 'Invalid email domain.'];
+    }
+    if (@checkdnsrr($domain, 'MX') || @checkdnsrr($domain, 'A')) {
+        return ['ok' => true];
+    }
+
+    return ['ok' => false, 'error' => 'This email domain does not appear to accept mail. Check the address and try again.'];
+}
+
 function platform_user_is_active(?array $row): bool
 {
     if (!$row) {

@@ -20,6 +20,9 @@
   var panels = document.querySelectorAll('[data-login-panel]');
   var footerSignin = document.getElementById('footer-signin');
   var footerRegister = document.getElementById('footer-register');
+  var pendingVerifyEmail = '';
+  var verifyEmailDisplay = document.getElementById('verify-email-display');
+  var verifyResendBtn = document.getElementById('verify-resend-btn');
 
   function showErr(msg) {
     if (!errEl) return;
@@ -61,6 +64,64 @@
     verifyLinkBox.classList.add('hidden');
   }
 
+  function showVerifyEmailPanel(email) {
+    if (verifyEmailDisplay) {
+      verifyEmailDisplay.textContent = email || '';
+    }
+    showPanel('verify-email');
+  }
+
+  async function resendVerificationEmail() {
+    if (!pendingVerifyEmail) {
+      showErr('No email address to resend to.');
+      return;
+    }
+    if (verifyResendBtn) verifyResendBtn.disabled = true;
+    try {
+      var res = await fetch('/api/auth-resend-verify.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: pendingVerifyEmail })
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) {
+        showErr(data.error || 'Could not resend verification email.');
+        return;
+      }
+      if (data.verifyUrl) {
+        showVerifyLink(data.verifyUrl);
+      }
+      if (data.emailSent) {
+        showOk(data.message || 'Verification email sent.');
+      } else {
+        showErr(data.message || 'Could not send verification email.');
+      }
+    } catch (x) {
+      showErr(x && x.message ? x.message : 'Network error');
+    } finally {
+      if (verifyResendBtn) verifyResendBtn.disabled = false;
+    }
+  }
+
+  if (verifyResendBtn) {
+    verifyResendBtn.addEventListener('click', resendVerificationEmail);
+  }
+
+  var linkPendingVerify = document.getElementById('link-pending-verify');
+  if (linkPendingVerify) {
+    linkPendingVerify.addEventListener('click', function (e) {
+      e.preventDefault();
+      var emailInput = document.getElementById('email');
+      pendingVerifyEmail = emailInput ? emailInput.value.trim() : '';
+      if (!pendingVerifyEmail) {
+        showErr('Enter your email on the sign-in form first.');
+        return;
+      }
+      showVerifyEmailPanel(pendingVerifyEmail);
+    });
+  }
+
   function showPanel(name) {
     clearMessages();
     panels.forEach(function (p) {
@@ -68,7 +129,7 @@
       p.hidden = !on;
     });
     if (footerSignin) footerSignin.hidden = name !== 'signin';
-    if (footerRegister) footerRegister.hidden = name === 'register';
+    if (footerRegister) footerRegister.hidden = name !== 'register';
     var card = document.querySelector('.login-card');
     if (card) {
       card.classList.toggle('login-card--alt', name !== 'signin');
@@ -151,6 +212,11 @@
         });
         var data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data.ok) {
+          if (data.code === 'pending_verify' && data.email) {
+            pendingVerifyEmail = data.email;
+            showVerifyEmailPanel(data.email);
+            return;
+          }
           showErr(data.error || 'Login failed');
           return;
         }
@@ -205,16 +271,15 @@
         if (strengthBars.length) {
           strengthBars.forEach(function (bar) { bar.classList.remove('login-strength-bar--on'); });
         }
-        var msg = data.message || 'Check your email to activate your account.';
+        pendingVerifyEmail = data.email || payload.email;
         if (data.verifyUrl) {
-          msg += ' Use the button below to verify your account.';
-          showOk(msg);
+          showVerifyEmailPanel(pendingVerifyEmail);
           showVerifyLink(data.verifyUrl);
-        } else if (data.emailSent === false) {
-          msg += ' Configure SMTP in .platform-sso.env on the server, or ask an administrator for the link in api/.mail-outbox/ on the server.';
-          showOk(msg);
-        } else {
-          showOk(msg);
+          return;
+        }
+        showVerifyEmailPanel(pendingVerifyEmail);
+        if (data.emailSent === false) {
+          showErr('We could not send the verification email. Try Resend verification or contact support.');
         }
       } catch (x) {
         showErr(x && x.message ? x.message : 'Network error');

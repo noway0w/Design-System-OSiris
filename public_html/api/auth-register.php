@@ -48,6 +48,12 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['ok' => false, 'error' => 'Invalid email address.']);
     exit;
 }
+$domainCheck = platform_email_domain_accepts_mail($email);
+if (!$domainCheck['ok']) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => $domainCheck['error'] ?? 'Invalid email address.']);
+    exit;
+}
 if (!$terms) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'You must accept the terms to continue.']);
@@ -110,13 +116,15 @@ if (!$emailSent) {
 
 $response = [
     'ok' => true,
+    'needsEmailVerification' => true,
+    'email' => $email,
     'emailSent' => $emailSent,
     'message' => $emailSent
-        ? 'Check your email to activate your account.'
-        : 'Account created. Email could not be delivered — use the verification link below.',
+        ? 'We sent a verification link to your email. Open it to activate your account before signing in.'
+        : 'Your account was created but we could not send the verification email. Use Resend verification below or contact support.',
 ];
 
-if (!$emailSent && !empty($mail['verifyUrl'])) {
+if (!$emailSent && platform_mail_expose_verify_link() && !empty($mail['verifyUrl'])) {
     $response['verifyUrl'] = $mail['verifyUrl'];
 }
 
