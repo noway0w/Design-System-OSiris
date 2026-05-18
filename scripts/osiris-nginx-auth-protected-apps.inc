@@ -24,16 +24,36 @@ location ^~ /map-app/ {
     try_files $uri $uri/ /map-app/index.html;
 }
 
+location = /iris {
+    return 301 /iris/;
+}
+
+location = /iris/index.php {
+    return 301 /iris/;
+}
+
 location ^~ /iris/ {
     auth_request /_internal_platform_auth;
     error_page 401 =302 /login/?next=$request_uri;
-    try_files $uri $uri/ /iris/index.php /iris/index.html;
+    # index.html only — server index lists index.php first; ^~ blocks location ~ \.php$.
+    # Top bar: /js/platform-shell-topbar.js in iris/index.html (not index.php).
+    index index.html;
+    try_files $uri $uri/ /iris/index.html;
+}
+
+location = /carscan {
+    return 301 /carscan/;
+}
+
+location = /carscan/index.php {
+    return 301 /carscan/;
 }
 
 location ^~ /carscan/ {
     auth_request /_internal_platform_auth;
     error_page 401 =302 /login/?next=$request_uri;
-    try_files $uri $uri/ /carscan/index.php /carscan/index.html;
+    index index.html;
+    try_files $uri $uri/ /carscan/index.html;
 }
 
 location ^~ /disable/ {

@@ -114,7 +114,7 @@ The `state` parameter is signed (see `platform_sso_*` in `platform-db.php`) so t
 ## 6. Nginx
 
 - Reference configs: `scripts/app-guillaumelassiat-nginx.conf`, `scripts/osiris-nginx-auth-protected-apps.inc`.
-- **`index index.php index.html`** in the app vhost so `/iris/` and `/carscan/` run `index.php` (platform top bar injection) before static `index.html`.
+- App vhost uses **`index index.html`** only. Iris/CarScan top bar is injected by **`platform-shell-topbar.js`** in each `index.html` (do not use `index.php` under `^~` locations — nginx would serve PHP as plain text).
 - Protected app paths (`/map-app/`, `/iris/`, `/carscan/`, `/disable/`, `/3Dobjscan/`, `/dashboard/`) live in **`osiris-nginx-auth-protected-apps.inc` only**. Do **not** duplicate those `location` blocks in `app-guillaumelassiat-nginx.conf` — nginx will fail with `duplicate location "/3Dobjscan"` (or similar).
 - Deploy: `sudo cp /home/OSiris/scripts/app-guillaumelassiat-nginx.conf /etc/nginx/conf.d/app-guillaumelassiat-nginx.conf` then `sudo nginx -t && sudo systemctl reload nginx`.
 - Internal auth subrequest locations should set **`HTTPS`** and **`HTTP_X_FORWARDED_PROTO`** before `fastcgi_pass`, and pass **`HTTP_COOKIE`** so PHP sees session and auth cookies.
@@ -140,11 +140,10 @@ Sub-apps load `public_html/css/dashboard-shell.css` and `public_html/js/platform
 |--------|------|------|
 | Shell script | `public_html/js/platform-shell-topbar.js` | Skeleton bar, fetch user, `OSirisPlatformTopbar.mountLeading()` for app controls (Map menu + Discover) |
 | Styles | `public_html/css/dashboard-shell.css` | 3-zone layout, `--platform-topbar-*` theme vars (`html.light` / `html.dark`), leading 48×48 slot |
-| Static HTML fragment | `public_html/includes/platform-topbar-static.html` | Markup injected by PHP entry points |
-| Iris entry | `public_html/iris/index.php` | Strips any embedded bar from `index.html`, injects fragment after `<body>` |
-| CarScan entry | `public_html/carscan/index.php` | Same as Iris |
+| Static HTML fragment | `public_html/includes/platform-topbar-static.html` | Optional; prefer JS shell |
+| Iris / CarScan entry | `public_html/iris/index.html`, `public_html/carscan/index.html` | Load `platform-shell-topbar.js` (defer at end of body) |
 
-**Iris / CarScan:** `index.html` must not embed the bar (avoids duplicate ids). Nginx serves `index.php` first; scripts at end of body: `theme-service.js` → `ThemeService.init()` → `platform-shell-topbar.js`.
+**Iris / CarScan:** Do not add `index.php` in these folders — on hosts without PHP handling for app paths, nginx serves the file as plain text. Use `scripts/osiris-public-443-static-apps.inc` on `osiris.guillaumelassiat.com` if needed.
 
 **Other apps:** Map moves `#general-menu-wrapper` and `#bottom-panel-toggle` into `#platform-topbar-leading`. Disable and 3Dobjscan use `theme-service.js` + the shell script; the bar is injected on `body` when missing, or kept when present.
 
