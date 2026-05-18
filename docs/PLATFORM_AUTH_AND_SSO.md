@@ -200,7 +200,7 @@ SQLite tables: `companies`, `roles`, `projects`, `project_members`, `user_files`
 | Project file (`project_id` set) | Members of that project only |
 | Legacy personal (`project_id` NULL, pre-migration) | Uploader only |
 
-Upload: `POST /api/iris-files-upload.php` requires `project_id` and an allowed extension (`jpeg`, `jpg`, `png`, `iges`, `step`, `dxf`, `ifc`, `3dm`, `dwg`, `glb`, `mp4`, `mov`, `avi`). Max 50 MB.
+Upload: `POST /api/iris-files-upload.php` requires `project_id` and an allowed extension (`jpeg`, `jpg`, `png`, `iges`, `step`, `dxf`, `ifc`, `3dm`, `dwg`, `glb`, `mp4`, `mov`, `avi`). Max 50 MB. **CAD Explorer** (`/disable/`) surfaces project CAD files via `GET /api/iris-cad-explorer-files.php` when the project has **`disable`** checked in **`project_services`** (and the viewer user has **`disable`** in **`service_permissions`**); workspace files download with `GET /api/iris-files-download.php?id=`.
 
 On schema init, each company gets a `General` project with all company users in `project_members`; orphan `user_files` rows are assigned to that project.
 
@@ -249,6 +249,10 @@ The standalone **Import Files** tab is removed; uploads happen inside the Projec
 | `auth-complete-invite.php` | POST — set password for pending invitee; sends standard verify email after |
 | `iris-files.php`, `iris-files-download.php` | `can_import_files` + membership rules |
 | `iris-files-upload.php` | `can_import_files` + required `project_id` + extension whitelist |
+
+<!-- CAD Explorer UI (public_html/disable/index.html): after each iris-cad-explorer-files GET, the viewer drops project-sourced loaded entries (plat-{id}) not returned; API errors prune all plat entries; visibilitychange triggers refetch. -->
+
+| `iris-cad-explorer-files.php` | GET JSON — **`service_permissions`** must include **`disable`**; lists `user_files` with CAD viewer extensions grouped by **`project_name`** where the project row exists in **`project_services`** with **`service_name = 'disable'`** (CAD Explorer enabled for that workspace). Mirrors file visibility logic of `iris-files`; client loads blobs via **`iris-files-download.php`**. Viewer extensions match [`platform_allowed_cad_explorer_extensions`](/home/OSiris/public_html/api/platform-rbac.php) (`iges`, `igs`, `step`, `stp`, `dxf`, `ifc`, `3dm`, `dwg`, `glb`). |
 
 `service_permissions` is unchanged for nginx `auth-verify.php` and app tiles; the Team tab toggles that table per member.
 

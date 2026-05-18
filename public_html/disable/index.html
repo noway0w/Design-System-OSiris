@@ -504,7 +504,12 @@
           </label>
           <p class="text-xs text-slate-500 dark:text-slate-400">IGES, STEP, DXF, IFC, 3DM, DWG, GLB</p>
         </div>
-        <div id="corintis-loaded-files-list" class="flex-1 overflow-y-auto pr-2 space-y-2 mt-2 min-h-0">
+        <div id="corintis-project-library-wrap" class="flex-shrink-0 mt-2 hidden">
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Project workspace</p>
+          <div id="corintis-project-library" class="space-y-1 max-h-36 overflow-y-auto pr-1 text-left"></div>
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-2 mb-1 border-t border-white/20 dark:border-slate-600/40 pt-2">Local files</p>
+        </div>
+        <div id="corintis-loaded-files-list" class="flex-1 overflow-y-auto pr-2 space-y-2 mt-1 min-h-0">
           <p class="text-sm text-slate-500 dark:text-slate-400">No files loaded. Import an IGES, STEP, DXF, IFC, 3DM, DWG, or GLB file.</p>
         </div>
       </div>
@@ -978,6 +983,19 @@
     } catch (_) {
       // ignore toast failures
     }
+  }
+
+  function escapeHtmlCad(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function formatBytesCad(n) {
+    const x = Number(n) || 0;
+    if (x < 1024) return x + ' B';
+    if (x < 1024 * 1024) return (x / 1024).toFixed(1) + ' KB';
+    return (x / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   /** After a failed 3DM/DWG load only—never used for IFC/STEP/IGES. */
@@ -2052,6 +2070,7 @@
   }
 
   async function saveToRepository(entry) {
+    if (entry && entry.fromPlatform) return;
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -2263,6 +2282,7 @@
   }
 
   async function removeFromRepository(id) {
+    if (String(id).startsWith('plat-')) return;
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -2275,6 +2295,7 @@
   }
 
   async function deleteFromServer(id) {
+    if (String(id).startsWith('plat-')) return;
     const url = typeof getCadFilesUrl === 'function' ? getCadFilesUrl() : '../api/cad-files.php';
     const res = await fetch(url + '?id=' + encodeURIComponent(String(id)), { method: 'DELETE' });
     if (!res.ok) {
@@ -2284,6 +2305,7 @@
   }
 
   async function uploadToServer(entry) {
+    if (entry && entry.fromPlatform) return;
     const url = typeof getCadFilesUrl === 'function' ? getCadFilesUrl() : '../api/cad-files.php';
     const form = new FormData();
     form.append('id', String(entry.id));
@@ -3799,13 +3821,13 @@
           <input type="radio" name="corintis-loaded-file" id="${radioId}" class="w-5 h-5 text-primary border-slate-300 dark:border-slate-500 bg-transparent focus:ring-primary cursor-pointer" data-file-id="${entry.id}" ${isActive ? 'checked' : ''}/>
         </div>
         <label for="${radioId}" class="flex-1 min-w-0 cursor-pointer">
-          <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate" title="${entry.name}">${entry.name}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${formatLabel}</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate" title="${escapeHtmlCad(entry.name)}">${escapeHtmlCad(entry.name)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${formatLabel}${entry.fromPlatform && entry.platformProjectTitle ? ' · ' + escapeHtmlCad(entry.platformProjectTitle) : ''}</p>
         </label>
         <div class="flex items-center gap-1 flex-shrink-0">
-          <button type="button" class="corintis-delete-file p-2 text-slate-500 hover:text-red-500 hover:bg-white/20 dark:hover:bg-slate-700/50 rounded-lg transition-colors" data-file-id="${entry.id}" title="Delete file">
+          ${entry.fromPlatform ? '' : `<button type="button" class="corintis-delete-file p-2 text-slate-500 hover:text-red-500 hover:bg-white/20 dark:hover:bg-slate-700/50 rounded-lg transition-colors" data-file-id="${entry.id}" title="Delete file">
             <span class="material-symbols-outlined text-[18px]">delete</span>
-          </button>
+          </button>`}
         </div>
       `;
       row.querySelector('input').addEventListener('change', async (e) => {
@@ -3827,46 +3849,49 @@
           updateLoadedFilesPanel();
         }
       });
-      row.querySelector('.corintis-delete-file').addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = row.querySelector('input').dataset.fileId;
-        if (!id) return;
-        const idx = loadedFiles.findIndex((f) => String(f.id) === String(id));
-        if (idx < 0) return;
-        loadedFiles.splice(idx, 1);
-        try {
-          await deleteFromServer(id);
-        } catch (err) {
-          console.warn('Could not delete from server:', err);
-        }
-        try {
-          await removeFromRepository(id);
-        } catch (err) {
-          console.warn('Could not remove from repository:', err);
-        }
-        if (String(activeFileId) === String(id)) {
-          activeFileId = loadedFiles.length > 0 ? loadedFiles[0].id : null;
-          if (loadedFiles.length > 0) {
-            const ent = loadedFiles[0];
-            try {
-              const result = await parseIfNeeded(ent);
-              buildMeshesFromResult(result, ent.format || detectFormat(ent.name));
-            } catch (err) {
-              clearCad();
-              const fmt = ent.format || detectFormat(ent.name);
-              showError(err?.message || 'Failed to load file');
-              handleCadConversionRouting(err, fmt, ent);
+      const delBtn = row.querySelector('.corintis-delete-file');
+      if (delBtn) {
+        delBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = row.querySelector('input').dataset.fileId;
+          if (!id) return;
+          const idx = loadedFiles.findIndex((f) => String(f.id) === String(id));
+          if (idx < 0) return;
+          loadedFiles.splice(idx, 1);
+          try {
+            await deleteFromServer(id);
+          } catch (err) {
+            console.warn('Could not delete from server:', err);
+          }
+          try {
+            await removeFromRepository(id);
+          } catch (err) {
+            console.warn('Could not remove from repository:', err);
+          }
+          if (String(activeFileId) === String(id)) {
+            activeFileId = loadedFiles.length > 0 ? loadedFiles[0].id : null;
+            if (loadedFiles.length > 0) {
+              const ent = loadedFiles[0];
+              try {
+                const result = await parseIfNeeded(ent);
+                buildMeshesFromResult(result, ent.format || detectFormat(ent.name));
+              } catch (err) {
+                clearCad();
+                const fmt = ent.format || detectFormat(ent.name);
+                showError(err?.message || 'Failed to load file');
+                handleCadConversionRouting(err, fmt, ent);
+              }
             }
           }
-        }
-        updateLoadedFilesPanel();
-      });
+          updateLoadedFilesPanel();
+        });
+      }
       loadedFilesList.appendChild(row);
     });
   }
 
-  async function addFileToLoadedList(name, buffer) {
+  async function parseCadBufferForLoadedList(name, buffer) {
     const format = detectFormat(name);
     let bufferForStorage = buffer.slice(0);
     if (format === 'iges') {
@@ -3924,6 +3949,11 @@
     if (!(format === '3dm' || format === 'dwg')) {
       assertCadHasRenderableMeshesOrThrow(outFormat, result, null);
     }
+    return { displayName, outFormat, bufferForStorage, result };
+  }
+
+  async function addFileToLoadedList(name, buffer) {
+    const { displayName, outFormat, bufferForStorage, result } = await parseCadBufferForLoadedList(name, buffer);
     const id = Date.now();
     const entry = { id, name: displayName, format: outFormat, result, buffer: bufferForStorage, createdAt: id };
     loadedFiles.push(entry);
@@ -3937,8 +3967,6 @@
     } catch (e) {
       console.warn('Could not upload to server:', e);
     }
-    if (loadedFiles.length > 0) {
-    }
     activeFileId = id;
     buildMeshesFromResult(result, outFormat);
     updateLoadedFilesPanel();
@@ -3946,6 +3974,187 @@
     if (loadedPanel && !isPanelOpen(loadedPanel)) {
       setPanelOpen(loadedPanel, true);
     }
+  }
+
+  async function loadPlatformCadFile(platformFileId, originalName, projectTitle) {
+    showLoading('Loading project file…', 'Downloading…', 10);
+    try {
+      const res = await fetch('/api/iris-files-download.php?id=' + encodeURIComponent(String(platformFileId)), {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      if (!res.ok) {
+        let errTxt = 'Download failed';
+        try {
+          const j = await res.json();
+          if (j.error) errTxt = j.error;
+        } catch (_) {}
+        throw new Error(errTxt);
+      }
+      const buffer = await res.arrayBuffer();
+      updateLoadingProgress('Parsing geometry…', 40);
+      const { displayName, outFormat, bufferForStorage, result } = await parseCadBufferForLoadedList(originalName || 'model', buffer);
+      const id = 'plat-' + String(platformFileId);
+      const existing = loadedFiles.findIndex((f) => String(f.id) === String(id));
+      if (existing >= 0) loadedFiles.splice(existing, 1);
+      const entry = {
+        id,
+        name: displayName,
+        format: outFormat,
+        result,
+        buffer: bufferForStorage,
+        createdAt: Date.now(),
+        fromPlatform: true,
+        platformNumericId: Number(platformFileId),
+        platformProjectTitle: projectTitle || ''
+      };
+      loadedFiles.push(entry);
+      activeFileId = id;
+      buildMeshesFromResult(result, outFormat);
+      updateLoadedFilesPanel();
+      const loadedPanel = floatingPanelsContainer?.querySelector('[data-panel-id="loaded"]');
+      if (loadedPanel && !isPanelOpen(loadedPanel)) {
+        setPanelOpen(loadedPanel, true);
+      }
+      notifyToast('success', 'Loaded from project workspace');
+    } catch (err) {
+      console.error(err);
+      showError(err?.message || 'Could not load project file');
+      notifyToast('error', err?.message || 'Could not load project file');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  async function hydrateProjectLibrary() {
+    const wrap = document.getElementById('corintis-project-library-wrap');
+    const lib = document.getElementById('corintis-project-library');
+    if (!wrap || !lib) return;
+    wrap.classList.remove('hidden');
+    lib.innerHTML = '<p class="text-xs text-slate-500 dark:text-slate-400 px-1">Loading project files…</p>';
+    const allowedFileIds = new Set();
+    try {
+      const res = await fetch('/api/iris-cad-explorer-files.php', { credentials: 'same-origin', cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.ok) {
+        for (const pr of data.projects || []) {
+          for (const f of pr.files || []) {
+            allowedFileIds.add(Number(f.id));
+          }
+        }
+      }
+
+      await pruneInaccessiblePlatformLoadedFiles(allowedFileIds);
+
+      if (!res.ok || !data.ok) {
+        const msg = (data && data.error) ? String(data.error) : 'Could not load project library';
+        lib.innerHTML = '<p class="text-xs text-slate-500 dark:text-slate-400 px-1">' + escapeHtmlCad(msg) + '</p>';
+        return;
+      }
+      const projects = data.projects || [];
+      if (projects.length === 0) {
+        lib.innerHTML =
+          '<p class="text-xs text-slate-500 dark:text-slate-400 px-1">' +
+          'No CAD files in projects with CAD Explorer enabled. Add files from the dashboard project workspace.</p>';
+        return;
+      }
+      lib.innerHTML = '';
+      projects.forEach((proj, idx) => {
+        const det = document.createElement('details');
+        det.className = 'rounded-lg border border-white/20 dark:border-slate-600/50 bg-white/5 dark:bg-slate-800/20';
+        if (idx === 0) det.open = true;
+        const sum = document.createElement('summary');
+        sum.className =
+          'cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200 px-2 py-1.5 flex items-center gap-1 select-none';
+        const ic = document.createElement('span');
+        ic.className = 'material-symbols-outlined text-sm';
+        ic.textContent = 'folder';
+        const ttl = document.createElement('span');
+        ttl.textContent = proj.project_name || ('Project ' + proj.project_id);
+        sum.appendChild(ic);
+        sum.appendChild(ttl);
+        det.appendChild(sum);
+        const body = document.createElement('div');
+        body.className = 'px-2 pb-2 space-y-1';
+        const hint = document.createElement('p');
+        hint.className = 'text-[10px] text-slate-500 dark:text-slate-400 mb-1';
+        hint.textContent = 'Stored in platform project workspace · click to load in viewer';
+        body.appendChild(hint);
+        const files = proj.files || [];
+        files.forEach((f) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className =
+            'w-full text-left text-xs py-1.5 px-2 rounded-md hover:bg-white/20 dark:hover:bg-slate-700/50 ' +
+            'text-slate-800 dark:text-slate-100 border border-transparent hover:border-white/20';
+          const nm = document.createElement('span');
+          nm.className = 'font-medium truncate block';
+          nm.textContent = f.original_name;
+          const meta = document.createElement('span');
+          meta.className = 'block text-[10px] text-slate-500 dark:text-slate-400';
+          meta.textContent =
+            formatBytesCad(f.byte_size) +
+            (f.created_at ? ' · ' + new Date(f.created_at * 1000).toLocaleString() : '');
+          btn.appendChild(nm);
+          btn.appendChild(meta);
+          btn.addEventListener('click', () => {
+            loadPlatformCadFile(f.id, f.original_name, proj.project_name || '');
+          });
+          body.appendChild(btn);
+        });
+        det.appendChild(body);
+        lib.appendChild(det);
+      });
+    } catch (e) {
+      lib.innerHTML =
+        '<p class="text-xs text-slate-500 dark:text-slate-400 px-1">' + escapeHtmlCad(e.message || 'Network error') + '</p>';
+      /* Do not prune on network failure — membership may still be valid. */
+    }
+  }
+
+  /**
+   * Drop project-workspace viewer entries no longer returned by iris-cad-explorer-files.php
+   * (removed from project, CAD disabled on project, or lost access).
+   */
+  async function pruneInaccessiblePlatformLoadedFiles(allowedFileIdSet) {
+    const allowed = allowedFileIdSet instanceof Set ? allowedFileIdSet : new Set(Array.from(allowedFileIdSet || []));
+    const retained = [];
+    let removedActive = false;
+    const prevActive = activeFileId;
+    for (let i = 0; i < loadedFiles.length; i++) {
+      const e = loadedFiles[i];
+      if (e.fromPlatform) {
+        const pid = typeof e.platformNumericId === 'number' ? e.platformNumericId : parseInt(String(e.platformNumericId), 10);
+        if (!Number.isFinite(pid) || !allowed.has(pid)) {
+          if (String(prevActive) === String(e.id)) removedActive = true;
+          continue;
+        }
+      }
+      retained.push(e);
+    }
+    if (retained.length === loadedFiles.length) return;
+    loadedFiles.length = 0;
+    retained.forEach((r) => loadedFiles.push(r));
+    if (removedActive || (prevActive != null && !loadedFiles.some((r) => String(r.id) === String(prevActive)))) {
+      activeFileId = loadedFiles.length > 0 ? loadedFiles[0].id : null;
+      if (loadedFiles.length > 0) {
+        const ent = loadedFiles[0];
+        try {
+          const result = await parseIfNeeded(ent);
+          buildMeshesFromResult(result, ent.format || detectFormat(ent.name));
+        } catch (err) {
+          clearCad();
+          const fmt = ent.format || detectFormat(ent.name);
+          showError(err?.message || 'Failed to load file');
+          handleCadConversionRouting(err, fmt, ent);
+        }
+      } else {
+        clearCad();
+        activeFileId = null;
+      }
+    }
+    updateLoadedFilesPanel();
   }
 
   function restoreFromRepository(records) {
@@ -4119,7 +4328,27 @@
 
   initThree();
   document.addEventListener('osiris-theme-change', () => updateSceneBackgroundForTheme());
-  initFromRepository().then(() => { renderAnalysisRunsList(true); });
+  let corintisProjectLibraryRefreshTimer = null;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    clearTimeout(corintisProjectLibraryRefreshTimer);
+    corintisProjectLibraryRefreshTimer = setTimeout(() => {
+      hydrateProjectLibrary().catch(() => {});
+    }, 500);
+  });
+  initFromRepository()
+    .then(async () => {
+      renderAnalysisRunsList(true);
+      if (window.OSirisPlatformReady) {
+        try {
+          await window.OSirisPlatformReady;
+        } catch (_) {
+          /* not logged into platform — library may 403 */
+        }
+      }
+      await hydrateProjectLibrary();
+    })
+    .catch(() => {});
   hideLoading();
   animate();
 })();

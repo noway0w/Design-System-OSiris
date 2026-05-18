@@ -412,6 +412,22 @@ function platform_validate_upload_extension(string $filename): bool
     return in_array($ext, platform_allowed_upload_extensions(), true);
 }
 
+/** @return list<string> */
+function platform_allowed_cad_explorer_extensions(): array
+{
+    return ['iges', 'igs', 'step', 'stp', 'dxf', 'ifc', '3dm', 'dwg', 'glb'];
+}
+
+function platform_is_cad_explorer_upload_filename(string $filename): bool
+{
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    if ($ext === '') {
+        return false;
+    }
+
+    return in_array($ext, platform_allowed_cad_explorer_extensions(), true);
+}
+
 /** @return list<array<string, mixed>> */
 function platform_project_workspace_services(): array
 {
