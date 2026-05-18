@@ -237,8 +237,8 @@ The standalone **Import Files** tab is removed; uploads happen inside the Projec
 | `iris-team-members.php` POST `action=reactivate` / `purge` | `can_purge_team_users` (`super_admin`) |
 | `iris-team-members.php` GET `?include_deleted=1` | `can_purge_team_users` — list soft-deleted company users |
 | `iris-team-invite.php` POST body | optional `role_slug` (`company_admin`, `company_manager`, `company_user`; `company_owner` only if actor is owner) |
-| `iris-projects.php` GET list | `can_access_projects` — only projects where actor is in `project_members` |
-| `iris-projects.php` GET `?project_id=` | compound JSON: `project`, `members`, `services`, `files` |
+| `iris-projects.php` GET list | `can_access_projects` — only projects where actor is in `project_members`; each project includes `member_preview` (up to 3 `{ avatar_url, name }` from `users.avatar_url`) for dashboard cards |
+| `iris-projects.php` GET `?project_id=` | compound JSON: `project`, `members` (with `avatar_url`), `pending_invites`, `services`, `files`, `can_manage_roster` |
 | `iris-projects.php` POST | `can_create_project` — auto-adds creator to `project_members` |
 | `iris-projects.php` DELETE | `can_delete_project` — soft-delete project (not membership-only) |
 | `iris-project-members.php` | `can_access_projects` + membership; POST optional `role_slug`; POST/DELETE need `can_manage_project_roster`. DELETE removes `project_members` and open `pending_project_invites` (user account unchanged) |
@@ -258,7 +258,9 @@ The standalone **Import Files** tab is removed; uploads happen inside the Projec
 2. `iris-project-invite.php` inserts `pending` user, `project_members`, `pending_project_invites`, and emails a link to `/login/?invite=TOKEN` (not `auth-verify-email.php` directly).
 3. Invitee registers (password or Google SSO with invite in OAuth state) → `auth-complete-invite.php` / SSO callback → verify email → `platform_activate_user()` fulfills pending project membership.
 4. Soft-deleted emails are **reactivated** on re-invite instead of returning “account removed”.
-5. **Members list** (`iris-projects.php` detail) lists all `project_members` for the project (not filtered by `users.company_id`, so platform owners with `company_id` NULL appear). Response includes `can_manage_roster`. Dashboard **Remove from project** / **Cancel invite** buttons call `DELETE iris-project-members.php` (owner, admin, manager, super_admin).
+5. **Members list** (`iris-projects.php` detail) lists all `project_members` for the project (not filtered by `users.company_id`, so platform owners with `company_id` NULL appear). Each member includes `avatar_url` when set (Google SSO profile picture). Response includes `can_manage_roster`. Dashboard **Remove from project** / **Cancel invite** buttons call `DELETE iris-project-members.php` (owner, admin, manager, super_admin).
+
+**Dashboard Projects UI:** Glassmorphic bento cards ([`dashboard-shell.css`](/home/OSiris/public_html/css/dashboard-shell.css), `renderProjects` in [`dashboard-admin.js`](/home/OSiris/public_html/dashboard/dashboard-admin.js)). List cards show real member avatars from `member_preview`; detail team rows use `avatar_url` with initials fallback on missing or broken images.
 
 **Team tab (company users):** **Remove** soft-deletes; **Show removed users** + **Reactivate** / **Delete permanently** for `super_admin` only. Does not remove project memberships until purge (purge deletes `project_members` via FK cleanup in `platform_hard_delete_user`).
 

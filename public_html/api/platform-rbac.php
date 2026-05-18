@@ -544,6 +544,44 @@ function platform_reactivate_user(PDO $pdo, int $userId): void
         ->execute([$status, $now, $userId]);
 }
 
+/**
+ * Up to $limitPerProject member avatars per project (for dashboard project cards).
+ *
+ * @param list<int> $projectIds
+ * @return array<int, list<array{avatar_url: ?string, name: string}>>
+ */
+function platform_project_member_previews(PDO $pdo, array $projectIds, int $limitPerProject = 3): array
+{
+    $projectIds = array_values(array_filter(array_map('intval', $projectIds), static fn (int $id): bool => $id > 0));
+    if ($projectIds === []) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($projectIds), '?'));
+    $st = $pdo->prepare("SELECT pm.project_id, u.avatar_url, u.name, u.surname
+            FROM project_members pm
+            INNER JOIN users u ON u.id = pm.user_id AND u.deleted_at IS NULL
+            WHERE pm.project_id IN ($placeholders)
+            ORDER BY pm.project_id, pm.created_at ASC");
+    $st->execute($projectIds);
+    $map = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $pid = (int) $row['project_id'];
+        if (!isset($map[$pid])) {
+            $map[$pid] = [];
+        }
+        if (count($map[$pid]) >= $limitPerProject) {
+            continue;
+        }
+        $avatar = $row['avatar_url'] ?? null;
+        $map[$pid][] = [
+            'avatar_url' => ($avatar !== null && $avatar !== '') ? (string) $avatar : null,
+            'name' => platform_user_display_name($row),
+        ];
+    }
+
+    return $map;
+}
+
 /** Why this team member cannot be removed; null if removal is allowed. */
 function platform_team_remove_blocked_reason(array $actor, array $target): ?string
 {

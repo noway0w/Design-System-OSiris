@@ -27,7 +27,7 @@ if ($method === 'GET') {
         $project = platform_require_project_access($pdo, $actor, $detailId);
         $projectCompanyId = (int) ($project['company_id'] ?? 0);
 
-        $stMembers = $pdo->prepare("SELECT u.id, u.name, u.surname, u.email, u.account_status, r.label AS role_label
+        $stMembers = $pdo->prepare("SELECT u.id, u.name, u.surname, u.email, u.avatar_url, u.account_status, r.label AS role_label
             FROM project_members pm
             INNER JOIN users u ON u.id = pm.user_id AND u.deleted_at IS NULL
             LEFT JOIN roles r ON r.id = u.role_id
@@ -36,16 +36,18 @@ if ($method === 'GET') {
         $stMembers->execute([$detailId]);
         $members = [];
         foreach ($stMembers->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $avatar = $row['avatar_url'] ?? null;
             $members[] = [
                 'id' => (int) $row['id'],
                 'name' => platform_user_display_name($row),
                 'email' => $row['email'],
+                'avatar_url' => ($avatar !== null && $avatar !== '') ? (string) $avatar : null,
                 'account_status' => (string) ($row['account_status'] ?? ''),
                 'role_label' => $row['role_label'],
             ];
         }
 
-        $stPending = $pdo->prepare('SELECT u.id, u.name, u.surname, u.email, u.account_status, ppi.created_at
+        $stPending = $pdo->prepare('SELECT u.id, u.name, u.surname, u.email, u.avatar_url, u.account_status, ppi.created_at
             FROM pending_project_invites ppi
             INNER JOIN users u ON u.id = ppi.user_id AND u.deleted_at IS NULL
             WHERE ppi.project_id = ? AND ppi.fulfilled_at IS NULL
@@ -53,10 +55,12 @@ if ($method === 'GET') {
         $stPending->execute([$detailId]);
         $pendingInvites = [];
         foreach ($stPending->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $avatar = $row['avatar_url'] ?? null;
             $pendingInvites[] = [
                 'id' => (int) $row['id'],
                 'name' => platform_user_display_name($row),
                 'email' => $row['email'],
+                'avatar_url' => ($avatar !== null && $avatar !== '') ? (string) $avatar : null,
                 'account_status' => (string) ($row['account_status'] ?? ''),
                 'invited_at' => (int) ($row['created_at'] ?? 0),
             ];
@@ -165,6 +169,11 @@ if ($method === 'GET') {
         }
         $projects[] = $item;
     }
+    $previewMap = platform_project_member_previews($pdo, array_column($projects, 'id'));
+    foreach ($projects as &$item) {
+        $item['member_preview'] = $previewMap[$item['id']] ?? [];
+    }
+    unset($item);
     echo json_encode(['ok' => true, 'projects' => $projects]);
     exit;
 }

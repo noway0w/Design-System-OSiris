@@ -602,20 +602,85 @@
     var canDeleteProject = !!dashCapabilities.can_delete_project;
     var canCreateProject = !!dashCapabilities.can_create_project;
     var isSuperAdmin = !!dashCapabilities.super_admin;
+    var projectIconVariants = ["dash-project-icon--a", "dash-project-icon--b", "dash-project-icon--c"];
+
+    function projectStatusLabel(status) {
+      var s = (status || "active").toLowerCase();
+      if (s === "active") return "Active workspace";
+      if (s === "archived") return "Archived";
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function memberInitials(name) {
+      var parts = String(name || "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      if (!parts.length) return "?";
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function userAvatarHtml(user, sizeClass) {
+      var cls = sizeClass || "dash-project-avatar";
+      var init = escapeHtml(memberInitials(user && user.name));
+      var url = user && user.avatar_url ? escapeHtml(String(user.avatar_url).trim()) : "";
+      if (!url) {
+        return (
+          '<span class="' +
+          cls +
+          '"><span class="' +
+          cls +
+          '__initials" aria-hidden="true">' +
+          init +
+          "</span></span>"
+        );
+      }
+      return (
+        '<span class="' +
+        cls +
+        '">' +
+        '<img src="' +
+        url +
+        '" alt="" loading="lazy" referrerpolicy="no-referrer" class="' +
+        cls +
+        '__img" onerror="this.style.display=\'none\';var n=this.nextElementSibling;if(n)n.style.display=\'flex\'"/>' +
+        '<span class="' +
+        cls +
+        '__initials" style="display:none" aria-hidden="true">' +
+        init +
+        "</span></span>"
+      );
+    }
+
+    function projectAvatarStack(preview, totalCount) {
+      var list = preview || [];
+      var total = totalCount != null ? Math.max(0, parseInt(totalCount, 10) || 0) : list.length;
+      if (total < 1 && !list.length) return "";
+      var html = '<div class="dash-project-avatars">';
+      list.slice(0, 3).forEach(function (u) {
+        html += userAvatarHtml(u, "dash-project-avatar");
+      });
+      if (total > 3) {
+        html += '<span class="dash-project-avatar dash-project-avatar--more">+' + (total - 3) + "</span>";
+      }
+      html += "</div>";
+      return html;
+    }
 
     function renderListShell() {
       var createBtn = canCreateProject
-        ? '<button type="button" id="projects-new-btn" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold shadow-sm"><span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>Create Project</button>'
+        ? '<button type="button" id="projects-new-btn" class="dash-btn-primary"><span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>Create Project</button>'
         : "";
       root.innerHTML =
-        '<div class="dash-section-head flex flex-wrap justify-between items-start gap-3">' +
+        '<div class="dash-section-head">' +
         '<div><h3 class="dash-section-title">Projects</h3>' +
         '<p class="dash-section-desc">Open a project workspace to manage services, team, and files.</p></div>' +
         createBtn +
         "</div>" +
-        '<div id="projects-empty-cta" class="hidden mt-6 glass-panel rounded-xl p-8 text-center"><p class="text-slate-600 mb-4">No projects yet. Create your first workspace.</p></div>' +
-        '<div id="projects-list-grid" class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>' +
-        '<p id="projects-status" class="text-sm mt-3 text-slate-600"></p>';
+        '<div id="projects-empty-cta" class="hidden dash-projects-empty glass-panel"><p>No projects yet. Create your first workspace.</p></div>' +
+        '<div id="projects-list-grid" class="dash-projects-grid"></div>' +
+        '<p id="projects-status" class="dash-section-desc" style="margin-top:0.75rem"></p>';
     }
 
     function loadList() {
@@ -644,8 +709,7 @@
             if (canCreateProject) {
               var ctaBtn = document.createElement("button");
               ctaBtn.type = "button";
-              ctaBtn.className =
-                "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-700 text-white text-sm font-semibold";
+              ctaBtn.className = "dash-btn-primary";
               ctaBtn.innerHTML =
                 '<span class="material-symbols-outlined text-lg">add</span>Create Project';
               ctaBtn.addEventListener("click", showCreatePanel);
@@ -656,21 +720,46 @@
           return;
         }
         if (emptyCta) emptyCta.classList.add("hidden");
-        list.forEach(function (p) {
+        list.forEach(function (p, idx) {
           var card = document.createElement("button");
           card.type = "button";
-          card.className =
-            "proj-open glass-panel rounded-xl p-4 text-left hover:ring-2 hover:ring-violet-300/50 transition";
+          card.className = "proj-open dash-project-card glass-panel";
           card.setAttribute("data-id", String(p.id));
           var desc = p.description ? escapeHtml(String(p.description).slice(0, 120)) : "No description";
-          var coLine = isSuperAdmin && p.company_name
-            ? '<p class="text-xs text-violet-600 mt-1">' + escapeHtml(p.company_name) + "</p>"
-            : "";
+          var meta =
+            isSuperAdmin && p.company_name
+              ? escapeHtml(p.company_name)
+              : "Workspace";
+          var iconVar = projectIconVariants[idx % projectIconVariants.length];
+          var badge = projectStatusLabel(p.status);
+          var members = p.member_count || 0;
           card.innerHTML =
-            '<h4 class="font-semibold text-base">' + escapeHtml(p.name) + "</h4>" +
-            coLine +
-            '<p class="text-sm text-slate-600 mt-1 line-clamp-2">' + desc + "</p>" +
-            '<p class="text-xs text-slate-500 mt-3">' + (p.member_count || 0) + " member(s)</p>";
+            '<div class="dash-project-card-top">' +
+            '<div class="dash-project-icon ' +
+            iconVar +
+            '"><span class="material-symbols-outlined">folder_shared</span></div>' +
+            "</div>" +
+            "<div>" +
+            '<h4 class="dash-project-card__title">' +
+            escapeHtml(p.name) +
+            "</h4>" +
+            '<p class="dash-project-card__meta">' +
+            meta +
+            "</p>" +
+            '<p class="dash-project-card__desc">' +
+            desc +
+            "</p>" +
+            "</div>" +
+            '<div class="dash-project-card-footer">' +
+            '<span class="dash-project-badge">' +
+            badge +
+            " · " +
+            members +
+            " member" +
+            (members === 1 ? "" : "s") +
+            "</span>" +
+            projectAvatarStack(p.member_preview || [], members) +
+            "</div>";
           grid.appendChild(card);
         });
         status.textContent = list.length + " project(s)";
@@ -681,37 +770,37 @@
       projectsState.view = "create";
       projectsState.projectId = null;
       root.innerHTML =
-        '<div class="mb-6 flex flex-wrap items-center gap-3">' +
-        '<button type="button" id="projects-create-cancel" class="text-sm text-violet-700 hover:underline flex items-center gap-1">' +
+        '<div class="proj-detail-hero">' +
+        '<button type="button" id="projects-create-cancel" class="dash-btn-ghost">' +
         '<span class="material-symbols-outlined text-base">arrow_back</span> Cancel</button>' +
-        '<h3 class="dash-section-title flex-1">Create project</h3></div>' +
-        '<div class="glass-panel rounded-2xl p-6 max-w-2xl">' +
-        '<label class="block text-sm mb-4"><span class="font-medium">Project name <span class="text-red-600">*</span></span>' +
-        '<input id="proj-create-name" type="text" required maxlength="120" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" placeholder="e.g. Site survey Q2"/></label>' +
-        '<label class="block text-sm mb-4"><span class="font-medium">Description</span>' +
-        '<textarea id="proj-create-desc" rows="3" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200" placeholder="Optional"></textarea></label>' +
-        '<div id="proj-create-team-block" class="mb-4 hidden">' +
-        '<h4 class="text-sm font-semibold mb-2">Invite team members</h4>' +
-        '<p class="text-xs text-slate-500 mb-3">Select colleagues to add to this project. You are added automatically as creator.</p>' +
-        '<div id="proj-create-members" class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3 mb-4"></div>' +
-        '<h4 class="text-sm font-semibold mb-2">Invite by email</h4>' +
+        '<h3 class="dash-section-title">Create project</h3></div>' +
+        '<div class="proj-create-form glass-panel">' +
+        '<label><span>Project name <span style="color:var(--dash-error)">*</span></span>' +
+        '<input id="proj-create-name" type="text" required maxlength="120" placeholder="e.g. Site survey Q2"/></label>' +
+        '<label><span>Description</span>' +
+        '<textarea id="proj-create-desc" rows="3" placeholder="Optional"></textarea></label>' +
+        '<div id="proj-create-team-block" class="hidden">' +
+        '<p class="proj-create-form__subhead">Invite team members</p>' +
+        '<p class="proj-create-form__hint">Select colleagues to add to this project. You are added automatically as creator.</p>' +
+        '<div id="proj-create-members" class="proj-create-members-box"></div>' +
+        '<p class="proj-create-form__subhead">Invite by email</p>' +
         '<div class="grid gap-3 sm:grid-cols-2">' +
-        '<label class="block text-xs sm:col-span-2"><span class="font-medium">Email</span>' +
-        '<input id="proj-create-invite-email" type="email" class="mt-1 w-full px-3 py-1.5 rounded-lg border text-sm" placeholder="colleague@company.com"/></label>' +
-        '<label class="block text-xs"><span class="font-medium">First name</span>' +
-        '<input id="proj-create-invite-name" type="text" class="mt-1 w-full px-3 py-1.5 rounded-lg border text-sm"/></label>' +
-        '<label class="block text-xs"><span class="font-medium">Last name</span>' +
-        '<input id="proj-create-invite-surname" type="text" class="mt-1 w-full px-3 py-1.5 rounded-lg border text-sm"/></label>' +
-        '<label class="block text-xs sm:col-span-2"><span class="font-medium">Role</span>' +
-        '<select id="proj-create-invite-role" class="mt-1 w-full px-3 py-1.5 rounded-lg border text-sm"></select></label></div>' +
-        '<p class="text-xs text-slate-500 mt-1 sm:col-span-2">Invites are sent when you click <strong>Create project</strong>.</p>' +
-        '<button type="button" id="proj-create-invite-add" class="mt-2 text-sm text-violet-700 font-medium sm:col-span-2">+ Add to invite list</button>' +
+        '<label class="sm:col-span-2"><span>Email</span>' +
+        '<input id="proj-create-invite-email" type="email" placeholder="colleague@company.com"/></label>' +
+        '<label><span>First name</span>' +
+        '<input id="proj-create-invite-name" type="text"/></label>' +
+        '<label><span>Last name</span>' +
+        '<input id="proj-create-invite-surname" type="text"/></label>' +
+        '<label class="sm:col-span-2"><span>Role</span>' +
+        '<select id="proj-create-invite-role"></select></label></div>' +
+        '<p class="proj-create-form__hint">Invites are sent when you click <strong>Create project</strong>.</p>' +
+        '<button type="button" id="proj-create-invite-add" class="proj-create-invite-add">+ Add to invite list</button>' +
         '<ul id="proj-create-pending-invites" class="mt-3 space-y-2"></ul></div>' +
-        '<p id="proj-create-no-team" class="text-sm text-slate-500 mb-4 hidden">You can invite teammates from the project workspace after creation.</p>' +
-        '<p id="proj-create-error" class="text-sm text-red-600 mb-3 hidden" role="alert"></p>' +
-        '<div class="flex flex-wrap gap-3 pt-2 border-t border-slate-200">' +
-        '<button type="button" id="projects-create-cancel-2" class="px-5 py-2 rounded-lg border border-slate-300 text-sm">Cancel</button>' +
-        '<button type="button" id="proj-create-submit" class="px-5 py-2 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold">Create project</button></div></div>';
+        '<p id="proj-create-no-team" class="proj-create-form__hint hidden">You can invite teammates from the project workspace after creation.</p>' +
+        '<p id="proj-create-error" class="text-sm hidden" style="color:var(--dash-error)" role="alert"></p>' +
+        '<div class="proj-create-form__actions">' +
+        '<button type="button" id="projects-create-cancel-2" class="dash-btn-secondary">Cancel</button>' +
+        '<button type="button" id="proj-create-submit" class="dash-btn-primary">Create project</button></div></div>';
 
       var pendingInvites = [];
       var createRoles = [];
@@ -734,7 +823,7 @@
         ul.innerHTML = "";
         pendingInvites.forEach(function (inv, idx) {
           var li = document.createElement("li");
-          li.className = "flex justify-between items-center text-sm glass-panel rounded-lg px-3 py-2";
+          li.className = "flex justify-between items-center text-sm glass-panel rounded-lg px-3 py-2 proj-create-pending-row";
           li.innerHTML =
             "<span>" +
             escapeHtml(inv.email) +
@@ -1032,7 +1121,7 @@
             '<label class="block text-xs mb-2">Role<select id="proj-invite-role" class="mt-1 w-full px-3 py-1.5 rounded-lg border text-sm">' +
             projectRoleOptions(roles, "company_user") +
             "</select></label>" +
-            '<button type="button" id="proj-invite-submit" class="mt-2 px-4 py-1.5 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-medium">Send invite</button>' +
+            '<button type="button" id="proj-invite-submit" class="dash-btn-primary" style="margin-top:0.5rem">Send invite</button>' +
             '<p id="proj-invite-msg" class="text-xs text-slate-600 mt-2"></p>' +
             '<p id="proj-invite-link" class="hidden text-xs mt-2 break-all"></p></div>'
           : "";
@@ -1046,10 +1135,10 @@
           "</div>" +
           inviteBlock;
         var footer = canManageRoster
-          ? '<button type="button" class="dash-modal-close px-4 py-1.5 rounded-lg border border-slate-300 text-sm">Cancel</button>' +
-            '<button type="button" id="proj-members-validate" class="px-4 py-1.5 rounded-lg border border-violet-300 text-violet-800 bg-violet-50 text-sm font-medium">Save members</button>' +
-            '<button type="button" class="dash-modal-close px-4 py-1.5 rounded-lg bg-slate-900 text-white text-sm">Done</button>'
-          : '<button type="button" class="dash-modal-close px-4 py-1.5 rounded-lg bg-slate-900 text-white text-sm">Done</button>';
+          ? '<button type="button" class="dash-modal-close dash-btn-secondary">Cancel</button>' +
+            '<button type="button" id="proj-members-validate" class="dash-btn-secondary">Save members</button>' +
+            '<button type="button" class="dash-modal-close dash-btn-primary">Done</button>'
+          : '<button type="button" class="dash-modal-close dash-btn-primary">Done</button>';
         var m = openModal("Add user to project", body, footer);
 
         function showInviteLink(url) {
@@ -1226,7 +1315,7 @@
       var servicesHtml = (data.services || [])
         .map(function (s) {
           return (
-            '<label class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 text-sm">' +
+            '<label class="proj-svc-row">' +
             "<span>" +
             escapeHtml(s.label || s.service_name) +
             "</span>" +
@@ -1248,21 +1337,23 @@
               : "";
           var removeBtn =
             detailCanManageRoster
-              ? '<button type="button" class="proj-member-remove shrink-0 text-xs text-red-600 font-medium hover:underline" data-uid="' +
+              ? '<button type="button" class="proj-member-remove" data-uid="' +
                 m.id +
                 '" data-name="' +
                 escapeHtml(m.name) +
                 '">Remove from project</button>'
               : "";
           return (
-            '<li class="py-2 border-b border-slate-100 text-sm flex flex-wrap items-start justify-between gap-2">' +
-            '<div class="min-w-0 flex-1"><span class="font-medium">' +
+            '<li class="proj-member-item">' +
+            '<div class="proj-member-item__body">' +
+            userAvatarHtml(m, "proj-member-initials") +
+            "<div><span class=\"proj-member-item__name\">" +
             escapeHtml(m.name) +
-            '</span><span class="text-slate-500 block text-xs">' +
+            '</span><span class="proj-member-item__meta">' +
             escapeHtml(m.email) +
             (m.role_label ? " · " + escapeHtml(m.role_label) : "") +
             statusNote +
-            "</span></div>" +
+            "</span></div></div>" +
             removeBtn +
             "</li>"
           );
@@ -1277,19 +1368,21 @@
         .map(function (p) {
           var cancelBtn =
             detailCanManageRoster
-              ? '<button type="button" class="proj-member-remove shrink-0 text-xs text-red-600 font-medium hover:underline" data-uid="' +
+              ? '<button type="button" class="proj-member-remove" data-uid="' +
                 p.id +
                 '" data-name="' +
                 escapeHtml(p.name) +
                 '" data-pending="1">Cancel invite</button>'
               : "";
           return (
-            '<li class="py-2 border-b border-slate-100 text-sm flex flex-wrap items-start justify-between gap-2">' +
-            '<div class="min-w-0 flex-1"><span class="font-medium">' +
+            '<li class="proj-member-item">' +
+            '<div class="proj-member-item__body">' +
+            userAvatarHtml(p, "proj-member-initials") +
+            "<div><span class=\"proj-member-item__name\">" +
             escapeHtml(p.name) +
-            '</span><span class="text-slate-500 block text-xs">' +
+            '</span><span class="proj-member-item__meta">' +
             escapeHtml(p.email) +
-            ' <span class="text-amber-600 font-medium">· Invite pending</span></span></div>' +
+            ' <span style="color:#b45309;font-weight:600">· Invite pending</span></span></div></div>' +
             cancelBtn +
             "</li>"
           );
@@ -1298,7 +1391,7 @@
       var teamListHtml =
         membersHtml ||
         pendingHtml ||
-        '<li class="text-sm text-slate-500 py-2">No members yet. Use Add user to project to invite someone.</li>';
+        '<li class="proj-member-item"><span class="proj-member-item__meta">No members yet. Use Add user to project to invite someone.</span></li>';
       if (membersHtml && pendingHtml) {
         teamListHtml = membersHtml + pendingHtml;
       }
@@ -1307,15 +1400,15 @@
         .map(function (f) {
           var sizeKb = Math.round((f.byte_size || 0) / 1024);
           return (
-            '<li class="flex flex-wrap items-center justify-between gap-2 py-3 px-2">' +
-            '<div class="flex items-center gap-3 min-w-0 flex-1">' +
-            '<span class="material-symbols-outlined text-violet-600 shrink-0">insert_drive_file</span>' +
-            '<div class="min-w-0"><p class="font-medium text-sm truncate">' +
+            '<li class="proj-file-row">' +
+            '<div class="proj-file-row__body">' +
+            '<span class="material-symbols-outlined proj-file-row__icon">insert_drive_file</span>' +
+            '<div><p class="proj-file-row__name">' +
             escapeHtml(f.original_name) +
-            '</p><p class="text-xs text-slate-500">' +
+            '</p><p class="proj-file-row__size">' +
             sizeKb +
             " KB</p></div></div>" +
-            '<a class="shrink-0 px-3 py-1 rounded-lg border border-violet-200 text-violet-700 text-xs font-medium" href="/api/iris-files-download.php?id=' +
+            '<a class="dash-btn-ghost" href="/api/iris-files-download.php?id=' +
             f.id +
             '">Download</a></li>'
           );
@@ -1323,48 +1416,55 @@
         .join("");
 
       root.innerHTML =
-        '<div class="flex flex-wrap items-center gap-3 mb-6">' +
-        '<button type="button" id="projects-back-btn" class="text-sm text-violet-700 hover:underline flex items-center gap-1">' +
+        '<div class="proj-detail-hero">' +
+        '<button type="button" id="projects-back-btn" class="dash-btn-ghost">' +
         '<span class="material-symbols-outlined text-base">arrow_back</span> Back to Projects</button>' +
-        '<h3 class="dash-section-title flex-1">' +
+        '<h3 class="dash-section-title">' +
         escapeHtml(p.name || "Project") +
-        (p.company_name ? ' <span class="text-sm font-normal text-violet-600">(' + escapeHtml(p.company_name) + ")</span>" : "") +
+        (p.company_name
+          ? ' <span class="dash-project-card__meta" style="display:inline;text-transform:none;letter-spacing:0">(' +
+            escapeHtml(p.company_name) +
+            ")</span>"
+          : "") +
         "</h3>" +
         (canDeleteProject
-          ? '<button type="button" id="projects-detail-del" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100"><span class="material-symbols-outlined text-base" aria-hidden="true">delete</span>Delete project</button>'
+          ? '<button type="button" id="projects-detail-del" class="dash-btn-danger-outline"><span class="material-symbols-outlined text-base" aria-hidden="true">delete</span>Delete project</button>'
           : "") +
         "</div>" +
         (p.description
-          ? '<p class="text-sm text-slate-600 mb-6">' + escapeHtml(p.description) + "</p>"
+          ? '<p class="dash-section-desc" style="margin-bottom:1.5rem">' + escapeHtml(p.description) + "</p>"
           : "") +
-        '<div class="grid gap-6 lg:grid-cols-3">' +
-        '<section class="glass-panel rounded-xl p-4"><h4 class="font-semibold text-sm mb-3">Allowed services</h4>' +
-        '<div>' +
-        (servicesHtml || '<p class="text-sm text-slate-500">No services configured.</p>') +
+        '<div class="proj-detail-bento">' +
+        '<section class="proj-panel glass-panel">' +
+        '<h4 class="proj-panel__title">Allowed services</h4>' +
+        "<div>" +
+        (servicesHtml || '<p class="proj-member-item__meta">No services configured.</p>') +
         "</div></section>" +
-        '<section class="glass-panel rounded-xl p-4"><div class="flex justify-between items-center gap-2 mb-3">' +
-        '<h4 class="font-semibold text-sm">Team members</h4>' +
+        '<section class="proj-panel glass-panel">' +
+        '<div class="proj-panel__head">' +
+        '<h4 class="proj-panel__title">Team members</h4>' +
         (detailCanManageRoster
-          ? '<button type="button" id="projects-add-user" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium">Add user to project</button>'
+          ? '<button type="button" id="projects-add-user" class="dash-btn-primary" style="padding:0.375rem 0.875rem;font-size:0.75rem">Add user</button>'
           : "") +
-        "</div><ul class=\"max-h-80 overflow-y-auto\">" +
+        '</div><ul class="proj-member-list">' +
         teamListHtml +
         "</ul></section>" +
-        '<section class="glass-panel rounded-xl p-4 lg:col-span-1">' +
-        '<div class="flex justify-between items-center gap-2 mb-3">' +
-        '<h4 class="font-semibold text-sm">Project files <span id="proj-file-count" class="text-slate-500 font-normal">(' +
+        '<section class="proj-panel glass-panel">' +
+        '<div class="proj-panel__head">' +
+        '<h4 class="proj-panel__title">Project files <span id="proj-file-count" class="proj-panel__count">(' +
         fileCount +
         ")</span></h4></div>" +
         '<input type="file" id="proj-file-input" class="hidden" accept=".jpeg,.jpg,.png,.iges,.step,.dxf,.ifc,.3dm,.dwg,.glb,video/*"/>' +
-        '<div id="proj-file-drop" class="mb-4 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/30 p-6 text-center">' +
-        '<span class="material-symbols-outlined text-4xl text-violet-500">cloud_upload</span>' +
-        '<p class="text-sm text-slate-600 mt-2">Add files to this project</p>' +
-        '<p class="text-xs text-slate-500 mt-1">jpeg, png, iges, step, dxf, ifc, 3dm, dwg, glb, mp4, mov, avi · max 50 MB</p>' +
-        '<button type="button" id="proj-file-import" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold">' +
+        '<div id="proj-file-drop" class="proj-file-drop">' +
+        '<span class="material-symbols-outlined">cloud_upload</span>' +
+        '<p>Add files to this project</p>' +
+        '<p class="proj-file-drop__hint">jpeg, png, iges, step, dxf, ifc, 3dm, dwg, glb, mp4, mov, avi · max 50 MB</p>' +
+        '<button type="button" id="proj-file-import" class="dash-btn-primary" style="margin-top:1rem">' +
         '<span class="material-symbols-outlined text-lg">add</span>Add file</button></div>' +
-        '<p id="proj-upload-msg" class="text-xs text-slate-600 mb-3"></p>' +
-        '<ul id="proj-files-list" class="divide-y divide-slate-100 max-h-[24rem] overflow-y-auto rounded-lg border border-slate-100">' +
-        (filesHtml || '<li class="py-6 text-center text-sm text-slate-500">No files uploaded yet. Click Add file to upload.</li>') +
+        '<p id="proj-upload-msg" class="proj-member-item__meta" style="margin-bottom:0.75rem"></p>' +
+        '<ul id="proj-files-list" class="proj-files-list">' +
+        (filesHtml ||
+          '<li class="proj-file-row"><span class="proj-member-item__meta">No files uploaded yet. Click Add file to upload.</span></li>') +
         "</ul></section></div>";
 
       document.getElementById("projects-back-btn").addEventListener("click", loadList);

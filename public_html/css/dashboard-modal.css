@@ -22,10 +22,17 @@ body.dash-modal-open {
 .dash-modal-member-list {
   max-height: min(16rem, 40vh);
   overflow-y: auto;
-  border: 1px solid var(--dash-outline-variant, #e2e8f0);
+  border: 1px solid var(--dash-white-50, rgba(255, 255, 255, 0.5));
   border-radius: 0.75rem;
-  background: #fff;
+  background: var(--dash-white-40, rgba(255, 255, 255, 0.4));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 0.25rem 0;
+}
+
+.dash-modal-footer .dash-btn-primary,
+.dash-modal-footer .dash-btn-secondary {
+  font-size: 0.875rem;
 }
 
 .proj-member-row {
