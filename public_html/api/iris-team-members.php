@@ -14,13 +14,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $actor = platform_require_session_user();
 platform_require_capability($actor, 'can_manage_team');
 $pdo = platform_pdo();
-$companyId = $actor['company_id'] ?? null;
-if ($companyId === null || $companyId === '') {
-    http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'No company assigned']);
-    exit;
-}
-$companyId = (int) $companyId;
+$companyId = platform_require_actor_company_id($actor);
 
 if ($method === 'GET') {
     $st = $pdo->prepare("SELECT u.id, u.name, u.surname, u.email, u.account_status, u.role_id,

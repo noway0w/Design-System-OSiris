@@ -19,6 +19,12 @@ if ($consumed === null) {
     exit;
 }
 
-platform_activate_user($pdo, $consumed['user_id']);
-header('Location: /login/?verified=1', true, 302);
+$joined = platform_activate_user($pdo, $consumed['user_id']);
+$redirect = '/login/?verified=1';
+if (count($joined) === 1) {
+    $redirect .= '&project_id=' . (int) $joined[0];
+} elseif (count($joined) > 1) {
+    $redirect .= '&project_id=' . (int) $joined[0];
+}
+header('Location: ' . $redirect, true, 302);
 exit;

@@ -187,28 +187,33 @@ SQLite tables: `companies`, `roles`, `projects`, `project_members`, `user_files`
 
 **Legacy note:** an older per-user `projects` table (user_id, project_name) is renamed to `legacy_projects_archive` on migration. The active `projects` table is company-scoped (`company_id`, `name`, `description`, `status`, `deleted_at`).
 
-**Project membership:** `project_members (project_id, user_id)` controls which managers/users may access project files. Company owners and admins have implicit access to all projects in their company (no pivot row required).
+**Project membership (strict):** A user sees or opens a project only if their `user_id` is in `project_members` for that `project_id`. This applies to **all company roles** (`company_owner`, `company_admin`, `company_manager`, `company_user`). **Exception:** platform `super_admin` bypasses membership and sees all projects globally on `GET /api/iris-projects.php`. On `POST /api/iris-projects.php`, the creator is auto-inserted into `project_members`.
 
-**File rows (`user_files`):** optional `project_id` (nullable = personal file within the company). Row-level access is enforced in `platform-rbac.php` (`platform_user_can_read_file`, `platform_files_list_sql_for_user`), not only by `can_import_files`.
+**Independent signup:** non-platform-owner registrations receive a dedicated company workspace, `company_owner` role, a `General` project, and automatic project membership.
 
-| File type | Owner / Admin | Manager / User |
-|-----------|---------------|----------------|
-| Personal (`project_id` NULL) | All files in company | Own uploads only |
-| Project (`project_id` set) | All files in company | Files in projects where user is in `project_members` |
-| Super Admin | All non-deleted files (platform) | — |
+**Project services:** `project_services (project_id, service_name)` stores which workspace apps are enabled per project (`map-app`, `iris`, `3Dobjscan`, `carscan`, `disable` — not `dashboard`). Toggles via `PATCH /api/iris-project-services.php`.
 
-Upload: `POST /api/iris-files-upload.php` accepts optional `project_id`. List/download/delete use the access helpers above.
+**File rows (`user_files`):** `project_id` is required for new uploads. Legacy rows with `project_id IS NULL` are migrated to each company’s `General` project on schema init. Access is membership-based in `platform-rbac.php`.
 
-Optional test backfill: set `PLATFORM_PROJECT_BACKFILL=1` before `platform_pdo()` to create a `General` project per company and add all company users to `project_members`.
+| File type | Access |
+|-----------|--------|
+| Project file (`project_id` set) | Members of that project only |
+| Legacy personal (`project_id` NULL, pre-migration) | Uploader only |
 
-**Capabilities (derived):** `can_manage_projects`, `can_access_all_company_projects`, `has_implicit_project_access` (company owner/admin).
+Upload: `POST /api/iris-files-upload.php` requires `project_id` and an allowed extension (`jpeg`, `jpg`, `png`, `iges`, `step`, `dxf`, `ifc`, `3dm`, `dwg`, `glb`, `mp4`, `mov`, `avi`). Max 50 MB.
 
-| Role slug | Scope | Dashboard tab |
-|-----------|--------|----------------|
-| `super_admin` | platform | Super Admin |
-| `company_owner` / `company_admin` | company | Team, Projects |
-| `company_manager` / `company_user` | company | — |
-| Any **active** user | — | Import Files |
+On schema init, each company gets a `General` project with all company users in `project_members`; orphan `user_files` rows are assigned to that project.
+
+**Capabilities (derived):** `can_access_projects`, `can_create_project` (active user with company context); `can_manage_project_roster`, `can_manage_project_services` (owner/admin/super_admin).
+
+| Role slug | Scope | Dashboard tab (typical) |
+|-----------|--------|-------------------------|
+| Any user with company | company | **Projects** (first tab), Home |
+| `super_admin` | platform | Projects, Home, Super Admin |
+| `company_owner` / `company_admin` | company | + Team |
+| `company_manager` / `company_user` | company | Projects + Home only |
+
+The standalone **Import Files** tab is removed; uploads happen inside the Project workspace UI.
 
 **Platform owners** (`g.lassiat@gmail.com`, `admin@localhost`) are seeded as `super_admin` with `company_id = NULL`. Only those emails may call `POST /api/iris-admin-promote-super-admin.php`.
 
@@ -220,11 +225,30 @@ Optional test backfill: set `PLATFORM_PROJECT_BACKFILL=1` before `platform_pdo()
 | `iris-admin-promote-super-admin.php` | `can_promote_super_admin` |
 | `iris-team-members.php`, `iris-team-permissions.php`, `iris-team-invite.php` | `can_manage_team` |
 | `iris-team-invite.php` POST body | optional `role_slug` (`company_admin`, `company_manager`, `company_user`; `company_owner` only if actor is owner) |
-| `iris-projects.php` | `can_manage_projects` |
-| `iris-project-members.php` | `can_manage_projects` |
-| `iris-files.php`, `iris-files-upload.php`, `iris-files-download.php` | `can_import_files` |
+| `iris-projects.php` GET list | `can_access_projects` — only projects where actor is in `project_members` |
+| `iris-projects.php` GET `?project_id=` | compound JSON: `project`, `members`, `services`, `files` |
+| `iris-projects.php` POST | `can_create_project` — auto-adds creator to `project_members` |
+| `iris-projects.php` DELETE | `can_access_projects` + project membership |
+| `iris-project-members.php` | `can_access_projects` + membership; POST optional `role_slug`; POST/DELETE need `can_manage_project_roster` |
+| `iris-project-invite.php` | `can_manage_project_roster` — POST `{ project_id, email, name?, surname?, role_slug? }`; creates pending user or reactivates removed account; sends **Join [project] on OSiris** mail with `/login/?invite=TOKEN` |
+| `iris-platform-mail-health.php` | `super_admin` GET — SMTP config diagnostic; `?send=1` sends test mail to signed-in user |
+| `iris-project-services.php` PATCH | `can_manage_project_services` + membership; body `{ project_id, service_name, enabled }` |
+| `auth-invite-meta.php` | GET `?token=` — metadata for project invite banner on `/login/` |
+| `auth-complete-invite.php` | POST — set password for pending invitee; sends standard verify email after |
+| `iris-files.php`, `iris-files-download.php` | `can_import_files` + membership rules |
+| `iris-files-upload.php` | `can_import_files` + required `project_id` + extension whitelist |
 
 `service_permissions` is unchanged for nginx `auth-verify.php` and app tiles; the Team tab toggles that table per member.
+
+**Project invite email (new users):**
+
+1. Admin uses **Team → Invite to project**, **Add user to project → Send invite**, or **Create project** (email in form is invited on submit).
+2. `iris-project-invite.php` inserts `pending` user, `project_members`, `pending_project_invites`, and emails a link to `/login/?invite=TOKEN` (not `auth-verify-email.php` directly).
+3. Invitee registers (password or Google SSO with invite in OAuth state) → `auth-complete-invite.php` / SSO callback → verify email → `platform_activate_user()` fulfills pending project membership.
+4. Soft-deleted emails are **reactivated** on re-invite instead of returning “account removed”.
+5. **Members list** (`iris-projects.php` detail) lists all `project_members` for the project (not filtered by `users.company_id`, so platform owners with `company_id` NULL appear).
+
+**Mail ops:** `GET /api/iris-platform-mail-health.php` (super_admin). Scripts: `scripts/fix-platform-mail-permissions.sh`, `scripts/fix-php-fpm-broken-mail-conf.sh` (php-fpm pool drops must be `644`, not `640`).
 
 **Private file storage:** `/home/OSiris/data/platform-user-files/` (gitignored; not under `public_html/`). Override with env `PLATFORM_USER_FILES_ROOT`.
 

@@ -66,6 +66,15 @@ secure_secret_file() {
   setfacl -m u:nginx:r "$SECRET_FILE" 2>/dev/null || true
 }
 
+secure_env_file() {
+  if [[ ! -f "$ENV_FILE" ]]; then
+    return 0
+  fi
+  chmod 640 "$ENV_FILE"
+  chgrp nginx "$ENV_FILE" 2>/dev/null || true
+  setfacl -m u:nginx:r "$ENV_FILE" 2>/dev/null || true
+}
+
 ensure_mail_env_block() {
   set_env_key 'PLATFORM_MAIL_DEV_EXPOSE_LINK' '0'
 }
@@ -89,6 +98,7 @@ case "$mode" in
     printf 'PLATFORM_SMTP_PASS=%s\n' "$val" > "$SECRET_FILE"
     sed -i 's/\r$//' "$SECRET_FILE" 2>/dev/null || true
     secure_secret_file
+    secure_env_file
   ;;
   ionos|ovh|ionos-com)
     if [[ -z "$val" ]]; then
@@ -114,6 +124,7 @@ case "$mode" in
     printf 'PLATFORM_SMTP_PASS=%s\n' "$val" > "$SECRET_FILE"
     sed -i 's/\r$//' "$SECRET_FILE" 2>/dev/null || true
     secure_secret_file
+    secure_env_file
   ;;
   resend)
     if [[ -z "$val" ]]; then
@@ -132,6 +143,7 @@ case "$mode" in
     printf 'PLATFORM_RESEND_API_KEY=%s\n' "$val" > "$SECRET_FILE"
     sed -i 's/\r$//' "$SECRET_FILE" 2>/dev/null || true
     secure_secret_file
+    secure_env_file
   ;;
   resend-test)
     # Smoke test only: Resend onboarding sender (no custom domain required)
@@ -148,6 +160,7 @@ case "$mode" in
     printf 'PLATFORM_RESEND_API_KEY=%s\n' "$val" > "$SECRET_FILE"
     sed -i 's/\r$//' "$SECRET_FILE" 2>/dev/null || true
     secure_secret_file
+    secure_env_file
   ;;
   google-oauth)
     ensure_mail_env_block

@@ -9,6 +9,7 @@
   <link href="/css/tailwind.css" rel="stylesheet"/>
   <link href="/css/variables.css" rel="stylesheet"/>
   <link href="/css/dashboard-shell.css" rel="stylesheet"/>
+  <link href="/css/dashboard-modal.css" rel="stylesheet"/>
 </head>
 <body class="font-sans antialiased">
   
@@ -52,13 +53,14 @@
 
         <section data-dash-panel="super_admin" id="panel-super-admin" class="hidden"></section>
         <section data-dash-panel="team" id="panel-team" class="hidden"></section>
+        <section data-dash-panel="projects" id="panel-projects" class="hidden"></section>
         <section data-dash-panel="files" id="panel-files" class="hidden"></section>
       </div>
     </main>
   </div>
 
   <script src="/js/platform-shell-topbar.js"></script>
-  <script src="/dashboard/dashboard-admin.js"></script>
+  <script src="/dashboard/dashboard-admin.js?v=20260518e"></script>
   <script>
 (function () {
   const grid = document.getElementById('services-grid');

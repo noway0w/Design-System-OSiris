@@ -7,6 +7,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/platform-db.php';
 require_once __DIR__ . '/platform-session.php';
 require_once __DIR__ . '/platform-rbac.php';
+require_once __DIR__ . '/platform-auth.php';
 
 function sso_redirect_login(string $code, string $next): void
 {
@@ -138,6 +139,54 @@ if ($family === '') {
 $avatar = trim((string) ($info['picture'] ?? ''));
 
 $pdo = platform_pdo();
+$inviteToken = trim((string) ($verified['invite'] ?? ''));
+if ($inviteToken !== '') {
+    $peek = platform_peek_auth_token($pdo, $inviteToken, 'email_verify');
+    if ($peek === null) {
+        sso_redirect_login('invite_invalid', '/login/?invite=' . rawurlencode($inviteToken));
+    }
+    $invited = platform_load_user_row($pdo, $peek['user_id']);
+    if ($invited === null) {
+        sso_redirect_login('invite_invalid', '/login/?invite=' . rawurlencode($inviteToken));
+    }
+    $invitedEmail = platform_normalize_email((string) ($invited['email'] ?? ''));
+    if ($invitedEmail === '' || $invitedEmail !== platform_normalize_email($email)) {
+        sso_redirect_login('invite_email_mismatch', '/login/?invite=' . rawurlencode($inviteToken));
+    }
+    $uid = (int) $invited['id'];
+    $now = time();
+    $status = (string) ($invited['account_status'] ?? 'pending');
+    if ($status === 'pending') {
+        $up = $pdo->prepare('UPDATE users SET sso_provider_id = ?, name = ?, surname = ?, avatar_url = COALESCE(NULLIF(?, \'\'), avatar_url), updated_at = ? WHERE id = ?');
+        $up->execute([$ssoId, $given, $family, $avatar !== '' ? $avatar : null, $now, $uid]);
+        platform_consume_auth_token($pdo, $inviteToken, 'email_verify');
+        $joined = platform_activate_user($pdo, $uid);
+        platform_session_set_user_id($uid);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        $dest = '/dashboard/';
+        if (count($joined) === 1) {
+            $dest = '/dashboard/?project_id=' . (int) $joined[0];
+        }
+        header('Location: ' . $dest, true, 302);
+        exit;
+    }
+    if ($status === 'active') {
+        platform_consume_auth_token($pdo, $inviteToken, 'email_verify');
+        $up = $pdo->prepare('UPDATE users SET sso_provider_id = COALESCE(sso_provider_id, ?), avatar_url = COALESCE(NULLIF(?, \'\'), avatar_url), updated_at = ? WHERE id = ?');
+        $up->execute([$ssoId, $avatar !== '' ? $avatar : null, $now, $uid]);
+        platform_fulfill_pending_project_invites($pdo, $uid);
+        platform_session_set_user_id($uid);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        header('Location: ' . $next, true, 302);
+        exit;
+    }
+    sso_redirect_login('invite_invalid', '/login/?invite=' . rawurlencode($inviteToken));
+}
+
 $row = null;
 $st = $pdo->prepare('SELECT id, email, sso_provider_id, role_id FROM users WHERE sso_provider_id = ? AND deleted_at IS NULL LIMIT 1');
 $st->execute([$ssoId]);

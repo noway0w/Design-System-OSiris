@@ -11,13 +11,30 @@ require_once __DIR__ . '/platform-mail-gmail.php';
 
 platform_mail_bootstrap_secrets();
 
+/** Ensure env + secrets are loaded (safe to call repeatedly). */
+function platform_mail_ensure_bootstrapped(): void
+{
+    if (is_readable(__DIR__ . '/platform-db.php')) {
+        require_once __DIR__ . '/platform-db.php';
+        platform_bootstrap_local_env_file();
+    }
+    platform_mail_bootstrap_secrets();
+}
+
+function platform_mail_is_configured(): bool
+{
+    platform_mail_ensure_bootstrapped();
+
+    return platform_smtp_configured() || platform_resend_configured() || platform_gmail_mail_configured();
+}
+
 function platform_mail_from(): string
 {
     $gmailFrom = platform_gmail_mail_from_address();
-    if ($gmailFrom !== null && (getenv('PLATFORM_MAIL_PROVIDER') ?: '') === 'gmail') {
+    if ($gmailFrom !== null && platform_env('PLATFORM_MAIL_PROVIDER') === 'gmail') {
         return 'OSiris <' . $gmailFrom . '>';
     }
-    $from = getenv('PLATFORM_MAIL_FROM');
+    $from = platform_env('PLATFORM_MAIL_FROM');
     if (is_string($from) && $from !== '') {
         return $from;
     }
@@ -27,18 +44,19 @@ function platform_mail_from(): string
 
 function platform_smtp_configured(): bool
 {
-    $host = getenv('PLATFORM_SMTP_HOST') ?: '';
-    $user = getenv('PLATFORM_SMTP_USER') ?: '';
-    $pass = getenv('PLATFORM_SMTP_PASS') ?: '';
+    platform_mail_ensure_bootstrapped();
+    $host = platform_env('PLATFORM_SMTP_HOST');
+    $user = platform_env('PLATFORM_SMTP_USER');
+    $pass = platform_env('PLATFORM_SMTP_PASS');
 
     return $host !== '' && $user !== '' && $pass !== '';
 }
 
 function platform_resend_configured(): bool
 {
-    $key = getenv('PLATFORM_RESEND_API_KEY') ?: '';
+    platform_mail_ensure_bootstrapped();
 
-    return $key !== '';
+    return platform_env('PLATFORM_RESEND_API_KEY') !== '';
 }
 
 function platform_mail_dev_log_enabled(): bool
@@ -110,11 +128,12 @@ function platform_send_mail_resend(string $to, string $subject, string $htmlBody
  */
 function platform_send_mail(string $to, string $subject, string $htmlBody, string $textBody = ''): array
 {
+    platform_mail_ensure_bootstrapped();
     if ($textBody === '') {
         $textBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody));
     }
 
-    $provider = strtolower((string) (getenv('PLATFORM_MAIL_PROVIDER') ?: ''));
+    $provider = strtolower(platform_env('PLATFORM_MAIL_PROVIDER'));
     if ($provider === 'smtp' || ($provider === '' && platform_smtp_configured())) {
         if (platform_send_mail_smtp($to, $subject, $htmlBody, $textBody)) {
             return ['ok' => true, 'mode' => 'smtp'];
@@ -131,9 +150,11 @@ function platform_send_mail(string $to, string $subject, string $htmlBody, strin
         }
     }
 
-    $logDev = platform_mail_dev_log_enabled() || !platform_smtp_configured();
-    error_log('[OSiris mail] To: ' . $to . ' | Subject: ' . $subject . "\n" . $textBody);
+    error_log('[OSiris mail] send failed to=' . $to . ' subject=' . $subject
+        . ' provider=' . ($provider !== '' ? $provider : 'auto')
+        . ' smtp=' . (platform_smtp_configured() ? 'yes' : 'no'));
     platform_mail_outbox_append($to, $subject, $textBody);
+    $logDev = platform_mail_dev_log_enabled() || !platform_mail_is_configured();
     $headers = [
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8',
@@ -163,6 +184,11 @@ function platform_verify_email_url(string $token): string
     return platform_public_base_url() . '/api/auth-verify-email.php?token=' . rawurlencode($token);
 }
 
+function platform_project_invite_signup_url(string $token): string
+{
+    return platform_public_base_url() . '/login/?invite=' . rawurlencode($token);
+}
+
 function platform_reset_email_url(string $token): string
 {
     return platform_public_base_url() . '/login/reset/?token=' . rawurlencode($token);
@@ -179,6 +205,51 @@ function platform_send_verify_email(string $to, string $token): array
         . platform_mail_button($url, 'Confirm email')
         . '<p style="color:#666;font-size:12px;">If you did not create an account, you can ignore this message.</p>';
     $result = platform_send_mail($to, 'Confirm your OSiris account', $html, $text);
+    $result['verifyUrl'] = $url;
+
+    return $result;
+}
+
+/**
+ * @return array{ok: bool, mode: string, verifyUrl: string}
+ */
+/**
+ * Notify an existing active user they were added to a project.
+ *
+ * @return array{ok: bool, mode: string}
+ */
+function platform_send_project_added_email(string $to, string $projectName, string $inviterName): array
+{
+    $url = platform_public_base_url() . '/login/';
+    $projectName = trim($projectName) !== '' ? trim($projectName) : 'a project';
+    $inviterName = trim($inviterName) !== '' ? trim($inviterName) : 'A teammate';
+    $text = "{$inviterName} added you to the OSiris project \"{$projectName}\".\n\nSign in to open the workspace:\n{$url}";
+    $html = '<p><strong>' . htmlspecialchars($inviterName, ENT_QUOTES, 'UTF-8') . '</strong> added you to '
+        . '<strong>' . htmlspecialchars($projectName, ENT_QUOTES, 'UTF-8') . '</strong> on OSiris.</p>'
+        . '<p>Sign in to access the project workspace.</p>'
+        . platform_mail_button($url, 'Sign in to OSiris')
+        . '<p style="color:#666;font-size:12px;">If you were not expecting this, you can ignore this message.</p>';
+
+    return platform_send_mail($to, 'You were added to ' . $projectName . ' on OSiris', $html, $text);
+}
+
+/**
+ * @return array{ok: bool, mode: string, verifyUrl: string}
+ */
+function platform_send_project_invite_email(string $to, string $token, string $projectName, string $inviterName): array
+{
+    $url = platform_project_invite_signup_url($token);
+    $projectName = trim($projectName) !== '' ? trim($projectName) : 'a project';
+    $inviterName = trim($inviterName) !== '' ? trim($inviterName) : 'A teammate';
+    $text = "{$inviterName} invited you to join the OSiris project \"{$projectName}\".\n\n"
+        . "Create your account on OSiris (email sign-up or Google):\n{$url}\n\n"
+        . "This link expires in 48 hours.";
+    $html = '<p><strong>' . htmlspecialchars($inviterName, ENT_QUOTES, 'UTF-8') . '</strong> invited you to collaborate on '
+        . '<strong>' . htmlspecialchars($projectName, ENT_QUOTES, 'UTF-8') . '</strong> on OSiris.</p>'
+        . '<p>Open the page below to <strong>create your account</strong> (password or Google). After you confirm your email, you can sign in and access this project workspace.</p>'
+        . platform_mail_button($url, 'Create account & join project')
+        . '<p style="color:#666;font-size:12px;">If you were not expecting this invitation, you can ignore this message.</p>';
+    $result = platform_send_mail($to, 'Join ' . $projectName . ' on OSiris', $html, $text);
     $result['verifyUrl'] = $url;
 
     return $result;

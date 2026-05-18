@@ -1,6 +1,6 @@
 <?php
 /**
- * GET ?id= — stream file when owned by session user.
+ * GET ?id= — stream file when session user may read it.
  */
 declare(strict_types=1);
 
@@ -16,7 +16,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
 
 $actor = platform_require_session_user();
 platform_require_capability($actor, 'can_import_files');
-$uid = (int) $actor['id'];
 $fileId = (int) ($_GET['id'] ?? 0);
 if ($fileId < 1) {
     http_response_code(400);
@@ -26,11 +25,11 @@ if ($fileId < 1) {
 }
 
 $pdo = platform_pdo();
-$st = $pdo->prepare('SELECT original_name, storage_path, mime_type FROM user_files
-    WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1');
-$st->execute([$fileId, $uid]);
+$st = $pdo->prepare('SELECT id, user_id, company_id, project_id, deleted_at, original_name, storage_path, mime_type
+    FROM user_files WHERE id = ? LIMIT 1');
+$st->execute([$fileId]);
 $row = $st->fetch(PDO::FETCH_ASSOC);
-if (!$row) {
+if (!$row || !platform_user_can_read_file($pdo, $actor, $row)) {
     http_response_code(404);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['ok' => false, 'error' => 'File not found']);

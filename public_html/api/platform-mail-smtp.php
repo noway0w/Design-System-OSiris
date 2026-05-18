@@ -65,18 +65,22 @@ function platform_smtp_authenticate($fp, string $user, string $pass): bool
 
 function platform_send_mail_smtp(string $to, string $subject, string $htmlBody, string $textBody): bool
 {
-    $host = getenv('PLATFORM_SMTP_HOST') ?: '';
-    $port = (int) (getenv('PLATFORM_SMTP_PORT') ?: 587);
-    $user = getenv('PLATFORM_SMTP_USER') ?: '';
-    $pass = getenv('PLATFORM_SMTP_PASS') ?: '';
+    if (function_exists('platform_mail_ensure_bootstrapped')) {
+        platform_mail_ensure_bootstrapped();
+    }
+    $host = platform_env('PLATFORM_SMTP_HOST');
+    $port = (int) (platform_env('PLATFORM_SMTP_PORT', '587') ?: 587);
+    $user = platform_env('PLATFORM_SMTP_USER');
+    $pass = platform_env('PLATFORM_SMTP_PASS');
     $from = platform_mail_from();
     if ($host === '' || $user === '' || $pass === '') {
-        error_log('platform_send_mail_smtp: missing host, user, or pass');
+        error_log('platform_send_mail_smtp: missing host, user, or pass (host=' . ($host !== '' ? 'ok' : 'no')
+            . ' user=' . ($user !== '' ? 'ok' : 'no') . ' pass=' . ($pass !== '' ? 'ok' : 'no') . ')');
 
         return false;
     }
 
-    $tlsMode = strtolower((string) (getenv('PLATFORM_SMTP_TLS') ?: 'starttls'));
+    $tlsMode = strtolower(platform_env('PLATFORM_SMTP_TLS', 'starttls'));
     $useSsl = in_array($tlsMode, ['ssl', 'smtps', '465'], true) || $port === 465;
     $remote = ($useSsl ? 'ssl://' : '') . $host . ':' . $port;
     $errno = 0;

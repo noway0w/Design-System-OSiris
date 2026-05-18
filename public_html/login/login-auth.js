@@ -8,15 +8,21 @@
     sso_email: 'Your account did not return an email address (required for OSiris).',
     sso_server: 'Sign-in hit a server error. Please try again or use email and password.',
     verify_missing: 'Verification link is missing.',
-    verify_invalid: 'This verification link is invalid or has expired.'
+    verify_invalid: 'This verification link is invalid or has expired.',
+    invite_invalid: 'This project invitation link is invalid or has expired.',
+    invite_email_mismatch: 'Use the Google account that matches the email address you were invited with.'
   };
 
   var params = new URLSearchParams(window.location.search);
   var next = params.get('next') || '/dashboard/';
+  var inviteToken = (params.get('invite') || '').trim();
   var errEl = document.getElementById('login-error');
   var okEl = document.getElementById('login-success');
   var ssoButtons = document.getElementById('sso-buttons');
   var ssoHint = document.getElementById('sso-hint');
+  var registerSsoButtons = document.getElementById('register-sso-buttons');
+  var registerSsoHint = document.getElementById('register-sso-hint');
+  var registerInviteBanner = document.getElementById('register-invite-banner');
   var panels = document.querySelectorAll('[data-login-panel]');
   var footerSignin = document.getElementById('footer-signin');
   var footerRegister = document.getElementById('footer-register');
@@ -152,48 +158,113 @@
     showErr(ERR[qErr]);
   }
   if (params.get('verified') === '1') {
-    showOk('Your email is verified. You can sign in now.');
+    var joinProject = params.get('project_id');
+    if (joinProject) {
+      sessionStorage.setItem('osiris_open_project_id', joinProject);
+      showOk('Your email is verified. Sign in to open your project workspace.');
+    } else {
+      showOk('Your email is verified. You can sign in now.');
+    }
   }
   if (params.get('reset') === 'ok') {
     showOk('Your password was updated. You can sign in now.');
   }
 
-  async function loadSso() {
-    if (!ssoButtons) return;
+  function renderSsoButtons(container, hintEl, providers) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (providers && providers.length) {
+      providers.forEach(function (p) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'login-sso-btn glass-panel';
+        if (p.id === 'google') {
+          btn.innerHTML = '<img src="/login/assets/google-g.png" alt="" width="20" height="20" />' +
+            '<span>Continue with Google</span>';
+        } else {
+          btn.textContent = 'Continue with ' + (p.label || p.id);
+        }
+        btn.addEventListener('click', function () {
+          var url = p.startUrl || '';
+          if (!url || url[0] !== '/') return;
+          window.top.location.assign(url);
+        });
+        container.appendChild(btn);
+      });
+      if (hintEl) hintEl.classList.add('hidden');
+    } else if (hintEl) {
+      hintEl.classList.remove('hidden');
+    }
+  }
+
+  async function loadSsoTargets(buttonContainer, hintEl, invite) {
+    if (!buttonContainer) return;
     try {
-      var res = await fetch('/api/auth-sso-meta.php?next=' + encodeURIComponent(next), { credentials: 'same-origin' });
+      var metaUrl = '/api/auth-sso-meta.php?next=' + encodeURIComponent(next);
+      if (invite) metaUrl += '&invite=' + encodeURIComponent(invite);
+      var res = await fetch(metaUrl, { credentials: 'same-origin' });
       var data = await res.json().catch(function () { return null; });
       if (!data || !data.sso) return;
-      ssoButtons.innerHTML = '';
       if (data.sso.providers && data.sso.providers.length) {
-        data.sso.providers.forEach(function (p) {
-          var btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'login-sso-btn glass-panel';
-          if (p.id === 'google') {
-            btn.innerHTML = '<img src="/login/assets/google-g.png" alt="" width="20" height="20" />' +
-              '<span>Continue with Google</span>';
-          } else {
-            btn.textContent = 'Continue with ' + (p.label || p.id);
-          }
-          btn.addEventListener('click', function () {
-            var url = p.startUrl || '';
-            if (!url || url[0] !== '/') return;
-            window.top.location.assign(url);
-          });
-          ssoButtons.appendChild(btn);
-        });
-        if (ssoHint) ssoHint.classList.add('hidden');
-      } else if (ssoHint) {
-        ssoHint.textContent = (data.sso.hint || '') + (data.sso.redirectUriExample ? ' ' + data.sso.redirectUriExample : '');
-        ssoHint.classList.remove('hidden');
+        renderSsoButtons(buttonContainer, hintEl, data.sso.providers);
+      } else if (hintEl) {
+        hintEl.textContent = (data.sso.hint || '') + (data.sso.redirectUriExample ? ' ' + data.sso.redirectUriExample : '');
+        hintEl.classList.remove('hidden');
       }
     } catch (e) {
-      if (ssoHint) {
-        ssoHint.textContent = 'Could not load SSO options. You can still sign in with email and password.';
-        ssoHint.classList.remove('hidden');
+      if (hintEl) {
+        hintEl.textContent = 'Could not load SSO options. You can still use email and password.';
+        hintEl.classList.remove('hidden');
       }
     }
+  }
+
+  async function loadSso() {
+    await loadSsoTargets(ssoButtons, ssoHint, '');
+    await loadSsoTargets(registerSsoButtons, registerSsoHint, inviteToken);
+  }
+
+  async function openInviteSignup() {
+    if (!inviteToken) return;
+    try {
+      var res = await fetch('/api/auth-invite-meta.php?token=' + encodeURIComponent(inviteToken), {
+        credentials: 'same-origin'
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) {
+        showErr(data.error || ERR.invite_invalid);
+        showPanel('signin');
+        return;
+      }
+      var regEmail = document.getElementById('reg-email');
+      var regFirst = document.getElementById('reg-first-name');
+      var regLast = document.getElementById('reg-last-name');
+      if (regEmail) {
+        regEmail.value = data.email || '';
+        regEmail.readOnly = true;
+        regEmail.classList.add('bg-slate-50');
+      }
+      if (regFirst && data.name) regFirst.value = data.name;
+      if (regLast && data.surname) regLast.value = data.surname;
+      if (registerInviteBanner) {
+        registerInviteBanner.innerHTML =
+          '<strong>' + escapeHtml(data.inviter_name || 'A teammate') + '</strong> invited you to join ' +
+          '<strong>' + escapeHtml(data.project_name || 'a project') + '</strong>. ' +
+          'Create your account below (Google or email), then confirm your email to access the project.';
+        registerInviteBanner.classList.remove('hidden');
+      }
+      showPanel('register');
+      await loadSsoTargets(registerSsoButtons, registerSsoHint, inviteToken);
+    } catch (e) {
+      showErr(ERR.invite_invalid);
+      showPanel('signin');
+    }
+  }
+
+  function escapeHtml(t) {
+    var d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
   }
 
   var loginForm = document.getElementById('login-form');
@@ -255,12 +326,23 @@
         confirmPassword: document.getElementById('reg-confirm-password').value,
         termsAccepted: document.getElementById('reg-terms').checked
       };
+      var endpoint = inviteToken ? '/api/auth-complete-invite.php' : '/api/auth-register.php';
+      var body = inviteToken
+        ? {
+            token: inviteToken,
+            name: payload.name,
+            surname: payload.surname,
+            password: payload.password,
+            confirmPassword: payload.confirmPassword,
+            termsAccepted: payload.termsAccepted
+          }
+        : payload;
       try {
-        var res = await fetch('/api/auth-register.php', {
+        var res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify(payload)
+          body: JSON.stringify(body)
         });
         var data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data.ok) {
@@ -272,6 +354,20 @@
           strengthBars.forEach(function (bar) { bar.classList.remove('login-strength-bar--on'); });
         }
         pendingVerifyEmail = data.email || payload.email;
+        if (inviteToken) {
+          inviteToken = '';
+          var regEmailEl = document.getElementById('reg-email');
+          if (regEmailEl) {
+            regEmailEl.readOnly = false;
+            regEmailEl.classList.remove('bg-slate-50');
+          }
+          if (window.history && window.history.replaceState) {
+            var cleanParams = new URLSearchParams(window.location.search);
+            cleanParams.delete('invite');
+            var q = cleanParams.toString();
+            window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
+          }
+        }
         if (data.verifyUrl) {
           showVerifyEmailPanel(pendingVerifyEmail);
           showVerifyLink(data.verifyUrl);
@@ -315,6 +411,10 @@
     });
   }
 
-  showPanel('signin');
-  loadSso();
+  if (inviteToken) {
+    openInviteSignup();
+  } else {
+    showPanel('signin');
+    loadSso();
+  }
 })();

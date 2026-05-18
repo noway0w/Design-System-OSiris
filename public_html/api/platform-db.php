@@ -5,6 +5,22 @@
  */
 declare(strict_types=1);
 
+function platform_env(string $key, string $default = ''): string
+{
+    if (isset($_ENV[$key]) && is_string($_ENV[$key]) && $_ENV[$key] !== '') {
+        return $_ENV[$key];
+    }
+    $g = getenv($key);
+    if (is_string($g) && $g !== '') {
+        return $g;
+    }
+    if (isset($_SERVER[$key]) && is_string($_SERVER[$key]) && $_SERVER[$key] !== '') {
+        return $_SERVER[$key];
+    }
+
+    return $default;
+}
+
 platform_bootstrap_local_env_file();
 
 /**
@@ -61,11 +77,11 @@ function platform_bootstrap_local_env_file(): void
         if ($key === '' || !isset($allowed[$key])) {
             continue;
         }
-        if ((getenv($key) ?: '') !== '') {
+        if (platform_env($key) !== '') {
             continue;
         }
-        putenv($key . '=' . $val);
         $_ENV[$key] = $val;
+        putenv($key . '=' . $val);
     }
     if (is_readable(__DIR__ . '/platform-mail-secrets.php')) {
         require_once __DIR__ . '/platform-mail-secrets.php';
@@ -113,16 +129,6 @@ CREATE TABLE IF NOT EXISTS users (
 ");
     platform_ensure_users_columns($db);
     platform_ensure_rbac_schema($db);
-    $db->exec("
-CREATE TABLE IF NOT EXISTS projects (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  project_name TEXT NOT NULL,
-  uploaded_file_paths TEXT NOT NULL DEFAULT '[]',
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
-);
-");
-    $db->exec('CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);');
     $db->exec("
 CREATE TABLE IF NOT EXISTS service_permissions (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -276,6 +282,184 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
         ->execute(['Default', 'default', $now, $now]);
 
     platform_backfill_user_rbac($db);
+    platform_ensure_project_schema($db);
+}
+
+/** @return array<string, true> */
+function platform_table_columns(PDO $db, string $table): array
+{
+    $stmt = $db->query('PRAGMA table_info(' . preg_replace('/[^a-z0-9_]/', '', $table) . ')');
+    if ($stmt === false) {
+        return [];
+    }
+    $have = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $n = isset($row['name']) ? (string) $row['name'] : '';
+        if ($n !== '') {
+            $have[$n] = true;
+        }
+    }
+
+    return $have;
+}
+
+function platform_table_exists(PDO $db, string $table): bool
+{
+    $st = $db->prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1");
+    $st->execute([$table]);
+
+    return (bool) $st->fetchColumn();
+}
+
+function platform_is_legacy_projects_table(PDO $db): bool
+{
+    if (!platform_table_exists($db, 'projects')) {
+        return false;
+    }
+    $cols = platform_table_columns($db, 'projects');
+
+    return isset($cols['user_id']) && !isset($cols['company_id']);
+}
+
+function platform_ensure_user_files_columns(PDO $db): void
+{
+    $have = platform_table_columns($db, 'user_files');
+    if (isset($have['project_id'])) {
+        return;
+    }
+    try {
+        $db->exec('ALTER TABLE user_files ADD COLUMN project_id INTEGER REFERENCES projects(id)');
+    } catch (PDOException $e) {
+        // race: ignore
+    }
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_user_files_project ON user_files(project_id);');
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_user_files_company_project ON user_files(company_id, project_id);');
+}
+
+function platform_ensure_project_schema(PDO $db): void
+{
+    if (platform_is_legacy_projects_table($db)) {
+        $db->exec('ALTER TABLE projects RENAME TO legacy_projects_archive');
+    }
+
+    $db->exec("
+CREATE TABLE IF NOT EXISTS projects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id INTEGER NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  deleted_at INTEGER
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_projects_company ON projects(company_id);');
+    try {
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_projects_company_status ON projects(company_id, status) WHERE deleted_at IS NULL');
+    } catch (PDOException $e) {
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_projects_company_status ON projects(company_id, status);');
+    }
+
+    $db->exec("
+CREATE TABLE IF NOT EXISTS project_members (
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  PRIMARY KEY (project_id, user_id)
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);');
+
+    $db->exec("
+CREATE TABLE IF NOT EXISTS project_services (
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  service_name TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  PRIMARY KEY (project_id, service_name)
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_project_services_project ON project_services(project_id);');
+
+    $db->exec("
+CREATE TABLE IF NOT EXISTS pending_project_invites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_slug TEXT,
+  invited_by INTEGER REFERENCES users(id),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  fulfilled_at INTEGER,
+  UNIQUE(project_id, user_id)
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_pending_project_invites_user ON pending_project_invites(user_id);');
+
+    platform_ensure_user_files_columns($db);
+    platform_backfill_default_projects($db);
+    platform_migrate_orphan_user_files($db);
+}
+
+function platform_migrate_orphan_user_files(PDO $db): void
+{
+    if (!platform_table_exists($db, 'user_files')) {
+        return;
+    }
+    $cols = platform_table_columns($db, 'user_files');
+    if (!isset($cols['project_id'])) {
+        return;
+    }
+    $st = $db->query('SELECT id FROM companies WHERE deleted_at IS NULL');
+    if ($st === false) {
+        return;
+    }
+    $findProject = $db->prepare("SELECT id FROM projects WHERE company_id = ? AND name = 'General' AND deleted_at IS NULL LIMIT 1");
+    $updateFiles = $db->prepare('UPDATE user_files SET project_id = ? WHERE project_id IS NULL AND company_id = ?');
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $companyId = (int) $row['id'];
+        $findProject->execute([$companyId]);
+        $projectId = $findProject->fetchColumn();
+        if ($projectId === false) {
+            continue;
+        }
+        $updateFiles->execute([(int) $projectId, $companyId]);
+    }
+    $updateByUser = $db->prepare('UPDATE user_files SET project_id = (
+        SELECT p.id FROM projects p
+        INNER JOIN users u ON u.company_id = p.company_id
+        WHERE u.id = user_files.user_id AND p.name = \'General\' AND p.deleted_at IS NULL
+        LIMIT 1
+    ) WHERE project_id IS NULL AND company_id IS NULL AND user_id IS NOT NULL');
+    $updateByUser->execute();
+}
+
+function platform_backfill_default_projects(PDO $db): void
+{
+    $st = $db->query('SELECT id FROM companies WHERE deleted_at IS NULL');
+    if ($st === false) {
+        return;
+    }
+    $now = time();
+    $findProject = $db->prepare("SELECT id FROM projects WHERE company_id = ? AND name = 'General' AND deleted_at IS NULL LIMIT 1");
+    $insProject = $db->prepare('INSERT INTO projects (company_id, name, description, status, created_at, updated_at) VALUES (?,?,?,?,?,?)');
+    $insMember = $db->prepare('INSERT OR IGNORE INTO project_members (project_id, user_id, created_at) VALUES (?,?,?)');
+    $listUsers = $db->prepare('SELECT id FROM users WHERE company_id = ? AND deleted_at IS NULL');
+
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $companyId = (int) $row['id'];
+        $findProject->execute([$companyId]);
+        $projectId = $findProject->fetchColumn();
+        if ($projectId === false) {
+            $insProject->execute([$companyId, 'General', 'Default collaboration project', 'active', $now, $now]);
+            $projectId = (int) $db->lastInsertId();
+        } else {
+            $projectId = (int) $projectId;
+        }
+        $listUsers->execute([$companyId]);
+        while ($u = $listUsers->fetch(PDO::FETCH_ASSOC)) {
+            $insMember->execute([$projectId, (int) $u['id'], $now]);
+        }
+    }
 }
 
 function platform_backfill_user_rbac(PDO $db): void
@@ -402,7 +586,7 @@ function platform_sso_b64url_decode(string $s): string
     return is_string($out) ? $out : '';
 }
 
-function platform_sso_sign_state(string $next): string
+function platform_sso_sign_state(string $next, ?string $inviteToken = null): string
 {
     $next = platform_sso_normalize_next($next);
     $key = platform_sso_state_signing_key();
@@ -416,6 +600,10 @@ function platform_sso_sign_state(string $next): string
         'next' => $next,
         'prov' => 'google',
     ];
+    $inviteToken = trim((string) $inviteToken);
+    if ($inviteToken !== '') {
+        $payload['invite'] = $inviteToken;
+    }
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
     if (!is_string($json)) {
         return '';
@@ -457,6 +645,11 @@ function platform_sso_verify_state(string $state): ?array
         return null;
     }
     $next = platform_sso_normalize_next((string) ($data['next'] ?? '/dashboard/'));
+    $out = ['next' => $next];
+    $invite = trim((string) ($data['invite'] ?? ''));
+    if ($invite !== '') {
+        $out['invite'] = $invite;
+    }
 
-    return ['next' => $next];
+    return $out;
 }

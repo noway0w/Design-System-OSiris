@@ -19,12 +19,7 @@ require_once __DIR__ . '/platform-rbac.php';
 $actor = platform_require_session_user();
 platform_require_capability($actor, 'can_manage_team');
 $pdo = platform_pdo();
-$companyId = (int) ($actor['company_id'] ?? 0);
-if ($companyId < 1) {
-    http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'No company assigned']);
-    exit;
-}
+$companyId = platform_require_actor_company_id($actor);
 
 $raw = file_get_contents('php://input') ?: '';
 $body = json_decode($raw, true);

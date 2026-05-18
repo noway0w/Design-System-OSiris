@@ -55,11 +55,11 @@ function platform_mail_bootstrap_secrets(): void
             if ($key === '' || !isset($allowed[$key])) {
                 continue;
             }
-            if ((getenv($key) ?: '') !== '') {
+            if (function_exists('platform_env') && platform_env($key) !== '') {
                 continue;
             }
-            putenv($key . '=' . $val);
             $_ENV[$key] = $val;
+            putenv($key . '=' . $val);
         }
     }
 }
