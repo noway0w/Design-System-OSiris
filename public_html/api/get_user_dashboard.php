@@ -73,9 +73,7 @@ $catalog = [
 
 $services = [];
 foreach ($catalog as $c) {
-    if (!empty($allowed[$c['service_name']])) {
-        $services[] = $c;
-    }
+    $services[] = array_merge($c, ['allowed' => !empty($allowed[$c['service_name']])]);
 }
 
 $caps = platform_user_capabilities($user);

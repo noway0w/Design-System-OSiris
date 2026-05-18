@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" role="img" aria-hidden="true">
+  <!-- E: nested arcs sharing left tangent (cx - r constant) -->
+  <circle cx="25" cy="24" r="16" stroke="currentColor" stroke-width="1.15"/>
+  <circle cx="18.5" cy="24" r="9.5" stroke="currentColor" stroke-width="1.15"/>
+  <circle cx="14" cy="24" r="5" stroke="currentColor" stroke-width="1.15"/>
+  <circle cx="10.75" cy="24" r="1.85" fill="currentColor" stroke="none"/>
+</svg>

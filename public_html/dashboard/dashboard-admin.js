@@ -1588,7 +1588,7 @@
     container.innerHTML = "";
     var tabDefs = [
       { id: "projects", label: "Projects", icon: "folder_shared" },
-      { id: "home", label: "Home", icon: "home" },
+      { id: "home", label: "App services", icon: "apps" },
       { id: "super_admin", label: "Super Admin", icon: "admin_panel_settings" },
       { id: "team", label: "Team", icon: "groups" },
     ];

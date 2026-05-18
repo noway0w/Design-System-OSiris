@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link href="/css/tailwind.css" rel="stylesheet"/>
   <link href="/css/variables.css" rel="stylesheet"/>
-  <link href="/css/dashboard-shell.css" rel="stylesheet"/>
+  <link href="/css/dashboard-shell.css?v=20260518q" rel="stylesheet"/>
   <link href="/css/dashboard-modal.css" rel="stylesheet"/>
 </head>
 <body class="font-sans antialiased">
@@ -43,12 +43,12 @@
         <section data-dash-panel="home" id="panel-home">
           <div class="dash-section-head" id="services">
             <div>
-              <h3 class="dash-section-title">Active services</h3>
+              <h3 class="dash-section-title">App services</h3>
               <p class="dash-section-desc">Open the applications assigned to your account.</p>
             </div>
           </div>
-          <p id="services-empty" class="dash-empty hidden mt-6">No applications are assigned to your account yet.</p>
-          <div id="services-grid" class="dash-services-grid mt-6"></div>
+          <p id="services-empty" class="dash-empty hidden mt-6">No app services assigned to your account yet.</p>
+          <div id="services-grid" class="dash-app-services-grid"></div>
         </section>
 
         <section data-dash-panel="super_admin" id="panel-super-admin" class="hidden"></section>
@@ -60,12 +60,22 @@
   </div>
 
   <script src="/js/platform-shell-topbar.js"></script>
-  <script src="/dashboard/dashboard-admin.js?v=20260524"></script>
+  <script src="/dashboard/dashboard-admin.js?v=20260525"></script>
   <script>
 (function () {
   const grid = document.getElementById('services-grid');
   const empty = document.getElementById('services-empty');
-  const iconVariants = ['dash-service-icon--a', 'dash-service-icon--b', 'dash-service-icon--c'];
+  /** Served from /assets/Dashboard_assets (copied from dashboard/illustrations). */
+  var DASHBOARD_ASSETS = "/assets/Dashboard_assets";
+  var ILLUS_V = "20260518n";
+  /** Foreground icon + watermark use the same slug file */
+  var SERVICE_TILE_SVGS = {
+    "map-app": DASHBOARD_ASSETS + "/map-app.svg?v=" + ILLUS_V,
+    iris: DASHBOARD_ASSETS + "/iris.svg?v=" + ILLUS_V,
+    carscan: DASHBOARD_ASSETS + "/carscan.svg?v=" + ILLUS_V,
+    "3Dobjscan": DASHBOARD_ASSETS + "/3dobjscan.svg?v=" + ILLUS_V,
+    disable: DASHBOARD_ASSETS + "/disable.svg?v=" + ILLUS_V,
+  };
 
   function escapeHtml(t) {
     const d = document.createElement('div');
@@ -73,24 +83,55 @@
     return d.innerHTML;
   }
 
-  function card(s, idx) {
-    var wrap = document.createElement('a');
-    wrap.href = s.url;
-    wrap.className = 'dash-service-card glass-panel';
-    var iv = iconVariants[idx % iconVariants.length];
+  function svcTileArt(s) {
+    return SERVICE_TILE_SVGS[s.service_name] || SERVICE_TILE_SVGS.iris;
+  }
+
+  function serviceIllustration(s) {
+    var src = svcTileArt(s);
+    return (
+      '<div class="dash-app-service-illus" aria-hidden="true">' +
+      '<img src="' + escapeHtml(src) + '" alt="" class="dash-app-service-illus__img" width="48" height="48" loading="lazy"/>' +
+      "</div>"
+    );
+  }
+
+  function card(s) {
+    var allowed = s.allowed === true || s.allowed === 1;
+    /* Back-compat if older API omitted flag: assume allowed when unknown */
+    if (s.allowed === undefined || s.allowed === null) {
+      allowed = true;
+    }
+    var src = svcTileArt(s);
+    var wrap = allowed ? document.createElement('a') : document.createElement('div');
+    if (allowed) {
+      wrap.href = s.url;
+    } else {
+      wrap.setAttribute('role', 'article');
+      wrap.setAttribute(
+        'aria-label',
+        (s.title || s.service_name) + ': not available — you do not have access to this app.'
+      );
+    }
+    wrap.className =
+      'dash-app-service-tile glass-panel' + (!allowed ? ' dash-app-service-tile--denied' : '');
     wrap.innerHTML =
-      '<div class="dash-service-card-top">' +
-        '<div class="dash-service-icon ' + iv + '">' +
-          '<span class="material-symbols-outlined text-2xl">' + escapeHtml(s.icon || 'apps') + '</span>' +
-        '</div>' +
-        '<span class="material-symbols-outlined text-slate-500" aria-hidden="true">arrow_outward</span>' +
+      '<div class="dash-app-service-tile-bg" aria-hidden="true">' +
+      '<img src="' + escapeHtml(src) + '" alt="" class="dash-app-service-tile-bg__img" loading="lazy"/>' +
+      '</div>' +
+      '<div class="dash-app-service-tile-top">' +
+      serviceIllustration(s) +
+      '<span class="dash-app-service-menu" aria-hidden="true">' +
+      '<span class="material-symbols-outlined">more_horiz</span></span>' +
       '</div>' +
       '<div>' +
-        '<h3>' + escapeHtml(s.title) + '</h3>' +
-        '<p>' + escapeHtml(s.subtitle || '') + '</p>' +
+      '<h3 class="dash-app-service-tile__title">' + escapeHtml(s.title) + '</h3>' +
+      '<p class="dash-app-service-tile__subtitle">' + escapeHtml(s.subtitle || '') + '</p>' +
       '</div>' +
-      '<div class="dash-service-card-footer">' +
-        '<span class="dash-service-badge">Open app</span>' +
+      '<div class="dash-app-service-tile-footer">' +
+      (allowed
+        ? '<span class="dash-app-service-status">Active</span>'
+        : '<span class="dash-app-service-status dash-app-service-status--denied">No access</span>') +
       '</div>';
     return wrap;
   }
@@ -102,7 +143,7 @@
       return;
     }
     empty.classList.add('hidden');
-    list.forEach(function (s, i) { grid.appendChild(card(s, i)); });
+    list.forEach(function (s) { grid.appendChild(card(s)); });
   }
 
   async function load() {

@@ -217,10 +217,10 @@ On schema init, each company gets a `General` project with all company users in 
 
 | Role slug | Scope | Dashboard tab (typical) |
 |-----------|--------|-------------------------|
-| Any user with company | company | **Projects** (first tab), Home |
-| `super_admin` | platform | Projects, Home, Super Admin |
+| Any user with company | company | **Projects** (first tab), App services |
+| `super_admin` | platform | Projects, App services, Super Admin |
 | `company_owner` / `company_admin` | company | + Team |
-| `company_manager` / `company_user` | company | Projects + Home only |
+| `company_manager` / `company_user` | company | Projects + App services only |
 
 The standalone **Import Files** tab is removed; uploads happen inside the Project workspace UI.
 
@@ -259,6 +259,10 @@ The standalone **Import Files** tab is removed; uploads happen inside the Projec
 3. Invitee registers (password or Google SSO with invite in OAuth state) → `auth-complete-invite.php` / SSO callback → verify email → `platform_activate_user()` fulfills pending project membership.
 4. Soft-deleted emails are **reactivated** on re-invite instead of returning “account removed”.
 5. **Members list** (`iris-projects.php` detail) lists all `project_members` for the project (not filtered by `users.company_id`, so platform owners with `company_id` NULL appear). Each member includes `avatar_url` when set (Google SSO profile picture). Response includes `can_manage_roster`. Dashboard **Remove from project** / **Cancel invite** buttons call `DELETE iris-project-members.php` (owner, admin, manager, super_admin).
+
+<!-- Dashboard App services tab: tiles in public_html/dashboard/index.html; SERVICE_TILE_SVGS under /assets/Dashboard_assets/. API returns full catalog with allowed=false for missing service_permissions; denied tiles are non-links with same svg art per service_name. -->
+
+**Dashboard App services UI:** Sidebar label **App services** (internal tab id `home`, `data-dash-panel="home"`). [`get_user_dashboard.php`](/home/OSiris/public_html/api/get_user_dashboard.php) returns the **full** service catalog, each row with **`allowed`** (presence in [`service_permissions`](/home/OSiris/public_html/api/platform-db.php) for `service_name`). **Allowed:** `<a>` link tile, footer **Active**. **Denied:** `<div>` (not clickable), same **`/assets/Dashboard_assets/{service_name}.svg`** for icon + watermark as when allowed, badge **No access**, class **`dash-app-service-tile--denied`**. Artwork is **pure vector** (**A→`disable`**, **B→`iris`**, **C→`3Dobjscan`**, **D→`map-app`**, **E→`carscan`**). Slug SVGs are copied into [`Dashboard_assets`](/home/OSiris/public_html/assets/Dashboard_assets/) from [`dashboard/illustrations`](/home/OSiris/public_html/dashboard/illustrations/). Extra reference [`illustration-F.svg`](/home/OSiris/public_html/assets/Dashboard_assets/illustration-F.svg). UI reflects permissions; **`auth-verify.php`** continues to gate app entry server-side.
 
 **Dashboard Projects UI:** Glassmorphic bento cards ([`dashboard-shell.css`](/home/OSiris/public_html/css/dashboard-shell.css), `renderProjects` in [`dashboard-admin.js`](/home/OSiris/public_html/dashboard/dashboard-admin.js)). List cards show real member avatars from `member_preview`; detail team rows use `avatar_url` with initials fallback on missing or broken images.
 

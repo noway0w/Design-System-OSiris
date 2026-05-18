@@ -582,6 +582,221 @@ html.light.dash-page body {
   border-radius: 0.375rem;
 }
 
+/* --- App services tab (bento service tiles) --- */
+.dash-app-services-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .dash-app-services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-app-services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dash-app-service-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 14rem;
+  padding: 1.75rem;
+  border-radius: 2rem;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+}
+
+/* Same visual language as .dash-blob-tl / .dash-blob-br: cool wash + warm corner */
+.dash-app-service-tile.glass-panel {
+  background-image:
+    radial-gradient(ellipse 78% 70% at 6% 8%, color-mix(in srgb, var(--dash-primary-fixed) 52%, transparent), transparent 62%),
+    radial-gradient(ellipse 90% 80% at 94% 94%, color-mix(in srgb, var(--dash-tertiary-fixed) 42%, transparent), transparent 58%);
+  background-color: rgba(255, 255, 255, 0.36);
+}
+
+html.dark .dash-app-service-tile.glass-panel {
+  background-image:
+    radial-gradient(ellipse 78% 70% at 6% 8%, color-mix(in srgb, var(--dash-primary-fixed) 24%, transparent), transparent 62%),
+    radial-gradient(ellipse 90% 80% at 94% 94%, color-mix(in srgb, var(--dash-tertiary-fixed) 20%, transparent), transparent 58%);
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+.dash-app-service-tile-bg {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  /* Base ⅓ tile ×1.6, then −15% */
+  width: calc(100% / 3 * 1.6 * 0.85);
+  height: calc(100% / 3 * 1.6 * 0.85);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.dash-app-service-tile-bg__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right bottom;
+  display: block;
+}
+
+html.dark .dash-app-service-tile-bg__img {
+  filter: brightness(0) invert(1);
+}
+
+.dash-app-service-tile > *:not(.dash-app-service-tile-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.dash-app-service-tile:hover,
+.dash-app-service-tile:focus-visible {
+  transform: scale(1.02);
+  box-shadow: var(--dash-shadow-md);
+  border-color: var(--dash-white-80);
+  background-color: rgba(255, 255, 255, 0.52);
+  outline: none;
+}
+
+html.dark .dash-app-service-tile:hover,
+html.dark .dash-app-service-tile:focus-visible {
+  background-color: rgba(30, 41, 59, 0.62);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.dash-app-service-tile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.dash-app-service-illus {
+  /* Circle well: original size; glyph scaled via .dash-app-service-illus__img */
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: var(--dash-primary-fixed);
+  border: 1px solid var(--dash-white-40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--dash-primary);
+}
+
+.dash-app-service-illus__img {
+  width: 3rem;
+  height: 3rem;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Original PNG art (transparent matte); invert strokes for dark tiles */
+html.dark .dash-app-service-illus__img,
+html.dark .dash-app-service-tile-bg__img {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
+
+.dash-app-service-menu {
+  color: var(--dash-on-surface-variant);
+  opacity: 0.55;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dash-app-service-menu .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.dash-app-service-tile__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--dash-primary);
+  margin: 0;
+}
+
+.dash-app-service-tile__subtitle {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-on-surface-variant);
+  margin: 0.35rem 0 0;
+}
+
+.dash-app-service-tile-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--dash-white-50);
+}
+
+.dash-app-service-tile--denied {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.dash-app-service-tile--denied .dash-app-service-tile__title,
+.dash-app-service-tile--denied .dash-app-service-tile__subtitle {
+  opacity: 0.72;
+}
+
+.dash-app-service-tile.glass-panel.dash-app-service-tile--denied:hover,
+.dash-app-service-tile.glass-panel.dash-app-service-tile--denied:focus-visible {
+  transform: none;
+  border-color: var(--dash-white-50);
+}
+
+html.dark .dash-app-service-tile.glass-panel.dash-app-service-tile--denied:hover,
+html.dark .dash-app-service-tile.glass-panel.dash-app-service-tile--denied:focus-visible {
+  border-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+.dash-app-service-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  color: #fff;
+  background: #22a06b;
+}
+
+.dash-app-service-status--muted {
+  background: #e07a6a;
+}
+
+.dash-app-service-status--denied {
+  background: rgba(100, 116, 139, 0.95);
+  color: #fff;
+}
+
+html.dark .dash-app-service-status--denied {
+  background: rgba(71, 85, 105, 0.9);
+}
+
 /* --- Projects tab (bento glass cards) --- */
 .dash-projects-grid {
   display: grid;

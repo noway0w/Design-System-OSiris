@@ -1,0 +1,14 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="23.5" cy="23.5" r="17.25" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-dasharray="0.6 0.6"/>
+<circle cx="23.5" cy="23.5" r="10.25" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5"/>
+<circle cx="39.55" cy="16.55" r="1.55" fill="black" style="fill:black;fill-opacity:1;"/>
+<circle cx="15.55" cy="16.55" r="1.55" fill="black" style="fill:black;fill-opacity:1;"/>
+<circle cx="13.55" cy="37.55" r="1.55" fill="black" style="fill:black;fill-opacity:1;"/>
+<circle cx="23.55" cy="33.55" r="1.55" fill="black" style="fill:black;fill-opacity:1;"/>
+<path d="M13.8145 37.5361L23.8145 33.5361" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+<path d="M13.8145 37.5361L15.5 16.5" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+<path d="M40 16L23.8145 33.5361" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+<path d="M39.5 16.5L15 17" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+<path d="M13.8145 37.5361L40 16" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+<path d="M16 17L23.8145 33.5361" stroke="black" style="stroke:black;stroke-opacity:1;" stroke-width="0.5" stroke-linecap="round"/>
+</svg>

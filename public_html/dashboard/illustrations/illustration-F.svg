@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- F: outer diamond, inscribed square (midpoints on diamond sides), inner diamond -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" role="img" aria-hidden="true">
+  <path d="M24 4 L42 24 24 44 6 24Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M33 14 L33 34 15 34 15 14Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M24 14 L33 24 24 34 15 24Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

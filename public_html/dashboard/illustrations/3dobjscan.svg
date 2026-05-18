@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" role="img" aria-hidden="true">
+  <!-- C: isometric stacked layers with light grid hatch -->
+  <g stroke="currentColor" stroke-width="1" stroke-linejoin="round">
+    <path d="M24 43 40 34V22L24 30 8 22v12z"/>
+    <path stroke-width="0.85" opacity="0.85" d="M15 37l9 5 9-5"/>
+    <path stroke-width="0.85" opacity="0.85" d="m18 34 6 3.5 6-3.5"/>
+    <path d="M24 36 38 27V17L24 25 10 17v10z"/>
+    <path stroke-width="0.85" opacity="0.85" d="M15 30l9 5 9-5"/>
+    <path stroke-width="0.85" opacity="0.85" d="m18 27 6 3.5 6-3.5"/>
+    <path d="M24 30 37 21V13L24 20 11 13v8z"/>
+    <path stroke-width="0.85" opacity="0.85" d="M16 23l8 5 8-5"/>
+    <path stroke-width="0.85" opacity="0.85" d="m19 21 5 3 5-3"/>
+    <path d="M24 25 36 17V11L24 17 12 11v6z"/>
+    <path stroke-width="0.85" opacity="0.85" d="m16 16 8 4.5 8-4.5"/>
+    <path d="M24 19 34 13V9L24 14 14 9v4z"/>
+  </g>
+</svg>
