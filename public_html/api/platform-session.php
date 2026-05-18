@@ -188,10 +188,12 @@ function platform_session_user_is_active(int $userId): bool
     }
     try {
         $pdo = platform_pdo();
-        $st = $pdo->prepare('SELECT account_status FROM users WHERE id = ? LIMIT 1');
+        $st = $pdo->prepare('SELECT account_status, deleted_at FROM users WHERE id = ? LIMIT 1');
         $st->execute([$userId]);
-        $status = (string) ($st->fetchColumn() ?: 'active');
-        $cache[$userId] = $status === 'active';
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        $status = (string) ($row['account_status'] ?? 'active');
+        $deleted = $row['deleted_at'] ?? null;
+        $cache[$userId] = $status === 'active' && ($deleted === null || $deleted === '');
     } catch (Throwable $e) {
         $cache[$userId] = true;
     }

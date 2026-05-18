@@ -9,6 +9,7 @@ header('Cache-Control: no-store');
 
 require_once __DIR__ . '/platform-db.php';
 require_once __DIR__ . '/platform-session.php';
+require_once __DIR__ . '/platform-rbac.php';
 
 $uid = platform_session_user_id();
 if (!$uid) {
@@ -18,21 +19,14 @@ if (!$uid) {
 }
 
 $pdo = platform_pdo();
-$st = $pdo->prepare('SELECT id, name, surname, email, avatar_url FROM users WHERE id = ? LIMIT 1');
-$st->execute([$uid]);
-$user = $st->fetch(PDO::FETCH_ASSOC);
+$user = platform_load_user_row($pdo, $uid);
 if (!$user) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'User not found']);
     exit;
 }
 
-$svc = $pdo->prepare('SELECT service_name FROM service_permissions WHERE user_id = ?');
-$svc->execute([$uid]);
-$allowed = [];
-foreach ($svc->fetchAll(PDO::FETCH_COLUMN) as $name) {
-    $allowed[(string) $name] = true;
-}
+$allowed = platform_user_service_map($pdo, $uid);
 
 $catalog = [
     [
@@ -84,6 +78,9 @@ foreach ($catalog as $c) {
     }
 }
 
+$caps = platform_user_capabilities($user);
+$navTabs = platform_nav_tabs_for_user($user);
+
 echo json_encode([
     'ok' => true,
     'user' => [
@@ -91,7 +88,18 @@ echo json_encode([
         'name' => $user['name'],
         'surname' => $user['surname'],
         'email' => $user['email'],
-        'avatar_url' => $user['avatar_url'],
+        'avatar_url' => $user['avatar_url'] ?? null,
+        'display_name' => platform_user_display_name($user),
+        'role' => [
+            'slug' => $user['role_slug'] ?? null,
+            'label' => $user['role_label'] ?? null,
+        ],
+        'company' => !empty($user['company_id']) ? [
+            'id' => (int) $user['company_id'],
+            'name' => $user['company_name'] ?? null,
+        ] : null,
     ],
+    'capabilities' => $caps,
+    'nav_tabs' => $navTabs,
     'services' => $services,
 ]);

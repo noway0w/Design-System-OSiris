@@ -26,9 +26,11 @@ For nginx snippets and WebSocket rules for the iris stack, see the Cursor rule *
 | SSO start | `public_html/api/auth-sso-start.php` | Redirects to Google with signed `state` |
 | SSO callback | `public_html/api/auth-sso-callback.php` | Exchanges code, upserts user, `platform_session_set_user_id()`, redirects to `next` |
 | Session check for nginx | `public_html/api/auth-verify.php` | Uses `platform_session_user_id()` for `auth_request` |
-| Dashboard API | `public_html/api/get_user_dashboard.php` | Uses `platform_session_user_id()` |
+| Dashboard API | `public_html/api/get_user_dashboard.php` | Uses `platform_session_user_id()`; returns `capabilities` + `nav_tabs` |
+| RBAC | `public_html/api/platform-rbac.php` | Companies, roles, capabilities, audit log |
+| Auth service | `public_html/api/platform-auth-service.php` | Shared login/session helpers for thin HTTP adapters |
 
-Login and dashboard UIs: `public_html/login/index.html`, `public_html/dashboard/index.html`.
+Login and dashboard UIs: `public_html/login/index.html`, `public_html/dashboard/index.html` (+ `dashboard/dashboard-admin.js` for admin tabs).
 
 ### Email verification (password registration)
 
@@ -178,7 +180,35 @@ Map uses `body:has(#map-app-root) { padding-top: 0 }` so only the overlay is off
 5. On verify: `account_status = active`, `email_verified_at` set, `platform_grant_default_permissions`, redirect `/login/?verified=1`.
 6. `POST /api/auth-login.php` returns **403** with `code: pending_verify` until verified.
 
-Google SSO users are created as **active** with `email_verified_at` set in [`auth-sso-callback.php`](/home/OSiris/public_html/api/auth-sso-callback.php).
+Google SSO users are created as **active** with `email_verified_at` set in [`auth-sso-callback.php`](/home/OSiris/public_html/api/auth-sso-callback.php). New and linked users receive default company RBAC via `platform_apply_owner_or_company_defaults()` (owners → `super_admin`, others → `company_user` in the default company).
+
+### Multi-tenant RBAC (Phase 1)
+
+SQLite tables: `companies`, `roles`, `user_files`, `admin_audit_log`. Users gain `company_id`, `role_id`, `deleted_at`, `public_display_name`.
+
+| Role slug | Scope | Dashboard tab |
+|-----------|--------|----------------|
+| `super_admin` | platform | Super Admin |
+| `company_owner` / `company_admin` | company | Team Permissions |
+| `company_manager` / `company_user` | company | — |
+| Any **active** user | — | Import Files |
+
+**Platform owners** (`g.lassiat@gmail.com`, `admin@localhost`) are seeded as `super_admin` with `company_id = NULL`. Only those emails may call `POST /api/iris-admin-promote-super-admin.php`.
+
+**APIs** (session + capability checks; `iris_*` prefix):
+
+| Endpoint | Capability |
+|----------|------------|
+| `iris-admin-users.php` | `super_admin` |
+| `iris-admin-promote-super-admin.php` | `can_promote_super_admin` |
+| `iris-team-members.php`, `iris-team-permissions.php`, `iris-team-invite.php` | `can_manage_team` |
+| `iris-files.php`, `iris-files-upload.php`, `iris-files-download.php` | `can_import_files` |
+
+`service_permissions` is unchanged for nginx `auth-verify.php` and app tiles; the Team tab toggles that table per member.
+
+**Private file storage:** `/home/OSiris/data/platform-user-files/` (gitignored; not under `public_html/`). Override with env `PLATFORM_USER_FILES_ROOT`.
+
+**GDPR Phase 1:** soft-delete only (`users.deleted_at`, `user_files.deleted_at`); auth logs use `user_id` instead of raw email. Phase 2: hard wipe scripts (see [PLATFORM_AUTH_MAIL_RESUME.md](PLATFORM_AUTH_MAIL_RESUME.md)).
 
 ### Password reset flow
 

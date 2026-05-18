@@ -281,13 +281,25 @@
 
       try {
         window.dispatchEvent(
-          new CustomEvent('osiris-platform-user', { detail: { user: user, services: data.services || [] } })
+          new CustomEvent('osiris-platform-user', {
+            detail: {
+              user: user,
+              services: data.services || [],
+              capabilities: data.capabilities || {},
+              nav_tabs: data.nav_tabs || ['home'],
+            },
+          })
         );
       } catch (e) {
         /* ignore */
       }
 
-      return { user: user, services: data.services || [] };
+      return {
+        user: user,
+        services: data.services || [],
+        capabilities: data.capabilities || {},
+        nav_tabs: data.nav_tabs || ['home'],
+      };
     })
     .catch(function (err) {
       if (err && err.message === 'unauthorized') {

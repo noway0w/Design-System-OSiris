@@ -15,6 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 
 require_once __DIR__ . '/platform-auth.php';
 require_once __DIR__ . '/platform-mail.php';
+require_once __DIR__ . '/platform-rbac.php';
 
 $raw = file_get_contents('php://input') ?: '';
 $body = json_decode($raw, true);
@@ -100,6 +101,7 @@ $ins->execute([
     'pending',
 ]);
 $uid = (int) $pdo->lastInsertId();
+platform_apply_owner_or_company_defaults($pdo, $uid, $email);
 
 $tok = platform_create_auth_token($pdo, $uid, 'email_verify', 48 * 3600);
 if ($tok === null) {
@@ -111,7 +113,7 @@ if ($tok === null) {
 $mail = platform_send_verify_email($email, $tok['token']);
 $emailSent = !empty($mail['ok']);
 if (!$emailSent) {
-    error_log('auth-register: email not delivered to ' . $email . ' (mode=' . ($mail['mode'] ?? 'unknown') . ')');
+    error_log('auth-register: email not delivered user_id=' . $uid . ' (mode=' . ($mail['mode'] ?? 'unknown') . ')');
 }
 
 $response = [

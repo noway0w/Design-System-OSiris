@@ -13,8 +13,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     exit;
 }
 
-require_once __DIR__ . '/platform-db.php';
-require_once __DIR__ . '/platform-session.php';
+require_once __DIR__ . '/platform-auth-service.php';
 
 $raw = file_get_contents('php://input') ?: '';
 $body = json_decode($raw, true);
@@ -32,33 +31,23 @@ if ($email === '' || $password === '') {
     exit;
 }
 
-$pdo = platform_pdo();
-$st = $pdo->prepare('SELECT id, name, surname, email, password_hash, account_status FROM users WHERE email = ? LIMIT 1');
-$st->execute([$email]);
-$row = $st->fetch(PDO::FETCH_ASSOC);
-if (!$row || empty($row['password_hash']) || !password_verify($password, $row['password_hash'])) {
+$result = platform_auth_login($email, $password);
+if (!$result['ok']) {
+    $code = $result['code'] ?? null;
+    if ($code === 'pending_verify') {
+        http_response_code(403);
+        echo json_encode([
+            'ok' => false,
+            'error' => $result['error'],
+            'code' => 'pending_verify',
+            'email' => $result['email'] ?? $email,
+        ]);
+        exit;
+    }
     http_response_code(401);
-    echo json_encode(['ok' => false, 'error' => 'Invalid credentials']);
-    exit;
-}
-if (($row['account_status'] ?? 'active') === 'pending') {
-    http_response_code(403);
-    echo json_encode([
-        'ok' => false,
-        'error' => 'Please verify your email before signing in. Check your inbox for the activation link.',
-        'code' => 'pending_verify',
-        'email' => $row['email'],
-    ]);
+    echo json_encode(['ok' => false, 'error' => $result['error']]);
     exit;
 }
 
-platform_session_set_user_id((int) $row['id']);
-echo json_encode([
-    'ok' => true,
-    'user' => [
-        'id' => (int) $row['id'],
-        'name' => $row['name'],
-        'surname' => $row['surname'],
-        'email' => $row['email'],
-    ],
-]);
+platform_auth_issue_session((int) $result['user']['id']);
+echo json_encode(['ok' => true, 'user' => $result['user']]);

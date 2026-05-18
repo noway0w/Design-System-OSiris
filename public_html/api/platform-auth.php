@@ -63,6 +63,9 @@ function platform_user_is_active(?array $row): bool
     if (!$row) {
         return false;
     }
+    if (!empty($row['deleted_at'])) {
+        return false;
+    }
     $status = (string) ($row['account_status'] ?? 'active');
 
     return $status === 'active';
@@ -134,6 +137,11 @@ function platform_consume_auth_token(PDO $pdo, string $token, ?string $expectedK
 
 function platform_load_user_by_id(PDO $pdo, int $userId): ?array
 {
+    if (is_readable(__DIR__ . '/platform-rbac.php')) {
+        require_once __DIR__ . '/platform-rbac.php';
+
+        return platform_load_user_row($pdo, $userId);
+    }
     $st = $pdo->prepare('SELECT id, name, surname, email, password_hash, account_status, email_verified_at FROM users WHERE id = ? LIMIT 1');
     $st->execute([$userId]);
     $row = $st->fetch(PDO::FETCH_ASSOC);

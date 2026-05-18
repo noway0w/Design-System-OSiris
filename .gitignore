@@ -49,6 +49,9 @@ public_html/api/.platform-gmail-mail.json
 # User uploads
 public_html/uploads/
 
+# Platform per-user file storage (outside web root)
+data/platform-user-files/
+
 # API cache
 public_html/.cache/
 

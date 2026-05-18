@@ -11,8 +11,11 @@
   <link href="/css/dashboard-shell.css" rel="stylesheet"/>
 </head>
 <body class="font-sans antialiased">
+  
   <div class="dash-root">
     <div class="dash-blob-tl" aria-hidden="true"></div>
+    
+    
     <div class="dash-blob-br" aria-hidden="true"></div>
 
     <p class="dash-mobile-brand">OSiris</p>
@@ -22,24 +25,7 @@
         <h1 class="dash-brand-title">OSiris</h1>
         <p class="dash-brand-sub">Platform</p>
       </div>
-      <div class="dash-nav-links">
-        <a class="dash-nav-link" href="/dashboard/">
-          <span class="material-symbols-outlined" aria-hidden="true">home</span>
-          <span>Home</span>
-        </a>
-        <span class="dash-nav-link dash-nav-link--disabled" title="Coming soon">
-          <span class="material-symbols-outlined" aria-hidden="true">folder_shared</span>
-          <span>Projects</span>
-        </span>
-        <a class="dash-nav-link dash-nav-link--active" href="#services">
-          <span class="material-symbols-outlined filled" aria-hidden="true">design_services</span>
-          <span>Services</span>
-        </a>
-        <span class="dash-nav-link dash-nav-link--disabled" title="Coming soon">
-          <span class="material-symbols-outlined" aria-hidden="true">payments</span>
-          <span>Finance</span>
-        </span>
-      </div>
+      <div class="dash-nav-links" id="dash-dynamic-nav"></div>
       <div class="dash-nav-footer">
         <button type="button" class="dash-nav-btn" id="btn-logout" title="Sign out">
           <span class="material-symbols-outlined" aria-hidden="true">logout</span>
@@ -50,26 +36,33 @@
 
     <main class="dash-main">
       <div id="platform-topbar-mount" data-mode="hydrate"></div>
+      <div id="dash-mobile-tabs" class="dash-mobile-tabs" aria-label="Dashboard sections" hidden></div>
 
-      <div class="dash-content" id="services">
-        <div class="dash-section-head">
-          <div>
-            <h3 class="dash-section-title">Active services</h3>
-            <p class="dash-section-desc">Open the applications assigned to your account.</p>
+      <div class="dash-content">
+        <section data-dash-panel="home" id="panel-home">
+          <div class="dash-section-head" id="services">
+            <div>
+              <h3 class="dash-section-title">Active services</h3>
+              <p class="dash-section-desc">Open the applications assigned to your account.</p>
+            </div>
           </div>
-        </div>
-        <p id="services-empty" class="dash-empty hidden mt-6">No applications are assigned to your account yet.</p>
-        <div id="services-grid" class="dash-services-grid mt-6"></div>
+          <p id="services-empty" class="dash-empty hidden mt-6">No applications are assigned to your account yet.</p>
+          <div id="services-grid" class="dash-services-grid mt-6"></div>
+        </section>
+
+        <section data-dash-panel="super_admin" id="panel-super-admin" class="hidden"></section>
+        <section data-dash-panel="team" id="panel-team" class="hidden"></section>
+        <section data-dash-panel="files" id="panel-files" class="hidden"></section>
       </div>
     </main>
   </div>
 
   <script src="/js/platform-shell-topbar.js"></script>
+  <script src="/dashboard/dashboard-admin.js"></script>
   <script>
 (function () {
   const grid = document.getElementById('services-grid');
   const empty = document.getElementById('services-empty');
-
   const iconVariants = ['dash-service-icon--a', 'dash-service-icon--b', 'dash-service-icon--c'];
 
   function escapeHtml(t) {
@@ -100,6 +93,16 @@
     return wrap;
   }
 
+  function renderServices(list) {
+    grid.innerHTML = '';
+    if (!list.length) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    list.forEach(function (s, i) { grid.appendChild(card(s, i)); });
+  }
+
   async function load() {
     var data = null;
     try {
@@ -110,14 +113,10 @@
     if (!data || !data.user || data.error) {
       return;
     }
-    const list = data.services || [];
-    grid.innerHTML = '';
-    if (!list.length) {
-      empty.classList.remove('hidden');
-      return;
+    renderServices(data.services || []);
+    if (window.OSirisDashboardAdmin) {
+      window.OSirisDashboardAdmin.init(data);
     }
-    empty.classList.add('hidden');
-    list.forEach(function (s, i) { grid.appendChild(card(s, i)); });
   }
 
   document.getElementById('btn-logout').addEventListener('click', async function () {

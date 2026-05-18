@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/platform-db.php';
 require_once __DIR__ . '/platform-session.php';
+require_once __DIR__ . '/platform-rbac.php';
 
 function sso_redirect_login(string $code, string $next): void
 {
@@ -138,11 +139,11 @@ $avatar = trim((string) ($info['picture'] ?? ''));
 
 $pdo = platform_pdo();
 $row = null;
-$st = $pdo->prepare('SELECT id, email, sso_provider_id FROM users WHERE sso_provider_id = ? LIMIT 1');
+$st = $pdo->prepare('SELECT id, email, sso_provider_id, role_id FROM users WHERE sso_provider_id = ? AND deleted_at IS NULL LIMIT 1');
 $st->execute([$ssoId]);
 $row = $st->fetch(PDO::FETCH_ASSOC);
 if (!$row) {
-    $st2 = $pdo->prepare('SELECT id, email, sso_provider_id FROM users WHERE email = ? LIMIT 1');
+    $st2 = $pdo->prepare('SELECT id, email, sso_provider_id, role_id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1');
     $st2->execute([$email]);
     $row = $st2->fetch(PDO::FETCH_ASSOC);
 }
@@ -153,6 +154,9 @@ if ($row) {
     $up = $pdo->prepare('UPDATE users SET sso_provider_id = ?, name = ?, surname = ?, avatar_url = COALESCE(NULLIF(?, \'\'), avatar_url), account_status = ?, email_verified_at = COALESCE(email_verified_at, ?), updated_at = ? WHERE id = ?');
     $up->execute([$ssoId, $given, $family, $avatar, 'active', $now, $now, $uid]);
     platform_grant_default_permissions($pdo, $uid);
+    if (empty($row['role_id'] ?? null)) {
+        platform_apply_owner_or_company_defaults($pdo, $uid, $email);
+    }
     platform_session_set_user_id($uid);
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
@@ -170,6 +174,7 @@ $ins = $pdo->prepare('INSERT INTO users (name, surname, email, password_hash, ip
 $ins->execute([$given, $family, $email, $randomPw, $_SERVER['REMOTE_ADDR'] ?? '', 'google-oauth', $avatar !== '' ? $avatar : null, $ssoId, 'active', $now]);
 $uid = (int) $pdo->lastInsertId();
 platform_grant_default_permissions($pdo, $uid);
+platform_apply_owner_or_company_defaults($pdo, $uid, $email);
 platform_session_set_user_id($uid);
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();

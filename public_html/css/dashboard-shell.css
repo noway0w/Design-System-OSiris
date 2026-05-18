@@ -138,6 +138,15 @@ html.light.dash-page body {
   margin-top: 1.5rem;
 }
 
+.dash-nav-links button.dash-nav-link {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+}
+
 .dash-nav-link {
   display: flex;
   align-items: center;
@@ -580,6 +589,33 @@ html.light.dash-page body {
   border-radius: 1rem;
   padding: 1.5rem;
   background: var(--dash-white-40);
+}
+
+.dash-mobile-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.75rem 1rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dash-mobile-tabs:not([hidden]) {
+  display: flex;
+}
+
+.dash-mobile-tabs .dash-nav-link {
+  flex-shrink: 0;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .dash-mobile-tabs {
+    display: none !important;
+  }
 }
 
 .dash-mobile-brand {

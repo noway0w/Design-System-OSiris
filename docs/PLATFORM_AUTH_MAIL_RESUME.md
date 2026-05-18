@@ -76,6 +76,22 @@ php /home/OSiris/scripts/platform-resend-verify.php idea080912@yopmail.com
 
 ---
 
+## GDPR / data retention (Phase 1 vs Phase 2)
+
+**Phase 1 (current):**
+
+- Users and files use **soft delete** (`deleted_at`); PII remains in SQLite for a future wipe.
+- Auth/mail error paths log **`user_id`** only, not email addresses.
+- No column-level encryption yet.
+
+**Phase 2 (planned, not implemented):**
+
+- Scripted erasure: anonymize or delete rows where `deleted_at` is set and retention period elapsed.
+- Remove blobs under `data/platform-user-files/` for soft-deleted `user_files`.
+- Optional export-before-delete for compliance requests.
+
+---
+
 ## Git / secrets
 
 Never commit: `.platform-sso.env`, `.platform-mail.secret`, `.platform-gmail-mail.json`, `api/.mail-outbox/`.

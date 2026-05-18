@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ");
     platform_ensure_users_columns($db);
+    platform_ensure_rbac_schema($db);
     $db->exec("
 CREATE TABLE IF NOT EXISTS projects (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,6 +185,10 @@ function platform_ensure_users_columns(PDO $db): void
         'account_status' => 'TEXT',
         'phone' => 'TEXT',
         'email_verified_at' => 'INTEGER',
+        'company_id' => 'INTEGER',
+        'role_id' => 'INTEGER',
+        'deleted_at' => 'INTEGER',
+        'public_display_name' => 'TEXT',
     ];
     foreach ($add as $col => $typeSql) {
         if (isset($have[$col])) {
@@ -207,9 +212,108 @@ function platform_ensure_users_columns(PDO $db): void
     }
 }
 
+function platform_ensure_rbac_schema(PDO $db): void
+{
+    $db->exec("
+CREATE TABLE IF NOT EXISTS companies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  deleted_at INTEGER
+);
+");
+    $db->exec("
+CREATE TABLE IF NOT EXISTS roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  scope TEXT NOT NULL,
+  label TEXT NOT NULL,
+  rank INTEGER NOT NULL DEFAULT 0
+);
+");
+    $db->exec("
+CREATE TABLE IF NOT EXISTS user_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  company_id INTEGER REFERENCES companies(id),
+  original_name TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  mime_type TEXT,
+  byte_size INTEGER NOT NULL DEFAULT 0,
+  sha256 TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  deleted_at INTEGER
+);
+");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_user_files_user ON user_files(user_id);');
+    $db->exec("
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor_user_id INTEGER NOT NULL REFERENCES users(id),
+  action TEXT NOT NULL,
+  target_user_id INTEGER,
+  meta_json TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+");
+
+    $roles = [
+        ['super_admin', 'platform', 'Super Admin', 100],
+        ['company_owner', 'company', 'Owner', 40],
+        ['company_admin', 'company', 'Admin', 30],
+        ['company_manager', 'company', 'Manager', 20],
+        ['company_user', 'company', 'User', 10],
+    ];
+    $insRole = $db->prepare('INSERT OR IGNORE INTO roles (slug, scope, label, rank) VALUES (?,?,?,?)');
+    foreach ($roles as $r) {
+        $insRole->execute($r);
+    }
+
+    $now = time();
+    $db->prepare('INSERT OR IGNORE INTO companies (name, slug, created_at, updated_at) VALUES (?,?,?,?)')
+        ->execute(['Default', 'default', $now, $now]);
+
+    platform_backfill_user_rbac($db);
+}
+
+function platform_backfill_user_rbac(PDO $db): void
+{
+    if (!is_readable(__DIR__ . '/platform-rbac.php')) {
+        return;
+    }
+    require_once __DIR__ . '/platform-rbac.php';
+
+    $ownerEmails = platform_owner_emails();
+    $defaultCompany = platform_default_company_id($db);
+    $superId = platform_role_id_by_slug($db, 'super_admin');
+    $userRoleId = platform_role_id_by_slug($db, 'company_user');
+
+    $st = $db->query('SELECT id, email, role_id FROM users WHERE deleted_at IS NULL');
+    if ($st === false) {
+        return;
+    }
+    $now = time();
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $uid = (int) $row['id'];
+        if (!empty($row['role_id'])) {
+            continue;
+        }
+        $email = platform_normalize_email((string) $row['email']);
+        if (in_array($email, $ownerEmails, true) && $superId !== null) {
+            $db->prepare('UPDATE users SET company_id = NULL, role_id = ?, updated_at = ? WHERE id = ?')
+                ->execute([$superId, $now, $uid]);
+        } elseif ($userRoleId !== null) {
+            $db->prepare('UPDATE users SET company_id = ?, role_id = ?, updated_at = ? WHERE id = ?')
+                ->execute([$defaultCompany, $userRoleId, $now, $uid]);
+        }
+    }
+}
+
 function platform_seed_if_empty(PDO $db): void
 {
-    $n = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    $n = (int) $db->query('SELECT COUNT(*) FROM users WHERE deleted_at IS NULL')->fetchColumn();
     if ($n > 0) {
         return;
     }
@@ -221,6 +325,10 @@ function platform_seed_if_empty(PDO $db): void
     $stmt->execute(['Admin', 'User', $email, $hash, '127.0.0.1', 'seed', 'active', $now]);
     $uid = (int) $db->lastInsertId();
     platform_grant_default_permissions($db, $uid);
+    if (is_readable(__DIR__ . '/platform-rbac.php')) {
+        require_once __DIR__ . '/platform-rbac.php';
+        platform_apply_owner_or_company_defaults($db, $uid, $email);
+    }
 }
 
 /** @return list<string> */

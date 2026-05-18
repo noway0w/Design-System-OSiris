@@ -50,7 +50,7 @@ if ($row && !empty($row['password_hash']) && platform_user_is_active($row)) {
     if ($tok !== null) {
         $mail = platform_send_reset_email($email, $tok['token']);
         if (empty($mail['ok'])) {
-            error_log('auth-forgot-password: email not delivered to ' . $email . ' (mode=' . ($mail['mode'] ?? 'unknown') . ')');
+            error_log('auth-forgot-password: email not delivered user_id=' . $uid . ' (mode=' . ($mail['mode'] ?? 'unknown') . ')');
         }
     }
 }
