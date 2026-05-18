@@ -137,8 +137,10 @@ if ($method === 'POST') {
 if ($method === 'DELETE') {
     $pdo->prepare('DELETE FROM project_members WHERE project_id = ? AND user_id = ?')
         ->execute([$projectId, $targetUserId]);
+    $pdo->prepare('DELETE FROM pending_project_invites WHERE project_id = ? AND user_id = ? AND fulfilled_at IS NULL')
+        ->execute([$projectId, $targetUserId]);
     platform_audit_log($pdo, $actorId, 'project_member_remove', $targetUserId, ['project_id' => $projectId]);
-    echo json_encode(['ok' => true]);
+    echo json_encode(['ok' => true, 'message' => 'User removed from project.']);
     exit;
 }
 

@@ -180,6 +180,7 @@ function platform_user_capabilities(array $user): array
     $companyAdmin = $slug === 'company_admin';
     $hasCompany = platform_user_has_company_context($user);
     $canManageProjectMeta = $active && ($companyOwner || $companyAdmin || $superAdmin);
+    $canManageProjectRoster = $active && ($canManageProjectMeta || $slug === 'company_manager');
 
     return [
         'super_admin' => $superAdmin,
@@ -188,11 +189,14 @@ function platform_user_capabilities(array $user): array
         'company_manager' => $slug === 'company_manager',
         'company_user' => $slug === 'company_user',
         'can_manage_team' => $active && ($companyOwner || $companyAdmin || $superAdmin),
+        'can_delete_team_users' => $active && ($companyOwner || $companyAdmin || $superAdmin),
+        'can_purge_team_users' => $superAdmin && $active,
         'can_import_files' => $active,
         'can_access_projects' => $hasCompany,
         'can_create_project' => $hasCompany,
-        'can_manage_project_roster' => $canManageProjectMeta,
+        'can_manage_project_roster' => $canManageProjectRoster,
         'can_manage_project_services' => $canManageProjectMeta,
+        'can_delete_project' => $canManageProjectMeta,
         'can_promote_super_admin' => $superAdmin && platform_is_owner_email((string) ($user['email'] ?? '')),
         'is_platform_owner' => platform_is_owner_email((string) ($user['email'] ?? '')),
     ];
@@ -525,6 +529,44 @@ function platform_soft_delete_user(PDO $pdo, int $userId): void
     $now = time();
     $pdo->prepare('UPDATE users SET deleted_at = ?, updated_at = ?, account_status = ? WHERE id = ?')
         ->execute([$now, $now, 'deleted', $userId]);
+}
+
+function platform_reactivate_user(PDO $pdo, int $userId): void
+{
+    $row = platform_load_user_row($pdo, $userId, true);
+    if ($row === null) {
+        return;
+    }
+    $verified = $row['email_verified_at'] ?? null;
+    $status = ($verified !== null && $verified !== '') ? 'active' : 'pending';
+    $now = time();
+    $pdo->prepare('UPDATE users SET deleted_at = NULL, account_status = ?, updated_at = ? WHERE id = ?')
+        ->execute([$status, $now, $userId]);
+}
+
+/** Why this team member cannot be removed; null if removal is allowed. */
+function platform_team_remove_blocked_reason(array $actor, array $target): ?string
+{
+    $actorId = (int) ($actor['id'] ?? 0);
+    $targetId = (int) ($target['id'] ?? 0);
+    if ($targetId < 1 || $targetId === $actorId) {
+        return 'Cannot delete your own account';
+    }
+    if ((string) ($target['role_slug'] ?? '') === 'super_admin' && !platform_is_owner_email((string) ($actor['email'] ?? ''))) {
+        return 'Cannot remove a platform Super Admin';
+    }
+
+    return null;
+}
+
+function platform_hard_delete_user(PDO $pdo, int $userId): void
+{
+    $pdo->prepare('DELETE FROM platform_auth_tokens WHERE user_id = ?')->execute([$userId]);
+    $pdo->prepare('DELETE FROM pending_project_invites WHERE user_id = ?')->execute([$userId]);
+    $pdo->prepare('DELETE FROM project_members WHERE user_id = ?')->execute([$userId]);
+    $pdo->prepare('DELETE FROM service_permissions WHERE user_id = ?')->execute([$userId]);
+    $pdo->prepare('DELETE FROM user_files WHERE user_id = ?')->execute([$userId]);
+    $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 }
 
 function platform_audit_log(PDO $pdo, int $actorId, string $action, ?int $targetUserId = null, ?array $meta = null): void

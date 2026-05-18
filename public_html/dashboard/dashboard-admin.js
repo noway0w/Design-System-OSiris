@@ -252,8 +252,12 @@
   }
 
   function renderTeam(root) {
-    var teamState = { roles: [] };
+    var teamState = { roles: [], includeDeleted: false, canRemoveUsers: false, canPurgeUsers: false };
+    var isSuperAdmin = !!dashCapabilities.super_admin;
+    var canRemoveUsers = !!dashCapabilities.can_delete_team_users;
+    var canPurgeUsers = !!dashCapabilities.can_purge_team_users;
     var canInviteToProject = !!dashCapabilities.can_manage_project_roster;
+    var showTeamActions = canRemoveUsers || canPurgeUsers;
     var inviteProjectBtn = canInviteToProject
       ? '<button type="button" id="team-project-invite-open" class="px-4 py-1.5 rounded-lg border border-violet-300 text-violet-800 bg-violet-50 hover:bg-violet-100 text-sm font-medium">Invite to project</button>'
       : "";
@@ -264,33 +268,103 @@
       '<div class="flex flex-wrap gap-2">' +
       inviteProjectBtn +
       '<button type="button" id="team-invite-open" class="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-sm">Invite user</button></div></div>' +
-      '<div class="mt-6 overflow-x-auto glass-panel rounded-xl p-4">' +
+      (canPurgeUsers
+        ? '<label class="mt-4 flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" id="team-show-deleted" class="rounded border-slate-300"/> Show removed users</label>'
+        : "") +
+      '<div class="mt-4 overflow-x-auto glass-panel rounded-xl p-4">' +
       '<table class="w-full text-sm text-left" id="team-table">' +
       '<thead><tr class="border-b"><th class="py-2 pr-2">Name</th><th class="py-2 pr-2">Email</th>' +
-      '<th class="py-2 pr-2">Status</th><th class="py-2 pr-2">Role</th><th class="py-2">App access</th></tr></thead>' +
+      '<th class="py-2 pr-2">Status</th><th class="py-2 pr-2">Role</th><th class="py-2 pr-2">App access</th>' +
+      (showTeamActions ? '<th class="py-2 pr-2 min-w-[8rem]">Actions</th>' : "") +
+      "</tr></thead>" +
       '<tbody></tbody></table></div>' +
       '<p id="team-status" class="text-sm mt-3 text-slate-600"></p>';
 
     function load() {
-      api("/api/iris-team-members.php").then(function (res) {
+      var url = "/api/iris-team-members.php";
+      if (teamState.includeDeleted) url += "?include_deleted=1";
+      api(url).then(function (res) {
         if (!res.data.ok) {
           document.getElementById("team-status").textContent = res.data.error || "Failed to load";
           return;
         }
         teamState.roles = res.data.roles || [];
+        teamState.canRemoveUsers = !!res.data.can_remove_users;
+        teamState.canPurgeUsers = !!res.data.can_purge_users;
         var tbody = document.querySelector("#team-table tbody");
         tbody.innerHTML = "";
         (res.data.members || []).forEach(function (m) {
           var tr = document.createElement("tr");
-          tr.className = "border-b border-slate-100 align-top";
+          tr.className = "border-b border-slate-100 align-top" + (m.is_deleted ? " opacity-60" : "");
           var roleOpts = teamRoleOptions(teamState.roles, m.role_id, false);
           var toggles = (m.services || []).map(function (s) {
-            return '<label class="inline-flex items-center gap-1 mr-2 mb-1 text-xs"><input type="checkbox" class="team-svc" data-uid="' + m.id + '" data-svc="' + s.service_name + '"' + (s.enabled ? " checked" : "") + '/> ' + escapeHtml(s.label) + "</label>";
+            return (
+              '<label class="inline-flex items-center gap-1 mr-2 mb-1 text-xs"><input type="checkbox" class="team-svc" data-uid="' +
+              m.id +
+              '" data-svc="' +
+              s.service_name +
+              '"' +
+              (s.enabled ? " checked" : "") +
+              (m.is_deleted ? " disabled" : "") +
+              "/> " +
+              escapeHtml(s.label) +
+              "</label>"
+            );
           }).join("");
-          tr.innerHTML = '<td class="py-2 pr-2">' + escapeHtml(m.name) + '</td><td class="py-2 pr-2">' + escapeHtml(m.email) + '</td><td class="py-2 pr-2">' + escapeHtml(m.account_status) + '</td><td class="py-2 pr-2"><select class="team-role text-xs px-2 py-1 rounded border" data-uid="' + m.id + '">' + roleOpts + '</select></td><td class="py-2"><div class="flex flex-wrap max-w-md">' + toggles + '</div></td>';
+          var actions = "";
+          if (showTeamActions) {
+            if (m.can_remove) {
+              actions +=
+                '<button type="button" class="team-del text-xs text-red-600 font-medium" data-uid="' +
+                m.id +
+                '" data-email="' +
+                escapeHtml(m.email) +
+                '">Remove</button>';
+            }
+            if (m.can_purge) {
+              actions +=
+                (actions ? " " : "") +
+                '<button type="button" class="team-purge text-xs text-red-700 font-medium underline" data-uid="' +
+                m.id +
+                '" data-email="' +
+                escapeHtml(m.email) +
+                '">Delete permanently</button>';
+            }
+            if (m.can_reactivate) {
+              actions +=
+                (actions ? " " : "") +
+                '<button type="button" class="team-reactivate text-xs text-violet-700 font-medium" data-uid="' +
+                m.id +
+                '">Reactivate</button>';
+            }
+            if (!actions) {
+              actions = '<span class="text-xs text-slate-400">—</span>';
+            }
+          }
+          tr.innerHTML =
+            '<td class="py-2 pr-2">' +
+            escapeHtml(m.name) +
+            '</td><td class="py-2 pr-2">' +
+            escapeHtml(m.email) +
+            '</td><td class="py-2 pr-2">' +
+            escapeHtml(m.is_deleted ? "removed" : m.account_status) +
+            '</td><td class="py-2 pr-2"><select class="team-role text-xs px-2 py-1 rounded border" data-uid="' +
+            m.id +
+            '"' +
+            (m.is_deleted ? " disabled" : "") +
+            ">" +
+            roleOpts +
+            '</select></td><td class="py-2"><div class="flex flex-wrap max-w-md">' +
+            toggles +
+            "</div></td>" +
+            (showTeamActions ? '<td class="py-2 pr-2 whitespace-nowrap">' + actions + "</td>" : "");
           tbody.appendChild(tr);
         });
-        document.getElementById("team-status").textContent = (res.data.members || []).length + " member(s)";
+        var active = (res.data.members || []).filter(function (m) { return !m.is_deleted; }).length;
+        var removed = (res.data.members || []).filter(function (m) { return m.is_deleted; }).length;
+        var statusMsg = active + " active member(s)";
+        if (teamState.includeDeleted && removed) statusMsg += ", " + removed + " removed";
+        document.getElementById("team-status").textContent = statusMsg;
       });
     }
 
@@ -439,12 +513,72 @@
     }
 
     root.addEventListener("change", function (e) {
+      if (e.target.id === "team-show-deleted") {
+        teamState.includeDeleted = e.target.checked;
+        load();
+        return;
+      }
       if (e.target.classList.contains("team-svc")) {
         api("/api/iris-team-permissions.php", { method: "PATCH", body: { user_id: parseInt(e.target.getAttribute("data-uid"), 10), service_name: e.target.getAttribute("data-svc"), enabled: e.target.checked } });
       }
       if (e.target.classList.contains("team-role")) {
         api("/api/iris-team-members.php", { method: "PATCH", body: { user_id: parseInt(e.target.getAttribute("data-uid"), 10), role_id: parseInt(e.target.value, 10) } }).then(function (res) {
           if (!res.data.ok) { document.getElementById("team-status").textContent = res.data.error || "Role update failed"; load(); }
+        });
+      }
+    });
+
+    root.addEventListener("click", function (e) {
+      var del = e.target.closest(".team-del");
+      if (del && confirm("Remove " + (del.getAttribute("data-email") || "this user") + " from the team? They will lose access until reactivated.")) {
+        api("/api/iris-team-members.php", {
+          method: "DELETE",
+          body: { user_id: parseInt(del.getAttribute("data-uid"), 10) },
+        }).then(function (res) {
+          document.getElementById("team-status").textContent = res.data.ok
+            ? res.data.message || "User removed."
+            : res.data.error || "Could not remove user";
+          if (res.data.ok) {
+            if (canPurgeUsers) {
+              teamState.includeDeleted = true;
+              var showDel = document.getElementById("team-show-deleted");
+              if (showDel) showDel.checked = true;
+            }
+            load();
+          }
+        });
+        return;
+      }
+      var purge = e.target.closest(".team-purge");
+      if (
+        purge &&
+        confirm(
+          "Permanently delete " +
+            (purge.getAttribute("data-email") || "this user") +
+            "? This cannot be undone."
+        )
+      ) {
+        api("/api/iris-team-members.php", {
+          method: "DELETE",
+          body: { user_id: parseInt(purge.getAttribute("data-uid"), 10), permanent: true },
+        }).then(function (res) {
+          document.getElementById("team-status").textContent = res.data.ok
+            ? res.data.message || "User permanently deleted."
+            : res.data.error || "Could not delete user";
+          if (res.data.ok) load();
+        });
+        return;
+      }
+      var react = e.target.closest(".team-reactivate");
+      if (react && confirm("Reactivate this user?")) {
+        api("/api/iris-team-members.php", {
+          method: "POST",
+          body: { user_id: parseInt(react.getAttribute("data-uid"), 10), action: "reactivate" },
+        }).then(function (res) {
+          document.getElementById("team-status").textContent = res.data.ok
+            ? res.data.message || "User reactivated."
+            : res.data.error || "Could not reactivate user";
+          if (res.data.ok) load();
         });
       }
     });
@@ -465,6 +599,7 @@
     var projectsState = { view: "list", projectId: null, detail: null };
     var canManageRoster = !!dashCapabilities.can_manage_project_roster;
     var canManageServices = !!dashCapabilities.can_manage_project_services;
+    var canDeleteProject = !!dashCapabilities.can_delete_project;
     var canCreateProject = !!dashCapabilities.can_create_project;
     var isSuperAdmin = !!dashCapabilities.super_admin;
 
@@ -1104,20 +1239,32 @@
           );
         })
         .join("");
+      var detailCanManageRoster = data.can_manage_roster !== undefined ? !!data.can_manage_roster : canManageRoster;
       var membersHtml = (data.members || [])
         .map(function (m) {
           var statusNote =
             m.account_status === "pending"
               ? ' <span class="text-amber-600 font-medium">· Pending email verification</span>'
               : "";
+          var removeBtn =
+            detailCanManageRoster
+              ? '<button type="button" class="proj-member-remove shrink-0 text-xs text-red-600 font-medium hover:underline" data-uid="' +
+                m.id +
+                '" data-name="' +
+                escapeHtml(m.name) +
+                '">Remove from project</button>'
+              : "";
           return (
-            '<li class="py-2 border-b border-slate-100 text-sm"><span class="font-medium">' +
+            '<li class="py-2 border-b border-slate-100 text-sm flex flex-wrap items-start justify-between gap-2">' +
+            '<div class="min-w-0 flex-1"><span class="font-medium">' +
             escapeHtml(m.name) +
             '</span><span class="text-slate-500 block text-xs">' +
             escapeHtml(m.email) +
             (m.role_label ? " · " + escapeHtml(m.role_label) : "") +
             statusNote +
-            "</span></li>"
+            "</span></div>" +
+            removeBtn +
+            "</li>"
           );
         })
         .join("");
@@ -1128,12 +1275,23 @@
           });
         })
         .map(function (p) {
+          var cancelBtn =
+            detailCanManageRoster
+              ? '<button type="button" class="proj-member-remove shrink-0 text-xs text-red-600 font-medium hover:underline" data-uid="' +
+                p.id +
+                '" data-name="' +
+                escapeHtml(p.name) +
+                '" data-pending="1">Cancel invite</button>'
+              : "";
           return (
-            '<li class="py-2 border-b border-slate-100 text-sm"><span class="font-medium">' +
+            '<li class="py-2 border-b border-slate-100 text-sm flex flex-wrap items-start justify-between gap-2">' +
+            '<div class="min-w-0 flex-1"><span class="font-medium">' +
             escapeHtml(p.name) +
             '</span><span class="text-slate-500 block text-xs">' +
             escapeHtml(p.email) +
-            ' <span class="text-amber-600 font-medium">· Invite pending</span></span></li>'
+            ' <span class="text-amber-600 font-medium">· Invite pending</span></span></div>' +
+            cancelBtn +
+            "</li>"
           );
         })
         .join("");
@@ -1172,7 +1330,7 @@
         escapeHtml(p.name || "Project") +
         (p.company_name ? ' <span class="text-sm font-normal text-violet-600">(' + escapeHtml(p.company_name) + ")</span>" : "") +
         "</h3>" +
-        (canManageRoster
+        (canDeleteProject
           ? '<button type="button" id="projects-detail-del" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100"><span class="material-symbols-outlined text-base" aria-hidden="true">delete</span>Delete project</button>'
           : "") +
         "</div>" +
@@ -1186,7 +1344,7 @@
         "</div></section>" +
         '<section class="glass-panel rounded-xl p-4"><div class="flex justify-between items-center gap-2 mb-3">' +
         '<h4 class="font-semibold text-sm">Team members</h4>' +
-        (canManageRoster
+        (detailCanManageRoster
           ? '<button type="button" id="projects-add-user" class="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium">Add user to project</button>'
           : "") +
         "</div><ul class=\"max-h-80 overflow-y-auto\">" +
@@ -1283,6 +1441,27 @@
       var openBtn = e.target.closest(".proj-open");
       if (openBtn) {
         openProjectDetail(parseInt(openBtn.getAttribute("data-id"), 10));
+        return;
+      }
+      var removeBtn = e.target.closest(".proj-member-remove");
+      if (removeBtn && projectsState.view === "detail" && projectsState.projectId) {
+        var uid = parseInt(removeBtn.getAttribute("data-uid"), 10);
+        var who = removeBtn.getAttribute("data-name") || "this user";
+        var pending = removeBtn.getAttribute("data-pending") === "1";
+        var confirmMsg = pending
+          ? "Cancel the invite for " + who + "? They will not join this project."
+          : "Remove " + who + " from this project? Their company account is not deleted.";
+        if (!confirm(confirmMsg)) return;
+        api("/api/iris-project-members.php", {
+          method: "DELETE",
+          body: { project_id: projectsState.projectId, user_id: uid },
+        }).then(function (res) {
+          if (!res.data.ok) {
+            window.alert(res.data.error || "Could not update project membership.");
+            return;
+          }
+          openProjectDetail(projectsState.projectId);
+        });
       }
     });
     root.addEventListener("change", function (e) {

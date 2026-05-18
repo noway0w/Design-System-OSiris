@@ -126,6 +126,7 @@ if ($method === 'GET') {
             'pending_invites' => $pendingInvites,
             'services' => $services,
             'files' => $files,
+            'can_manage_roster' => !empty($caps['can_manage_project_roster']),
         ]);
         exit;
     }
@@ -214,7 +215,7 @@ if ($method === 'POST') {
 }
 
 if ($method === 'DELETE') {
-    platform_require_capability($actor, 'can_manage_project_roster');
+    platform_require_capability($actor, 'can_delete_project');
     $projectId = (int) ($body['project_id'] ?? 0);
     if ($projectId < 1) {
         http_response_code(400);
