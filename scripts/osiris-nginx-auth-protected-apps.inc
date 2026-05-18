@@ -46,14 +46,19 @@ location = /carscan {
 }
 
 location = /carscan/index.php {
-    return 301 /carscan/;
+    return 301 /carscan/index.html;
 }
 
 location ^~ /carscan/ {
     auth_request /_internal_platform_auth;
     error_page 401 =302 /login/?next=$request_uri;
     index index.html;
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     try_files $uri $uri/ /carscan/index.html;
+}
+
+location ~* ^/carscan/.+\.php$ {
+    return 301 /carscan/index.html;
 }
 
 location ^~ /disable/ {

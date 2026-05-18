@@ -20,7 +20,7 @@ location = /carscan {
 }
 
 location = /carscan/index.php {
-    return 301 /carscan/;
+    return 301 /carscan/index.html;
 }
 
 location ^~ /carscan/ {

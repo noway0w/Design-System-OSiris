@@ -49,7 +49,7 @@ $catalog = [
         'service_name' => 'carscan',
         'title' => 'CarScan',
         'subtitle' => 'SpeedVision capture',
-        'url' => '/carscan/',
+        'url' => '/carscan/index.html',
         'icon' => 'directions_car',
         'accent' => 'from-emerald-500/20 to-teal-600/10',
     ],
