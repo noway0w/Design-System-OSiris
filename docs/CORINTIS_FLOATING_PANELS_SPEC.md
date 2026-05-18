@@ -2,13 +2,15 @@
 
 This document describes the floating panel system in the Corintis 3D CAD Explorer. Use it when modifying, extending, or debugging the floating panels.
 
+**Deployment path:** Source file is `public_html/disable/index.html`. The URL is `/disable/index.html`. CSS classes and DOM IDs still use the `corintis-*` prefix (legacy naming).
+
 ---
 
 ## 1. Overview
 
 Floating panels are draggable, resizable UI panels overlaid on the 3D canvas. Panels are opened via a left-hand sidebar (icon buttons) and closed via a header close button. Closed panels are fully hidden (`display: none`). Multiple panels can be open at once. Position and size persist in `localStorage` until the user clicks Reset or reloads the page.
 
-**File:** `public_html/corintis/index.html`  
+**File:** `public_html/disable/index.html`  
 **Container:** `#corintis-floating-panels` (absolute, inset-0, pointer-events-none, z-10)  
 **Sidebar:** `#corintis-panel-sidebar` (absolute, left edge, z-30)
 

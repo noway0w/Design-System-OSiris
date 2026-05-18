@@ -4,7 +4,7 @@ This document describes the **in-browser car camera** UI under `/carscan/`, the 
 
 ## Architecture
 
-- **Static UI:** `public_html/carscan/` — custom `index.html` with `getUserMedia` (front/rear cameras), `MediaStreamTrack` stop on toggle, and frame submission to the API (HTTP `POST` by default; WebSocket optional).
+- **Static UI:** `public_html/carscan/index.html` — served at **`/carscan/index.html`** (dashboard tile link). Platform top bar via `platform-shell-topbar.js`. Do **not** use `index.php` under `/carscan/` (nginx `^~` locations serve `.php` as plain text).
 - **Analysis service:** `speedvision-service/` — FastAPI on **127.0.0.1:9001** (systemd: `speedvision-carscan.service`), loads Ultralytics YOLO weights from `CARSCAN_WEIGHTS` (default: `yolov8n.pt` in the `carscan` web folder when paths resolve).
 - **Nginx (site config):** `scripts/app-guillaumelassiat-nginx.conf` — `location` blocks proxy `/api/carscan/` and `/api/carscan/ws` to the sidecar, and deny or restrict direct access to `.py` and model weights under `/carscan/`. Snippet-only copy: `scripts/carscan-nginx-snippets.conf`.
 
@@ -22,10 +22,18 @@ curl -sS 127.0.0.1:9001/health
 
 ## Nginx on the VPS
 
-After editing the app server block, test and reload (paths depend on your OS layout):
+Protected app rules: `scripts/osiris-nginx-auth-protected-apps.inc` (included from `app-guillaumelassiat.com`). Deploy CarScan/nginx fixes:
+
+```bash
+sudo bash /home/OSiris/scripts/deploy-platform-nginx-carscan-fix.sh
+```
+
+That script copies vhost configs, removes stale `index.php` wrappers, and reloads nginx. Manual check:
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
+curl -sI https://app.guillaumelassiat.com/carscan/index.php | grep -i location
+# → location: .../carscan/index.html
 ```
 
 ## UI ↔ API

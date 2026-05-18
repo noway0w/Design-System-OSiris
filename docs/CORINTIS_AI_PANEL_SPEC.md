@@ -2,7 +2,8 @@
 
 This document describes the CAD AI Assistant floating panel in the Corintis 3D CAD Explorer. Use it when modifying, extending, or debugging the AI chat interface.
 
-**File:** `public_html/corintis/index.html`  
+**File:** `public_html/disable/index.html`  
+**Deployment:** Same directory as the main CAD Explorer SPA; URL `/disable/index.html`.  
 **Panel ID:** `ai`  
 **Default width:** 460px (overrides base 16rem for this panel)  
 **Related spec:** [CORINTIS_FLOATING_PANELS_SPEC.md](CORINTIS_FLOATING_PANELS_SPEC.md)

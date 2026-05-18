@@ -8,7 +8,7 @@ This document describes the feedback system in the Corintis 3D CAD Explorer: toa
 
 Corintis uses **toasts only** for user feedback. There is no full-screen error overlay. All success, error, and info messages appear as non-blocking toasts in the top-right corner.
 
-**File:** `public_html/corintis/index.html`  
+**File:** `public_html/disable/index.html`  
 **Toast container:** `#toast-container` (fixed, top-right, z-index 60)  
 **CSS:** `public_html/css/components/toast.css`  
 **Variables:** `public_html/css/variables.css` (--toast-bg, --toast-border, --toast-title, etc.)
