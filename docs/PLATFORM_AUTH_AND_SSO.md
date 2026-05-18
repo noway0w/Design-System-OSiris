@@ -183,12 +183,30 @@ Google SSO users are created as **active** with `email_verified_at` set in [`aut
 
 ### Multi-tenant RBAC (Phase 1)
 
-SQLite tables: `companies`, `roles`, `user_files`, `admin_audit_log`. Users gain `company_id`, `role_id`, `deleted_at`, `public_display_name`.
+SQLite tables: `companies`, `roles`, `projects`, `project_members`, `user_files`, `admin_audit_log`. Users gain `company_id`, `role_id`, `deleted_at`, `public_display_name`.
+
+**Legacy note:** an older per-user `projects` table (user_id, project_name) is renamed to `legacy_projects_archive` on migration. The active `projects` table is company-scoped (`company_id`, `name`, `description`, `status`, `deleted_at`).
+
+**Project membership:** `project_members (project_id, user_id)` controls which managers/users may access project files. Company owners and admins have implicit access to all projects in their company (no pivot row required).
+
+**File rows (`user_files`):** optional `project_id` (nullable = personal file within the company). Row-level access is enforced in `platform-rbac.php` (`platform_user_can_read_file`, `platform_files_list_sql_for_user`), not only by `can_import_files`.
+
+| File type | Owner / Admin | Manager / User |
+|-----------|---------------|----------------|
+| Personal (`project_id` NULL) | All files in company | Own uploads only |
+| Project (`project_id` set) | All files in company | Files in projects where user is in `project_members` |
+| Super Admin | All non-deleted files (platform) | — |
+
+Upload: `POST /api/iris-files-upload.php` accepts optional `project_id`. List/download/delete use the access helpers above.
+
+Optional test backfill: set `PLATFORM_PROJECT_BACKFILL=1` before `platform_pdo()` to create a `General` project per company and add all company users to `project_members`.
+
+**Capabilities (derived):** `can_manage_projects`, `can_access_all_company_projects`, `has_implicit_project_access` (company owner/admin).
 
 | Role slug | Scope | Dashboard tab |
 |-----------|--------|----------------|
 | `super_admin` | platform | Super Admin |
-| `company_owner` / `company_admin` | company | Team Permissions |
+| `company_owner` / `company_admin` | company | Team, Projects |
 | `company_manager` / `company_user` | company | — |
 | Any **active** user | — | Import Files |
 
@@ -201,6 +219,9 @@ SQLite tables: `companies`, `roles`, `user_files`, `admin_audit_log`. Users gain
 | `iris-admin-users.php` | `super_admin` |
 | `iris-admin-promote-super-admin.php` | `can_promote_super_admin` |
 | `iris-team-members.php`, `iris-team-permissions.php`, `iris-team-invite.php` | `can_manage_team` |
+| `iris-team-invite.php` POST body | optional `role_slug` (`company_admin`, `company_manager`, `company_user`; `company_owner` only if actor is owner) |
+| `iris-projects.php` | `can_manage_projects` |
+| `iris-project-members.php` | `can_manage_projects` |
 | `iris-files.php`, `iris-files-upload.php`, `iris-files-download.php` | `can_import_files` |
 
 `service_permissions` is unchanged for nginx `auth-verify.php` and app tiles; the Team tab toggles that table per member.
